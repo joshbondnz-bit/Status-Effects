@@ -3,9 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import {
-  PRESETS, MIN, effects, healthState, makeDrink, simulateNight, standardDrinks,
+  MIN, WARNING_BAC, effects, healthState, makeDrink, simulateNight, standardDrinks,
   type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
+import { newId, sampleNightEvents } from '../sampleNight';
 import { colors, fonts, panel } from '../theme';
 import { glassSprite } from '../sprites';
 import { HealthBar } from '../components/HealthBar';
@@ -21,8 +22,6 @@ import { ICONS } from '../sprites';
 import { clock } from '../format';
 import { useApp } from '../AppDataProvider';
 
-let seq = 0;
-const newId = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
 
 function Button({ label, onPress, primary, flex = 1 }: { label: string; onPress: () => void; primary?: boolean; flex?: number }) {
   return (
@@ -46,10 +45,13 @@ export function TonightScreen() {
   const night = useMemo(() => simulateNight({ profile, events, now }), [profile, events, now]);
   const fx = useMemo(() => effects(night, { calories: settings.calories, endedAt }), [night, settings.calories, endedAt]);
   const region = profile.region;
-  // At 0 HP the safety check-in appears, and comes back every 30 minutes while still critical.
+  // People are badly impaired well before 0 HP, so the safety check-in appears from the Wasted zone (0.15%+)
+  // as well as at 0 HP, and comes back every 30 minutes while the level stays that high.
   const critical = healthState(night) === 'critical';
+  const highRange = critical || night.bacNow >= WARNING_BAC;
   const ack = data.tonight.safetyAckAt;
-  const showSafety = critical && (ack == null || now - ack > 30 * MIN);
+  const showSafety = highRange && (ack == null || now - ack > 30 * MIN);
+  const reopenSafety = () => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: undefined } }));
 
   const log = (e: LogEvent) => {
     update(d => ({ ...d, tonight: { ...d.tonight, events: [...d.tonight.events, e] } }));
@@ -68,15 +70,7 @@ export function TonightScreen() {
 
   // A sample night to try things out. Only offered while tonight's log is empty, so it never replaces real entries.
   const loadSample = () => {
-    const t = currentTime();
-    update(d => ({ ...d, tonight: { ...d.tonight, endedAt: null, events: [
-      { type: 'food', id: newId(), t: t - 170 * MIN },
-      makeDrink(PRESETS.beer[0], t - 130 * MIN, newId()),
-      makeDrink(PRESETS.beer[0], t - 85 * MIN, newId()),
-      makeDrink(PRESETS.beer[3], t - 45 * MIN, newId()),
-      { type: 'water', id: newId(), t: t - 30 * MIN },
-      makeDrink(PRESETS.spirits[1], t - 10 * MIN, newId()),
-    ] } }));
+    update(d => ({ ...d, tonight: { ...d.tonight, endedAt: null, events: sampleNightEvents(currentTime()) } }));
     tick();
   };
 
@@ -122,12 +116,14 @@ export function TonightScreen() {
           <View style={styles.danger}>
             <Text style={styles.dangerTitle}>Health is at 0</Text>
             <Text style={styles.dangerTxt}>Your estimated level is in a range where alcohol poisoning is a real risk. Stop drinking and make sure someone sober is with you.</Text>
-            <Pressable onPress={() => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: undefined } }))} accessibilityRole="button">
+            <Pressable onPress={reopenSafety} accessibilityRole="button">
               <Text style={styles.dangerLink}>Open the safety check-in</Text>
             </Pressable>
           </View>
-        ) : night.bacNow >= 0.15 ? (
-          <Text style={styles.warn}>Memory gaps and vomiting are likely in this range. Switch to water and stay with people you trust.</Text>
+        ) : highRange ? (
+          <Pressable onPress={reopenSafety} accessibilityRole="button">
+            <Text style={styles.dangerLink}>Open the safety check-in</Text>
+          </Pressable>
         ) : null}
 
         <View style={styles.actions}>
@@ -186,8 +182,8 @@ export function TonightScreen() {
       ) : null}
       {error ? <Text style={styles.warn}>{error}</Text> : null}
 
-      <LogDrinkSheet visible={sheet && !showSafety} region={region} showCalories={settings.calories} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
-      <SafetyCheck visible={showSafety} region={region}
+      <LogDrinkSheet visible={sheet && !showSafety} region={region} showCalories={settings.calories} highRange={night.bacNow >= WARNING_BAC} onClose={() => setSheet(false)} onPick={pickDrink} />
+      <SafetyCheck visible={showSafety} region={region} critical={critical}
         onWithSomeone={() => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: currentTime() } }))} />
     </Screen>
   );

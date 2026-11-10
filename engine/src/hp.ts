@@ -36,11 +36,18 @@ export function hpFromBac(bac: number): number {
 export const STABLE_BELOW = 0.2;
 
 /**
+ * From here up (the Wasted zone) the app shows a warning. People are badly impaired well before 0 HP:
+ * blackouts, falls, vomiting and choking risk all become common around 0.15–0.20%.
+ */
+export const WARNING_BAC = 0.15;
+
+/**
  * - critical: at or above 0.25%, or came down from it but still above 0.20% (so it can't flicker)
  * - stabilising: reached critical tonight, now below 0.20% but alcohol not yet cleared
+ * - warning: in the Wasted zone (0.15%+), or drinks already taken will carry you there (or to critical)
  * - normal: everything else
  */
-export type HealthState = 'critical' | 'stabilising' | 'normal';
+export type HealthState = 'critical' | 'stabilising' | 'warning' | 'normal';
 
 export function healthState(night: Night): HealthState {
   if (night.bacNow >= CRITICAL_BAC) return 'critical';
@@ -48,6 +55,9 @@ export function healthState(night: Night): HealthState {
     if (night.bacNow >= STABLE_BELOW) return 'critical';
     if (night.bacNow > 0) return 'stabilising';
   }
+  if (night.bacNow >= WARNING_BAC) return 'warning';
+  if (night.criticalAt != null && night.criticalAt > night.now) return 'warning';
+  if (night.futurePeak >= WARNING_BAC && night.futurePeakAt > night.now) return 'warning';
   return 'normal';
 }
 

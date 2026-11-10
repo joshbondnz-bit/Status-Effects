@@ -27,6 +27,27 @@ test('coming down from critical stays critical until below 0.20%, then stabilise
   assert.equal(healthState(night(binge(), below)), 'stabilising');
 });
 
+test('heading for critical shows a warning before it gets there', () => {
+  const n = night(binge(), 2);
+  assert.ok(n.bacNow < 0.15);
+  assert.equal(healthState(n), 'warning');
+});
+
+test('the Wasted zone (0.15%+) shows a warning even if critical is not coming', () => {
+  // Six pints at once peaks in the Wasted zone, below 0.25%.
+  const six = Array.from({ length: 6 }, () => drink(PRESETS.beer[0], 0));
+  const base = night(six, 0);
+  assert.ok(base.peak >= 0.15 && base.peak < CRITICAL_BAC, `peak ${base.peak}`);
+  assert.equal(healthState(night(six, (base.peakAt - at(0)) / 60000)), 'warning');
+});
+
+test('heading into the Wasted zone warns before getting there', () => {
+  const six = Array.from({ length: 6 }, () => drink(PRESETS.beer[0], 0));
+  const n = night(six, 2);
+  assert.ok(n.bacNow < 0.15 && n.criticalAt == null);
+  assert.equal(healthState(n), 'warning');
+});
+
 test('a night that never reaches 0.25% is never critical', () => {
   const n = night([drink(BOTTLE, 0), drink(BOTTLE, 30)], 60);
   assert.equal(n.criticalAt, null);

@@ -5,11 +5,13 @@ import { useAppData } from './useAppData';
 import type { AppData } from './storage';
 
 export interface TimeMachine {
-  /** 1 = real time; 60 = a minute per second; 600 = ten minutes per second. */
+  /** 0 = paused; 1 = real time; 60 = a minute per second; 600 = ten minutes per second. */
   speed: number;
   setSpeed: (speed: number) => void;
   /** Jump forward by some milliseconds. */
   skip: (ms: number) => void;
+  /** Jump to a specific time. */
+  skipTo: (t: number) => void;
   /** Back to the real clock. */
   reset: () => void;
   /** How far ahead of the real clock the app is, in ms. */
@@ -47,7 +49,7 @@ export function AppDataProvider({ children, loading }: { children: ReactNode; lo
       offset.current += (speed - 1) * (real - last);
       last = real;
       tick();
-    }, speed > 1 ? 250 : 15_000);
+    }, speed !== 1 ? 250 : 15_000); // speed 0 = paused: the offset falls back as fast as real time moves on
     return () => clearInterval(id);
   }, [speed, tick]);
 
@@ -55,6 +57,7 @@ export function AppDataProvider({ children, loading }: { children: ReactNode; lo
     speed,
     setSpeed,
     skip: ms => { offset.current += ms; tick(); },
+    skipTo: t => { offset.current = t - Date.now(); tick(); },
     reset: () => { offset.current = 0; setSpeed(1); tick(); },
     offset: offsetShown,
   };

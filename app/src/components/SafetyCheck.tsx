@@ -1,4 +1,4 @@
-// The safety check-in shown at 0 HP (critical blood alcohol). Calm, practical, never a "game over".
+// The safety check-in shown in the Wasted zone (0.15%+) and at 0 HP. Calm, practical, never a "game over".
 import { useState } from 'react';
 import { Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ function smsLink(body: string) {
   return Platform.OS === 'ios' ? `sms:&body=${encodeURIComponent(body)}` : `sms:?body=${encodeURIComponent(body)}`;
 }
 
-export function SafetyCheck({ visible, region, onWithSomeone }: { visible: boolean; region: RegionCode; onWithSomeone: () => void }) {
+export function SafetyCheck({ visible, region, critical, onWithSomeone }: { visible: boolean; region: RegionCode; critical: boolean; onWithSomeone: () => void }) {
   const insets = useSafeAreaInsets();
   const [notYet, setNotYet] = useState(false);
   const number = EMERGENCY[region];
@@ -25,7 +25,9 @@ export function SafetyCheck({ visible, region, onWithSomeone }: { visible: boole
       <View style={[styles.backdrop, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
         <ScrollView contentContainerStyle={styles.card}>
           <Text style={styles.title}>Time to stop and check in</Text>
-          <Text style={styles.body}>Your estimated level is in a range where alcohol poisoning is a real risk. Stop drinking now.</Text>
+          <Text style={styles.body}>{critical
+            ? 'Your estimated level is in a range where alcohol poisoning is a real risk. Stop drinking now.'
+            : "You're likely very drunk by now, even though your health isn't at 0 yet. Blackouts, falls and vomiting are common in this range. Time to switch to water."}</Text>
 
           {!notYet ? (
             <>
@@ -67,7 +69,7 @@ export function SafetyCheck({ visible, region, onWithSomeone }: { visible: boole
             ].map(s => <Text key={s} style={styles.sign}>•  {s}</Text>)}
           </View>
           <Text style={styles.body}>If someone is drowsy, lay them on their side and stay with them. Coffee and cold showers don't help.</Text>
-          <Text style={styles.small}>This check-in comes back every 30 minutes while your level stays critical.</Text>
+          <Text style={styles.small}>This check-in comes back every 30 minutes while your level stays this high.</Text>
         </ScrollView>
       </View>
     </Modal>
