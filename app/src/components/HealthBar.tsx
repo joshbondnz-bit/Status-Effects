@@ -13,30 +13,30 @@ import { useReduceMotion } from '../useReduceMotion';
 
 const SEGMENTS = ['WASTED', 'ROUGH', 'DRUNK', 'TIPSY', 'BUZZED', 'FRESH'];
 const TICKS = ['.15', '.11', '.08', '.05', '.02'];
-/** The 45° stripe pattern repeats every 8 / sin(45°) ≈ 11.3 px horizontally. */
-const STRIPE_PERIOD = 11.31;
 /** The native animation driver isn't available on web (used only for browser testing). */
 const NATIVE = Platform.OS !== 'web';
 
-/** A striped section of the bar that scrolls: incoming damage (red/white, flowing left) or the next hour's healing (green, flowing right). */
+/**
+ * A striped section of the bar: incoming damage (red/white) or the next hour's healing (green).
+ * The stripes stay still and slowly fade in and out, so the motion stays calm (sliding stripes looked jittery).
+ */
 function Zone({ left, width, kind, label, still }: { left: number; width: number; kind: 'dmg' | 'heal'; label: string; still: boolean }) {
   const id = 'stripes-' + kind;
   const [a, b] = kind === 'dmg' ? ['rgba(255,240,220,0.75)', 'rgba(140,20,40,0.6)'] : ['rgba(95,211,154,0.65)', 'rgba(95,211,154,0.2)'];
-  const shift = useRef(new Animated.Value(0)).current;
+  const glow = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    if (still) { shift.setValue(0); return; }
-    // Snap back explicitly each pass (the stripe pattern repeats, so the jump is invisible).
+    if (still) { glow.setValue(1); return; }
+    const ease = Easing.inOut(Easing.sin);
     const loop = Animated.loop(Animated.sequence([
-      Animated.timing(shift, { toValue: 1, duration: 700, easing: Easing.linear, useNativeDriver: NATIVE }),
-      Animated.timing(shift, { toValue: 0, duration: 0, useNativeDriver: NATIVE }),
+      Animated.timing(glow, { toValue: 0.45, duration: 1400, easing: ease, useNativeDriver: NATIVE }),
+      Animated.timing(glow, { toValue: 1, duration: 1400, easing: ease, useNativeDriver: NATIVE }),
     ]));
     loop.start();
     return () => loop.stop();
-  }, [still, shift]);
-  const translateX = shift.interpolate({ inputRange: [0, 1], outputRange: [0, kind === 'dmg' ? -STRIPE_PERIOD : STRIPE_PERIOD] });
+  }, [still, glow]);
   return (
     <View style={[styles.zone, { left: `${left}%`, width: `${width}%` }, kind === 'dmg' ? styles.zoneDmg : styles.zoneHeal]}>
-      <Animated.View style={[styles.stripeLayer, { transform: [{ translateX }] }]}>
+      <Animated.View style={[styles.stripeLayer, { opacity: glow }]}>
         <Svg width="100%" height="100%">
           <Defs>
             <Pattern id={id} width={8} height={8} patternUnits="userSpaceOnUse" patternTransform={`rotate(${kind === 'dmg' ? -45 : 45})`}>
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   zone: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   zoneDmg: { borderLeftWidth: 2, borderLeftColor: '#fff4e6' },
   zoneHeal: { borderRightWidth: 2, borderRightColor: colors.good },
-  stripeLayer: { position: 'absolute', top: 0, bottom: 0, left: -STRIPE_PERIOD, right: -STRIPE_PERIOD },
+  stripeLayer: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
   zoneTxt: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
   divider: { position: 'absolute', top: 0, bottom: 0, width: 3, marginLeft: -3, backgroundColor: colors.edge },
   edge: { position: 'absolute', top: 0, bottom: 0, width: 4, marginLeft: -2 },
