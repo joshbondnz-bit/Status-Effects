@@ -15,11 +15,12 @@ interface Props {
   visible: boolean;
   region: RegionCode;
   highRange: boolean;
+  showCalories: boolean;
   onClose: () => void;
   onPick: (spec: DrinkSpec) => void;
 }
 
-export function LogDrinkSheet({ visible, region, highRange, onClose, onPick }: Props) {
+export function LogDrinkSheet({ visible, region, highRange, showCalories, onClose, onPick }: Props) {
   const [tab, setTab] = useState<DrinkCategory>('beer');
   const insets = useSafeAreaInsets();
   const g = REGIONS[region].gramsPerStandardDrink;
@@ -53,7 +54,7 @@ export function LogDrinkSheet({ visible, region, highRange, onClose, onPick }: P
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={styles.pQty}>{(alcoholGrams(p.ml, p.abv) / g).toFixed(1)} std</Text>
-                  <Text style={styles.pSub}>{d.kcal} kcal</Text>
+                  {showCalories ? <Text style={styles.pSub}>{d.kcal} kcal</Text> : null}
                 </View>
               </Pressable>
             );

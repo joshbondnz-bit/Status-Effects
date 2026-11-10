@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   PRESETS, MIN, effects, makeDrink, simulateNight, standardDrinks,
@@ -13,8 +14,7 @@ import { LogDrinkSheet } from '../components/LogDrinkSheet';
 import { NightLog } from '../components/NightLog';
 import { PixelSprite } from '../components/PixelSprite';
 import { clock } from '../format';
-import { useAppData } from '../useAppData';
-import { DEFAULT_PROFILE } from '../storage';
+import { useApp } from '../AppDataProvider';
 
 let seq = 0;
 const newId = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
@@ -30,28 +30,22 @@ function Button({ label, onPress, primary, flex = 1 }: { label: string; onPress:
 
 export function TonightScreen() {
   const insets = useSafeAreaInsets();
-  const [now, setNow] = useState(() => Date.now());
+  const router = useRouter();
   const [sheet, setSheet] = useState(false);
   const [removed, setRemoved] = useState<LogEvent | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { data, ready, error, update } = useAppData(now);
+  const { data, error, update, now, tick } = useApp();
 
-  // Re-run the model every 15 seconds so countdowns and the health bar move on their own.
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const profile = data?.profile ?? DEFAULT_PROFILE;
-  const events = data?.tonight.events ?? [];
-  const endedAt = data?.tonight.endedAt ?? null;
+  const { profile, settings } = data;
+  const events = data.tonight.events;
+  const endedAt = data.tonight.endedAt;
   const night = useMemo(() => simulateNight({ profile, events, now }), [profile, events, now]);
-  const fx = useMemo(() => effects(night, { calories: true, endedAt }), [night, endedAt]);
+  const fx = useMemo(() => effects(night, { calories: settings.calories, endedAt }), [night, settings.calories, endedAt]);
   const region = profile.region;
 
   const log = (e: LogEvent) => {
     update(d => ({ ...d, tonight: { ...d.tonight, events: [...d.tonight.events, e] } }));
-    setNow(Date.now());
+    tick();
   };
   const pickDrink = (spec: DrinkSpec) => { log(makeDrink(spec, Date.now(), newId())); setSheet(false); };
   const setEnded = (t: number | null) => update(d => ({ ...d, tonight: { ...d.tonight, endedAt: t } }));
@@ -75,18 +69,10 @@ export function TonightScreen() {
       { type: 'water', id: newId(), t: t - 30 * MIN },
       makeDrink(PRESETS.spirits[1], t - 10 * MIN, newId()),
     ] } }));
-    setNow(t);
+    tick();
   };
 
   const total = standardDrinks(night.totalGrams, region);
-
-  if (!ready) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-        {error ? <Text style={styles.warn}>{error}</Text> : <ActivityIndicator color={colors.gold} />}
-      </View>
-    );
-  }
 
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 32 }]}>
@@ -94,6 +80,12 @@ export function TonightScreen() {
         <Text style={styles.clock}>{clock(now)}</Text>
         {night.drinks.length ? <Text style={styles.noDrive}>NO DRIVING TONIGHT</Text> : null}
       </View>
+
+      {data.setup === 'skipped' ? (
+        <Pressable onPress={() => router.navigate('/options')} accessibilityRole="button" style={styles.nudge}>
+          <Text style={styles.nudgeTxt}>You're using default stats. Set up your character for accurate numbers ›</Text>
+        </Pressable>
+      ) : null}
 
       <View style={[panel, styles.card]}>
         <HealthBar night={night} />
@@ -163,7 +155,7 @@ export function TonightScreen() {
       ) : null}
       {error ? <Text style={styles.warn}>{error}</Text> : null}
 
-      <LogDrinkSheet visible={sheet} region={region} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
+      <LogDrinkSheet visible={sheet} region={region} showCalories={settings.calories} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
     </ScrollView>
   );
 }
@@ -184,6 +176,8 @@ const styles = StyleSheet.create({
   btnTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, textAlign: 'center' },
   h2: { fontFamily: fonts.display, fontSize: 19, color: colors.ink },
   logHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  nudge: { backgroundColor: '#3a3220', borderWidth: 2, borderColor: '#6a5424', padding: 12 },
+  nudgeTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, lineHeight: 20 },
   undo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.ink, paddingHorizontal: 12, paddingVertical: 10 },
   undoTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.bg },
   undoBtn: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.hpLo, textDecorationLine: 'underline' },

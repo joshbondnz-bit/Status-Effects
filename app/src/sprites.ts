@@ -52,6 +52,14 @@ export const HEART: SpriteDef = {
   rows: ['.RR.RR.', 'hRRRRRR', 'RRRRRRR', '.RRRRR.', '..RRR..', '...R...'],
 };
 
+/** Options tab icon; tinted to match the tab state. */
+export function gearSprite(color: string): SpriteDef {
+  return {
+    palette: { g: color },
+    rows: ['...g.g...', '..ggggg..', '.ggg.ggg.', 'gg.....gg', '.gg...gg.', 'gg.....gg', '.ggg.ggg.', '..ggggg..', '...g.g...'],
+  };
+}
+
 // Drink tally glasses. L/H/D are the drink's liquid colour, its highlight and its shade.
 const GLASSES: Record<'pint' | 'bottle' | 'wine' | 'shot' | 'cocktail', string[]> = {
   pint: ['.wwwwwww.', 'wwwwwwwww', 'gLLLLLLLg', 'gLHLLLLLg', 'gLHLLLLLg', 'gLLLLLLDg', '.gLLLLDg.', '.gLLLLDg.', '.gLLLLDg.', '.ggggggg.'],

@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { LogEvent, Profile } from '../../engine/src/index.ts';
 
 const KEY = 'status-effects/data';
-const DATA_VERSION = 1;
+const DATA_VERSION = 2;
 
 export interface SavedNight {
   id: string;
@@ -15,13 +15,29 @@ export interface SavedNight {
   endedAt: number | null;
 }
 
+export type Units = 'metric' | 'imperial';
+
+export interface Settings {
+  /** Show calories and the food-related debuffs. */
+  calories: boolean;
+  /** How weight and height are shown and entered. The engine always works in kg and cm. */
+  units: Units;
+}
+
+/** First-run setup: not seen yet, finished, or skipped (using the default character). */
+export type SetupState = 'pending' | 'done' | 'skipped';
+
 export interface AppData {
   version: number;
+  setup: SetupState;
   profile: Profile;
+  settings: Settings;
   tonight: SavedNight;
   /** Finished nights, oldest first. History will be built from these. */
   past: SavedNight[];
 }
+
+export const DEFAULT_SETTINGS: Settings = { calories: true, units: 'imperial' };
 
 /** Until onboarding exists in the app, this is everyone's starting character. */
 export const DEFAULT_PROFILE: Profile = {
@@ -33,7 +49,7 @@ export function newNight(): SavedNight {
 }
 
 export function defaultData(): AppData {
-  return { version: DATA_VERSION, profile: DEFAULT_PROFILE, tonight: newNight(), past: [] };
+  return { version: DATA_VERSION, setup: 'pending', profile: DEFAULT_PROFILE, settings: DEFAULT_SETTINGS, tonight: newNight(), past: [] };
 }
 
 function isNight(x: unknown): x is SavedNight {
@@ -41,13 +57,21 @@ function isNight(x: unknown): x is SavedNight {
   return !!n && typeof n.id === 'string' && Array.isArray(n.events);
 }
 
-/** Bring older saved formats up to date. (Only version 1 exists so far.) */
+/**
+ * Bring older saved formats up to date, one version at a time.
+ * v1 → v2: added `setup` and `settings`. Version 1 users never saw setup, so they get it now.
+ */
 function upgrade(raw: any): AppData | null {
-  if (!raw || typeof raw !== 'object' || raw.version !== DATA_VERSION) return null;
+  if (!raw || typeof raw !== 'object' || typeof raw.version !== 'number') return null;
+  if (raw.version === 1) raw = { ...raw, version: 2, setup: 'pending', settings: DEFAULT_SETTINGS };
+  if (raw.version !== DATA_VERSION) return null;
   if (!isNight(raw.tonight) || !Array.isArray(raw.past)) return null;
+  const setup: SetupState = raw.setup === 'done' || raw.setup === 'skipped' ? raw.setup : 'pending';
   return {
     version: DATA_VERSION,
+    setup,
     profile: { ...DEFAULT_PROFILE, ...(raw.profile ?? {}) },
+    settings: { ...DEFAULT_SETTINGS, ...(raw.settings ?? {}) },
     tonight: { ...raw.tonight, endedAt: raw.tonight.endedAt ?? null },
     past: raw.past.filter(isNight),
   };

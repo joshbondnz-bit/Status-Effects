@@ -1,7 +1,7 @@
 {
-  "name": "app",
-  "version": "1.0.0",
-  "main": "index.ts",
+  "name": "status-effects-app",
+  "version": "0.1.0",
+  "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/atkinson-hyperlegible": "^0.4.1",
     "@expo-google-fonts/pixelify-sans": "^0.4.2",
@@ -9,12 +9,17 @@
     "@expo/metro-runtime": "~58.0.17",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~58.0.23",
+    "expo-constants": "~58.0.15",
     "expo-font": "~58.0.11",
+    "expo-linking": "~58.0.16",
+    "expo-router": "~58.0.30",
+    "expo-splash-screen": "~58.0.13",
     "expo-status-bar": "~58.0.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
     "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
     "react-native-svg": "15.16.0",
     "react-native-web": "^0.21.4"
   },
