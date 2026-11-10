@@ -120,7 +120,10 @@ export function HistoryScreen() {
       <Segmented<Period> label="Period" value={period} onChange={p => { setPeriod(p); if (selected) setCursor(keyToTime(selected)); }}
         options={[{ value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }, { value: 'year', label: 'Year' }]} />
 
-      {/* Sticky: always shows exactly which dates the numbers below are for. */}
+      {/* Sticky: always shows exactly which dates the numbers below are for.
+          The plain outer View matters: on iPhone, React Native moves a sticky header's own style onto a
+          wrapper, which would drop the row layout. Styling the inner View keeps arrows either side of the dates. */}
+      <View>
       <View style={styles.rangeBar}>
         <Pressable onPress={() => step(-1)} disabled={!canPrev} style={[styles.arrow, !canPrev && { opacity: 0.3 }]} accessibilityRole="button" accessibilityLabel={`Previous ${word}`}>
           <Text style={styles.arrowTxt}>‹</Text>
@@ -133,6 +136,7 @@ export function HistoryScreen() {
         <Pressable onPress={() => step(1)} disabled={live} style={[styles.arrow, live && { opacity: 0.3 }]} accessibilityRole="button" accessibilityLabel={`Next ${word}`}>
           <Text style={styles.arrowTxt}>›</Text>
         </Pressable>
+      </View>
       </View>
 
       {!hasAny ? (
