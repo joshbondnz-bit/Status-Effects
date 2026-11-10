@@ -1,0 +1,13 @@
+{
+  "name": "status-effects",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A drinking HUD for harm reduction: blood alcohol as a health bar, effects as debuffs.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"engine/test/*.test.ts\""
+  },
+  "engines": {
+    "node": ">=23.6"
+  }
+}

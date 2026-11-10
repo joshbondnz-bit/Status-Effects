@@ -1,0 +1,2136 @@
+<title>Status Effects</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@400;500;600;700&family=VT323&display=swap">
+<style>
+/* Layout: a phone-shaped game HUD (Tonight / The science / Options) on the left, the prototype time machine on the right; stacks to one column on phones.
+   Theme: dark "tavern at night" by default, with a lilac-paper light mode. */
+:root{
+  color-scheme: dark;
+  --bg:#17131f; --bg-dot:#221c2f;
+  --panel:#252036; --panel-2:#2f2945; --sunk:#1b1728;
+  --edge:#0c0912; --edge-hi:#4a4170;
+  --ink:#f0e5cd; --ink-dim:#aca2c4; --ink-faint:#776e97;
+  --hp:#e5484f; --hp-hi:#ff9a86; --hp-lo:#8d1d33; --hp-empty:#3a1824;
+  --gold:#f2c14e; --mana:#6f93ff; --good:#5fd39a; --warn:#f2a03d; --bad:#ff5d62;
+  --f-display:"Pixelify Sans", ui-monospace, "Cascadia Mono", monospace;
+  --f-num:"VT323", ui-monospace, "Cascadia Mono", monospace;
+  --f-body:"Atkinson Hyperlegible", system-ui, "Segoe UI", sans-serif;
+  --f-label:var(--f-body);
+  --alert-bg:#3a1f22; --alert-ink:#ffd7cf; --alert-edge:#7a3036;
+  --buff-edge:#2f5a48; --pressed:#3a3220; --gold-edge:#6a5424; --drop:rgba(0,0,0,.35);
+  --heat-1:#4a2236; --heat-2:#7a2638; --heat-3:#b8343f; --heat-4:#ff5d62; --heat-ink:#fff6ee; --dry:#1f4636;
+}
+/* Light theme: follows the device unless Options picks one (data-app-theme), and respects the host's own light choice. */
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]):not([data-app-theme]){
+    color-scheme: light;
+    --bg:#e9e4f2; --bg-dot:#d9d1e8;
+    --panel:#fbf9fe; --panel-2:#f2eef9; --sunk:#e7e1f1;
+    --edge:#2a2238; --edge-hi:#bdb2d6;
+    --ink:#1f1830; --ink-dim:#584e70; --ink-faint:#857ba0;
+    --hp-empty:#f3d3d8; --gold:#d39b14; --mana:#3d63d6; --good:#1c8f5a; --warn:#b85f05; --bad:#cf2a37;
+    --alert-bg:#fde3e1; --alert-ink:#6f1a21; --alert-edge:#e6a1a3;
+    --buff-edge:#8fd0b0; --pressed:#fbefc6; --gold-edge:#e2c56f; --drop:rgba(42,34,56,.18);
+    --heat-1:#f7d2d6; --heat-2:#ef9aa3; --heat-3:#d6505e; --heat-4:#9e1c31; --heat-ink:#ffffff; --dry:#cdeedc;
+  }
+}
+:root[data-theme="light"]:not([data-app-theme]), :root[data-app-theme="light"]{
+  color-scheme: light;
+  --bg:#e9e4f2; --bg-dot:#d9d1e8;
+  --panel:#fbf9fe; --panel-2:#f2eef9; --sunk:#e7e1f1;
+  --edge:#2a2238; --edge-hi:#bdb2d6;
+  --ink:#1f1830; --ink-dim:#584e70; --ink-faint:#857ba0;
+  --hp-empty:#f3d3d8; --gold:#d39b14; --mana:#3d63d6; --good:#1c8f5a; --warn:#b85f05; --bad:#cf2a37;
+  --alert-bg:#fde3e1; --alert-ink:#6f1a21; --alert-edge:#e6a1a3;
+  --buff-edge:#8fd0b0; --pressed:#fbefc6; --gold-edge:#e2c56f; --drop:rgba(42,34,56,.18);
+    --heat-1:#f7d2d6; --heat-2:#ef9aa3; --heat-3:#d6505e; --heat-4:#9e1c31; --heat-ink:#ffffff; --dry:#cdeedc;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{
+  color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.45;
+  background-color:var(--bg);
+  background-image:radial-gradient(var(--bg-dot) 1px, transparent 1.2px);
+  background-size:8px 8px;
+}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600;font-family:var(--f-display)}
+p{margin:0}
+
+.page{max-width:1100px;margin:0 auto;padding-block:20px 56px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin-bottom:22px}
+.brand{font-family:var(--f-display);font-size:30px;font-weight:700;letter-spacing:.01em}
+.brand b{color:var(--hp);font-weight:700}
+.tagline{font-size:13px;color:var(--ink-dim)}
+.layout{display:grid;gap:30px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:920px){
+  .layout{grid-template-columns:minmax(0,440px) minmax(0,1fr);align-items:start}
+  .bench{position:sticky;top:16px}
+}
+
+.px{background:var(--panel);box-shadow:0 0 0 3px var(--edge), inset 0 0 0 2px var(--edge-hi), 0 9px 0 3px var(--drop)}
+.view,.hist-body{display:flex;flex-direction:column;gap:20px;min-width:0}
+.hist-body{gap:24px}
+.appnav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.appnav .tab{padding:9px 4px;font-weight:700;font-size:14px}
+/* History */
+.hist-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tiles,.stats2,.streaks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.streaks{margin-bottom:12px}
+.tile{padding:11px 12px;background:var(--sunk);display:flex;flex-direction:column;gap:3px;min-width:0}
+.tile .tv{font-family:var(--f-num);font-size:36px;line-height:.95;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile .tv small{font-size:20px;color:var(--ink-dim)}
+.tile .ts{font-size:12.5px;color:var(--ink-dim);line-height:1.35}
+.meter{position:relative;height:8px;background:var(--panel-2);box-shadow:0 0 0 2px var(--edge);margin:5px 2px 3px}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:var(--ink-dim)}
+.meter i.over{background:var(--warn)}
+.meter b{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}
+.st-warn{color:var(--warn);font-weight:700}
+.st-good{color:var(--good);font-weight:700}
+.st-bad{color:var(--bad);font-weight:700}
+.cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cal-nav h2{flex:1;text-align:center;font-size:18px}
+.cal-nav .x:disabled{opacity:.35;cursor:default}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.cal .dow{font-size:11px;font-weight:700;color:var(--ink-faint);text-align:center;padding-bottom:2px}
+.cell{border:0;aspect-ratio:1;min-width:0;padding:3px 4px;font-size:12px;font-weight:700;background:var(--sunk);color:var(--ink);cursor:pointer;display:flex;align-items:flex-start;justify-content:flex-start;font-variant-numeric:tabular-nums}
+.cell.dry{background:var(--dry)}
+.cell.l1{background:var(--heat-1)} .cell.l2{background:var(--heat-2)}
+.cell.l3{background:var(--heat-3);color:var(--heat-ink)} .cell.l4{background:var(--heat-4);color:var(--heat-ink)}
+.cell.none,.cell.future{background:transparent;color:var(--ink-faint);cursor:default;box-shadow:inset 0 0 0 1px var(--edge-hi)}
+.cell.adj{font-weight:400}
+.cell.out{opacity:.32}
+.cell.inweek{box-shadow:inset 0 -4px 0 var(--gold)}
+.cell.today{box-shadow:inset 0 0 0 2px var(--gold)}
+.cell.today.inweek{box-shadow:inset 0 0 0 2px var(--gold), inset 0 -4px 0 var(--gold)}
+.rangebar{position:sticky;top:env(safe-area-inset-top, 0px);z-index:5;display:flex;align-items:center;gap:8px;padding:8px;background:var(--panel);box-shadow:0 0 0 2px var(--edge-hi), 0 6px 0 0 var(--panel)}
+.rangebar .x:disabled{opacity:.3;cursor:default}
+.range-mid{flex:1;text-align:center;min-width:0}
+.range-dates{font-family:var(--f-display);font-size:19px;font-weight:600;line-height:1.2}
+.range-note{font-size:12px;color:var(--ink-faint)}
+.year{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px}
+.mini{border:0;background:transparent;padding:4px;cursor:pointer;text-align:left;color:inherit;min-width:0}
+.mini:hover:not(:disabled){background:var(--sunk)}
+.mini:disabled{cursor:default;opacity:.5}
+.mini b{display:block;font-size:12px;margin-bottom:3px}
+.mg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px}
+.mg i{display:block;aspect-ratio:1;background:transparent}
+.mg i.dry{background:var(--dry)} .mg i.l1{background:var(--heat-1)} .mg i.l2{background:var(--heat-2)} .mg i.l3{background:var(--heat-3)} .mg i.l4{background:var(--heat-4)}
+.mg i.future,.mg i.none{background:var(--sunk)}
+.cell.sel{box-shadow:inset 0 0 0 3px var(--ink)}
+.cal-legend,.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-dim);margin-top:8px}
+.cal-legend i,.legend i{display:inline-block;width:12px;height:12px;vertical-align:-2px;margin-right:5px;box-shadow:inset 0 0 0 1px var(--edge-hi)}
+.daydetail{margin-top:10px;padding:9px 11px;background:var(--sunk);font-size:14px}
+.chart-svg{display:block;width:100%;height:auto;overflow:visible}
+.ct{fill:var(--ink-faint);font:700 10px var(--f-body)}
+.ct.strong{fill:var(--ink-dim)}
+.ct.halo{paint-order:stroke;stroke:var(--panel);stroke-width:4px;stroke-linejoin:round;fill:var(--ink)}
+.bar:hover path{opacity:.8}
+.stack{display:flex;gap:2px;height:14px;min-width:0}
+.stack.tall{height:18px}
+.stack i{display:block;height:100%;min-width:2px}
+.feelrows{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.feelrow{display:grid;grid-template-columns:78px minmax(0,1fr) 74px;gap:8px;align-items:center;font-size:13px}
+.feelrow .fr{text-align:right;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.insight{padding:10px 12px;background:var(--pressed);box-shadow:inset 0 0 0 2px var(--gold-edge);font-size:14px}
+.why{margin-top:8px;font-size:13.5px;color:var(--ink-dim)}
+.why summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.why p{margin-top:6px;max-width:60ch}
+.badges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.badge{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;padding:10px;background:var(--sunk);align-items:center;min-width:0}
+.badge canvas{width:36px;height:36px;image-rendering:pixelated}
+.badge.locked b{color:var(--ink-dim)}
+.badge b{display:block;font-size:14px}
+.badge small{display:block;font-size:12px;color:var(--ink-dim);line-height:1.3}
+.audit{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--sunk);font-size:14px}
+.audit .field select{font-size:15px}
+.audit .row{margin-top:0}
+/* First-run setup */
+.ob-head{display:flex;align-items:center;gap:12px}
+.ob-head canvas{width:35px;height:30px;image-rendering:pixelated;flex:none}
+.ob-head h2{font-size:24px}
+.ob-pips{display:flex;gap:6px}
+.ob-pips i{flex:1;height:6px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--edge-hi)}
+.ob-pips i.on{background:var(--hp);box-shadow:none}
+.ob-step{display:flex;flex-direction:column;gap:12px}
+.unitrow{display:flex;gap:6px;min-width:0}
+.unitrow.grow{flex:1}
+.unitrow input{flex:1;min-width:0}
+.field .unitrow select{width:auto;flex:none}
+.ob-err{font-size:14px;color:var(--bad);font-weight:700}
+/* Info pop-up and links */
+.info-link{color:var(--mana);font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer;white-space:nowrap}
+.info-title{display:flex;align-items:center;gap:10px}
+.info-title canvas{width:32px;height:32px;image-rendering:pixelated;flex:none}
+.info-body{display:flex;flex-direction:column;gap:12px;font-size:15px;line-height:1.5}
+.info-body h3{font-family:var(--f-body);font-size:15px;font-weight:700;margin-bottom:2px}
+.info-body p{color:var(--ink-dim);max-width:60ch}
+.info-body .beats{display:flex;gap:4px;align-items:flex-end;padding:10px 12px;background:var(--sunk);font-size:13px;color:var(--ink-dim);flex-wrap:wrap}
+.info-body .beats b{color:var(--ink);font-variant-numeric:tabular-nums}
+/* Paying */
+.pay{padding:10px 12px;background:var(--sunk);display:flex;flex-direction:column;gap:8px}
+.pay-inputs{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pay-inputs input,.pay-inputs select{padding:8px;background:var(--panel);border:0;box-shadow:inset 0 0 0 2px var(--edge-hi);font-size:15px;min-width:0}
+.pay-inputs #payAmt{width:90px}
+.pay-inputs #payCount{width:64px}
+.pay .cur{font-weight:700;color:var(--ink-dim)}
+.packs{display:flex;flex-direction:column;gap:4px}
+.pack{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--ink-dim)}
+.pack b{color:var(--ink)}
+.pack .del{font-size:16px}
+.addprice{border:0;background:transparent;color:var(--mana);font-weight:700;font-size:12.5px;cursor:pointer;padding:0;text-decoration:underline}
+.priceinp{width:64px;padding:3px 5px;background:var(--panel);border:0;box-shadow:inset 0 0 0 2px var(--gold);font-size:13px}
+p.lead{font-size:14px;color:var(--ink-dim);margin-bottom:12px;max-width:60ch}
+.reportready{width:100%;background:var(--pressed);box-shadow:inset 0 0 0 2px var(--gold-edge), 0 4px 0 0 var(--edge)}
+.refs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.refs li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;padding:10px 12px;background:var(--sunk)}
+.refs canvas{width:32px;height:32px;image-rendering:pixelated}
+.refs b{display:block;font-size:15px}
+.refs p{font-size:14px;color:var(--ink-dim);margin:2px 0 4px}
+.refs small{font-size:12.5px;color:var(--ink-faint)}
+.device{padding:16px 14px 18px;display:flex;flex-direction:column;gap:20px;min-width:0}
+.label{font-family:var(--f-label);font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-dim)}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.sec-head h2{font-size:18px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* HUD top */
+.hud-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.clock{font-family:var(--f-num);font-size:26px;line-height:1}
+.clock small{font-size:18px;color:var(--gold);margin-left:6px}
+.chip{font-family:var(--f-label);font-size:11px;font-weight:700;letter-spacing:.05em;padding:4px 7px;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--edge-hi);color:var(--ink-dim);white-space:nowrap}
+.chip.nodrive{color:var(--bad);box-shadow:inset 0 0 0 2px var(--alert-edge)}
+.chip.sample{color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold-edge)}
+
+/* Health */
+.hp-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.hp-head canvas{width:28px;height:24px;image-rendering:pixelated;flex:none}
+.phase-name{font-size:30px;font-weight:700;line-height:1;letter-spacing:.02em}
+.hp-meta{margin-left:auto;text-align:right;line-height:1}
+.hp-num{font-family:var(--f-num);font-size:26px}
+.bac{font-size:14px;color:var(--ink-dim);margin-top:2px;font-variant-numeric:tabular-nums}
+.ticknums{position:relative;height:16px;margin:0 3px}
+.ticknums span{position:absolute;transform:translateX(-50%);font-size:11.5px;font-weight:700;color:var(--ink-faint);line-height:1}
+.bar{position:relative;height:30px;margin:0 3px;background:var(--hp-empty);box-shadow:0 0 0 3px var(--edge), inset 0 3px 0 rgba(0,0,0,.35)}
+.bar-fill{position:absolute;left:0;top:0;bottom:0;width:100%;
+  background:linear-gradient(var(--hp-hi) 0 22%, var(--hp) 22% 72%, var(--hp-lo) 72% 100%)}
+.barwrap{position:relative}
+.bar-trail{position:absolute;left:0;top:0;bottom:0;width:100%;background:#ffe08a;transition:width .35s linear}
+.bar-ghost{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:repeating-linear-gradient(-45deg, rgba(255,240,220,.7) 0 4px, rgba(140,20,40,.55) 4px 8px);background-size:11.3px 11.3px;
+  box-shadow:inset 2px 0 0 #fff4e6;transition:left .5s steps(6), width .5s steps(6);
+  animation:ghostFlow .7s linear infinite, ghostPulse 1.1s ease-in-out infinite alternate}
+.bar-ghost span{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;text-shadow:1px 1px 0 #3a0a14, -1px -1px 0 #3a0a14, 1px -1px 0 #3a0a14, -1px 1px 0 #3a0a14;letter-spacing:.02em}
+@keyframes ghostFlow{to{background-position:-11.3px 0}}
+@keyframes ghostPulse{from{opacity:.65}to{opacity:1}}
+.bar-edge{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;background:transparent;transition:left .5s steps(6);pointer-events:none}
+.bar-edge.dmg{background:#fff;box-shadow:0 0 8px 2px var(--hp)}
+.bar-edge.heal{background:var(--good);box-shadow:0 0 8px 2px var(--good);animation:edgePulse 1s ease-in-out infinite alternate}
+@keyframes edgePulse{from{opacity:.5}to{opacity:1}}
+.bar.hurt .bar-fill{filter:brightness(1.9) saturate(.6)}
+.bar-fill{transition:width .5s steps(6), filter .15s}
+.dmg-chip{font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:3px 6px;white-space:nowrap;align-self:center}
+.dmg-chip.dmg{color:#fff;background:var(--hp);animation:chipBlink 1s steps(2, jump-none) infinite}
+.dmg-chip.heal{color:var(--edge);background:var(--good)}
+@keyframes chipBlink{50%{opacity:.45}}
+.pop{position:absolute;top:-4px;transform:translate(-50%, 0);font-family:var(--f-num);font-size:28px;line-height:1;pointer-events:none;z-index:3;
+  text-shadow:2px 2px 0 var(--edge), -1px -1px 0 var(--edge);animation:popUp 1.25s ease-out forwards}
+.pop.dmg{color:#ff6a6f}
+.pop.heal{color:#6fe3a8}
+@keyframes popUp{0%{transform:translate(-50%, 10px) scale(.5);opacity:0}15%{transform:translate(-50%, -6px) scale(1.2);opacity:1}35%{transform:translate(-50%, -12px) scale(1)}100%{transform:translate(-50%, -34px);opacity:0}}
+.bar-regen{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:repeating-linear-gradient(45deg, rgba(95,211,154,.6) 0 4px, rgba(95,211,154,.18) 4px 8px);background-size:11.3px 11.3px;
+  box-shadow:inset -2px 0 0 var(--good);transition:left .5s steps(6), width .5s steps(6);animation:regenFlow 1.4s linear infinite}
+.bar-regen span{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;text-shadow:1px 1px 0 #0d3a26, -1px -1px 0 #0d3a26, 1px -1px 0 #0d3a26, -1px 1px 0 #0d3a26}
+@keyframes regenFlow{to{background-position:11.3px 0}}
+.rateline{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;margin:9px 3px 0;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.rateline.heal{color:var(--good)}
+.rateline.dmg{color:var(--bad)}
+.rateline small{font-size:13px;font-weight:400;color:var(--ink-dim)}
+.spark{position:absolute;top:10px;width:4px;height:4px;margin-left:-2px;background:#7ff0b8;box-shadow:0 0 5px 1px var(--good);pointer-events:none;z-index:3;animation:sparkUp 1.2s ease-out forwards}
+.spark.plus{width:auto;height:auto;background:none;box-shadow:none;font:700 13px var(--f-body);color:#7ff0b8;text-shadow:1px 1px 0 var(--edge)}
+@keyframes sparkUp{0%{transform:translate(0, 0);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx, 0px), -34px);opacity:0}}
+#heart.regen{animation:beat 1.5s ease-in-out infinite}
+@keyframes beat{0%,55%,100%{transform:scale(1)}12%{transform:scale(1.2)}24%{transform:scale(1.04)}36%{transform:scale(1.16)}}
+#heart.hit{animation:heartHit .35s steps(4)}
+@keyframes heartHit{25%{transform:translate(-3px, 1px);filter:brightness(2.2)}50%{transform:translate(3px, -1px)}75%{transform:translate(-2px, 0);filter:brightness(1.6)}}
+.bar-ticks{position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg, transparent 0 calc(16.666% - 3px), var(--edge) calc(16.666% - 3px) 16.666%)}
+.seglabels{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin:8px 3px 0}
+.seglabels span{font-family:var(--f-label);font-size:10.5px;font-weight:700;letter-spacing:.03em;text-align:center;color:var(--ink-faint);padding:3px 0}
+.seglabels span.on{color:var(--edge);background:var(--gold)}
+.phase-desc{margin-top:12px;color:var(--ink);font-size:15px}
+.trend{margin-top:8px;font-size:15px;color:var(--ink-dim);display:flex;flex-direction:column;gap:4px}
+.trend .nudge{color:var(--warn)}
+.warnband{padding:10px 12px;background:var(--alert-bg);box-shadow:inset 0 0 0 2px var(--alert-edge);color:var(--alert-ink);font-size:15px}
+
+/* Actions */
+.actions{display:grid;grid-template-columns:2fr 1fr 1fr 1.3fr;gap:8px}
+.btn{border:0;cursor:pointer;padding:11px 8px;background:var(--panel-2);color:var(--ink);font-weight:600;font-size:15px;
+  box-shadow:inset 0 0 0 2px var(--edge-hi), 0 4px 0 0 var(--edge);transform:translateY(0);transition:transform .06s}
+.btn:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--edge-hi), 0 1px 0 0 var(--edge)}
+.btn.primary{background:var(--hp);color:#fff8ee;box-shadow:inset 0 0 0 2px var(--hp-hi), inset 0 -4px 0 var(--hp-lo), 0 4px 0 0 var(--edge)}
+.btn.small{padding:7px 9px;font-size:14px}
+.btn.on{background:var(--gold);color:var(--edge);box-shadow:inset 0 0 0 2px #ffe39a, 0 4px 0 0 var(--edge)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Potions */
+.potions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.potion{border:0;text-align:left;cursor:pointer;display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:10px;row-gap:2px;align-content:start;
+  padding:10px;background:var(--panel-2);box-shadow:inset 0 0 0 2px var(--edge);min-width:0}
+.potion.buff{box-shadow:inset 0 0 0 2px var(--buff-edge)}
+.potion.incoming{background:var(--sunk)}
+.potion canvas{width:48px;height:48px;image-rendering:pixelated;grid-row:1 / span 3}
+.p-name{font-weight:700;font-size:15px;line-height:1.2;min-width:0}
+.p-time{font-family:var(--f-num);font-size:24px;line-height:1}
+.p-time em{font-style:normal;font-size:17px;color:var(--ink-dim)}
+.p-sev{justify-self:start;font-family:var(--f-label);font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 5px;margin-top:2px;background:var(--sunk);color:var(--ink-dim)}
+.p-sev.s1{color:var(--warn)} .p-sev.s2{color:var(--bad)} .p-sev.buffsev{color:var(--good)}
+.p-desc{grid-column:1 / -1;margin-top:8px;font-size:14px;color:var(--ink-dim);line-height:1.45}
+.potion[aria-expanded="true"]{grid-column:1 / -1}
+.empty{font-size:14px;color:var(--ink-faint);padding:12px;background:var(--sunk)}
+
+/* Rations */
+.rations{padding:12px;background:var(--sunk);display:flex;flex-direction:column;gap:10px}
+.r-total{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.r-total .num{font-size:38px;line-height:.9}
+.r-eq{font-size:15px}
+.icons{display:flex;flex-wrap:wrap;gap:4px;min-height:36px}
+.icons canvas{width:36px;height:36px;image-rendering:pixelated}
+.split{display:flex;height:10px;box-shadow:0 0 0 2px var(--edge)}
+.split i{display:block;height:100%}
+.split-key{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink-dim)}
+.split-key b{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:0}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Chart */
+.chart-wrap{background:var(--sunk);padding:6px 4px 2px}
+#chart{display:block;width:100%;height:190px}
+
+/* Log */
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.log li{display:grid;grid-template-columns:52px minmax(0,1fr) auto 30px;gap:8px;align-items:center;padding:7px 8px;background:var(--sunk)}
+.log .t{font-size:14px;font-weight:700;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.log .n{font-size:15px;min-width:0;overflow-wrap:anywhere}
+.log .n small{display:block;font-size:12.5px;color:var(--ink-faint)}
+.log .q{font-size:14px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.del{border:0;background:transparent;color:var(--ink-faint);cursor:pointer;font-size:18px;line-height:1;padding:4px}
+.del:hover{color:var(--bad)}
+.fine{font-size:12.5px;color:var(--ink-faint);line-height:1.5}
+
+/* Bench */
+.bench{display:flex;flex-direction:column;gap:26px;min-width:0}
+.bench .px{padding:16px}
+.bench h3{font-size:18px;margin-bottom:6px}
+.bench p.lead{font-size:14px;color:var(--ink-dim);margin-bottom:12px;max-width:60ch}
+.bench-clock{font-family:var(--f-num);font-size:44px;line-height:1;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-family:var(--f-label);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-dim)}
+.field input,.field select{width:100%;min-width:0;padding:9px 8px;background:var(--sunk);border:0;box-shadow:inset 0 0 0 2px var(--edge-hi);font-size:16px}
+.field.full{grid-column:1 / -1}
+[hidden]{display:none!important}
+.check{display:flex;flex-direction:row;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-dim);cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--gold);margin-top:1px;flex:none}
+.method{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--ink-dim);max-width:62ch}
+.method b{color:var(--ink);font-weight:600}
+.sources{margin-top:12px;font-size:12.5px;color:var(--ink-faint);line-height:1.55}
+
+/* Overlays */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(9,7,14,.78);display:flex;align-items:flex-end;justify-content:center;
+  padding:16px max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
+@media (min-width:640px){.overlay{align-items:center}}
+.sheet{width:100%;max-width:460px;max-height:100%;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheet-head h2{font-size:22px}
+.x{border:0;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--edge-hi);width:34px;height:34px;cursor:pointer;font-size:18px;flex:none}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:0;cursor:pointer;padding:7px 10px;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--edge-hi);font-size:14px;color:var(--ink-dim)}
+.tab[aria-selected="true"]{background:var(--gold);color:var(--edge);box-shadow:inset 0 0 0 2px #ffe39a}
+.presets{display:flex;flex-direction:column;gap:6px}
+.preset{border:0;cursor:pointer;text-align:left;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 12px;background:var(--panel-2);box-shadow:inset 0 0 0 2px var(--edge)}
+.preset:hover{box-shadow:inset 0 0 0 2px var(--gold)}
+.preset .pn{font-weight:600;font-size:15px}
+.preset .pd{font-size:13px;color:var(--ink-dim)}
+.preset .pq{grid-row:1 / span 2;align-self:center;text-align:right;font-size:14px;font-weight:700;line-height:1.3;font-variant-numeric:tabular-nums}
+.preset .pq span{display:block;color:var(--ink-dim);font-weight:400}
+.mine-row{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:6px}
+.mine-row .x{height:auto}
+.sizes{display:flex;flex-wrap:wrap;gap:5px}
+.sizes button{border:0;cursor:pointer;padding:5px 8px;background:var(--sunk);box-shadow:inset 0 0 0 2px var(--edge-hi);font-size:13px;font-variant-numeric:tabular-nums}
+.preview{padding:10px 12px;background:var(--sunk);font-size:14px;color:var(--ink-dim)}
+.preview b{color:var(--ink)}
+.scan{display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--sunk);font-size:13px;color:var(--ink-faint)}
+.sheet-warn{padding:10px 12px;background:var(--alert-bg);box-shadow:inset 0 0 0 2px var(--alert-edge);color:var(--alert-ink);font-size:14px}
+
+.report-rows{display:flex;flex-direction:column;gap:2px}
+.rrow{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:center;padding:9px 10px;background:var(--sunk)}
+.rrow canvas{width:32px;height:32px;image-rendering:pixelated}
+.rrow .rk{font-family:var(--f-label);font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--ink-faint);text-transform:uppercase}
+.rrow .rv{font-size:15px}
+.feel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.feel button{border:0;cursor:pointer;padding:10px 6px;background:var(--panel-2);box-shadow:inset 0 0 0 2px var(--edge);display:flex;flex-direction:column;align-items:center;gap:6px;font-size:14px}
+.feel button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--gold);background:var(--pressed)}
+.feel canvas{width:36px;height:36px;image-rendering:pixelated}
+
+.safety{max-width:460px;width:100%;max-height:100%;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px;background:#1e2a33;box-shadow:0 0 0 3px var(--edge), inset 0 0 0 2px #3f6275}
+.safety h2{font-size:24px;color:#e9f6ff}
+.safety p,.safety li{font-size:15px;color:#cfe3ef}
+.safety ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.numbers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.numbers div{padding:8px 10px;background:#14202a;font-family:var(--f-num);font-size:22px;color:#fff;user-select:all}
+.numbers div small{display:block;font-family:var(--f-label);font-size:11px;font-weight:700;color:#9fc0d2;letter-spacing:.05em}
+
+/* Drink tally */
+.tally{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:12px;padding:8px 10px;background:var(--sunk);min-height:48px}
+.tally-icons{display:flex;flex-wrap:wrap;align-items:flex-end;gap:2px 3px;min-width:0}
+.tally-icons canvas{image-rendering:pixelated;display:block}
+.tally-icons .more{font-weight:700;font-size:14px;color:var(--ink-dim);padding-left:4px}
+.tally-text{font-weight:700;font-size:15px;text-align:right;white-space:nowrap;line-height:1.2;flex:none}
+.tally-text small{display:block;font-weight:400;color:var(--ink-dim);font-size:12.5px}
+
+.toast{position:fixed;left:50%;bottom:max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px));transform:translateX(-50%);z-index:60;
+  padding:10px 14px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;box-shadow:0 0 0 3px var(--edge);max-width:calc(100% - 32px)}
+
+@media (max-width:420px){
+  .actions{grid-template-columns:1fr 1fr}
+  .phase-name{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){
+  .bar-fill,.bar-ghost,.bar-trail,.bar-edge,.btn{transition:none}
+  .bar-ghost,.bar-regen,.bar-edge,.dmg-chip,#heart.regen{animation:none}
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div class="brand">Status <b>Effects</b></div>
+    <div class="tagline">Prototype · a drinking HUD for harm reduction · all figures are estimates</div>
+  </header>
+
+  <div class="layout">
+    <main class="device px" id="app" aria-label="App preview">
+      <div class="hud-top">
+        <div class="clock" id="clock">--:--</div>
+        <div class="seg">
+          <span class="chip sample" id="sampleChip">SAMPLE NIGHT</span>
+          <span class="chip nodrive" id="noDrive" hidden>NO DRIVING TONIGHT</span>
+        </div>
+      </div>
+
+      <nav class="appnav" id="appnav" role="tablist" aria-label="Sections">
+        <button class="tab" role="tab" data-view="tonight" aria-selected="true">Tonight</button>
+        <button class="tab" role="tab" data-view="history" aria-selected="false">History</button>
+        <button class="tab" role="tab" data-view="science" aria-selected="false">Science</button>
+        <button class="tab" role="tab" data-view="options" aria-selected="false">Options</button>
+      </nav>
+
+      <div class="view" id="view-tonight">
+      <button class="btn reportready" id="setupNudge" hidden>You're using default stats. Set up your character for accurate numbers</button>
+      <section aria-labelledby="phaseName">
+        <div class="hp-head">
+          <canvas id="heart" width="7" height="6" aria-hidden="true"></canvas>
+          <h1 class="phase-name" id="phaseName">Fresh</h1>
+          <span class="dmg-chip" id="dmgChip" hidden></span>
+          <div class="hp-meta">
+            <div class="hp-num" id="hpNum">HP 100</div>
+            <div class="bac" id="bacNow">est. 0.000%</div>
+          </div>
+        </div>
+        <div class="ticknums" aria-hidden="true">
+          <span style="left:16.666%">.15</span><span style="left:33.333%">.11</span><span style="left:50%">.08</span><span style="left:66.666%">.05</span><span style="left:83.333%">.02</span>
+        </div>
+        <div class="barwrap" id="barWrap">
+          <div class="bar" role="meter" aria-label="Health" aria-valuemin="0" aria-valuemax="100" id="bar">
+            <div class="bar-trail" id="barTrail"></div>
+            <div class="bar-fill" id="barFill"></div>
+            <div class="bar-ghost" id="barGhost"><span id="ghostTxt"></span></div>
+            <div class="bar-regen" id="barRegen" hidden><span id="regenTxt"></span></div>
+            <div class="bar-edge" id="barEdge"></div>
+            <div class="bar-ticks"></div>
+          </div>
+        </div>
+        <div class="rateline" id="rateLine" hidden></div>
+        <div class="seglabels" id="segLabels">
+          <span data-k="5">WASTED</span><span data-k="4">ROUGH</span><span data-k="3">DRUNK</span><span data-k="2">TIPSY</span><span data-k="1">BUZZED</span><span data-k="0">FRESH</span>
+        </div>
+        <div class="tally" aria-label="Drinks tonight">
+          <div class="tally-icons" id="tallyIcons"></div>
+          <div class="tally-text" id="tallyText"></div>
+        </div>
+        <p class="phase-desc" id="phaseDesc"></p>
+        <div class="trend" id="trend"></div>
+      </section>
+
+      <div class="warnband" id="warnBand" hidden>You're in the range where memory gaps and vomiting are likely. Switch to water and stay with people you trust.</div>
+
+      <div class="actions">
+        <button class="btn primary" id="addDrink">+ Drink</button>
+        <button class="btn" id="addWater">Water</button>
+        <button class="btn" id="addFood">Food</button>
+        <button class="btn" id="endNight">End night</button>
+      </div>
+      <button class="btn reportready" id="reportReady" hidden>Your morning-after report is ready. View it</button>
+
+      <section aria-labelledby="debuffHead">
+        <div class="sec-head"><h2 id="debuffHead">Debuffs</h2><span class="label">Tap for details</span></div>
+        <div class="potions" id="debuffs"></div>
+        <p class="empty" id="debuffEmpty" hidden>No debuffs. Log a drink and they appear here with countdowns.</p>
+      </section>
+
+      <section aria-labelledby="buffHead">
+        <div class="sec-head"><h2 id="buffHead">Buffs</h2><span class="label">Earned by good choices</span></div>
+        <div class="potions" id="buffs"></div>
+        <p class="empty" id="buffEmpty" hidden>Log water, eat something, or take an hour off to earn buffs.</p>
+      </section>
+
+      <section aria-labelledby="calHead" id="calSection">
+        <div class="sec-head"><h2 id="calHead">Rations</h2><span class="label">Tonight's calories</span></div>
+        <div class="rations">
+          <div class="r-total"><span class="num" id="kcal">0</span><span class="label">kcal</span></div>
+          <div class="r-eq" id="kcalEq"></div>
+          <div class="icons" id="kcalIcons" aria-hidden="true"></div>
+          <div class="split" id="kcalSplit" aria-hidden="true"></div>
+          <div class="split-key" id="kcalKey"></div>
+          <div class="seg" id="eqPick" role="group" aria-label="Compare with">
+            <button class="btn small" data-eq="pizza">Pizza</button>
+            <button class="btn small" data-eq="doughnut">Doughnuts</button>
+            <button class="btn small" data-eq="burger">Burgers</button>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="curveHead">
+        <div class="sec-head"><h2 id="curveHead">Tonight's curve</h2><span class="label">Solid: so far · Dotted: projected</span></div>
+        <div class="chart-wrap"><canvas id="chart" role="img" aria-label="Estimated blood alcohol over the night"></canvas></div>
+      </section>
+
+      <section aria-labelledby="logHead">
+        <div class="sec-head"><h2 id="logHead">Tonight's log</h2><span class="label" id="logTotal"></span></div>
+        <ul class="log" id="log"></ul>
+        <p class="empty" id="logEmpty" hidden>Nothing logged yet.</p>
+      </section>
+
+      <p class="fine">Estimates only. Not a breathalyser and never a driving clearance. If someone can't be woken, is breathing slowly or irregularly, or is having a seizure, call emergency services.</p>
+      </div>
+
+      <div class="view" id="view-history" hidden>
+        <div class="hist-head">
+          <span class="chip sample">SAMPLE HISTORY</span>
+          <div class="seg" id="periodPick" role="group" aria-label="Period">
+            <button class="btn small" data-period="week">Week</button>
+            <button class="btn small" data-period="month">Month</button>
+            <button class="btn small" data-period="year">Year</button>
+          </div>
+        </div>
+        <div id="histBody" class="hist-body"></div>
+      </div>
+
+      <div class="view" id="view-science" hidden>
+        <section aria-labelledby="howHead">
+          <div class="sec-head"><h2 id="howHead">How the numbers work</h2></div>
+          <ul class="method">
+            <li><b>Blood alcohol (BAC).</b> Shown as a percentage: grams of alcohol per 100 ml of blood. In Canada, 0.08% is the criminal driving limit and most provinces issue roadside suspensions from 0.05%.</li>
+            <li><b>Canadian standard drink.</b> 13.45 g of alcohol: a 341 ml bottle of 5% beer, a 142 ml glass of 12% wine, or a 43 ml (1.5 oz) shot of 40% spirits.</li>
+            <li><b>Grams, not drinks.</b> Each drink becomes grams of alcohol: ml × ABV × 0.789. Standard drinks are shown for your region.</li>
+            <li><b>Absorption lag.</b> On an empty stomach a drink peaks in about 30–45 min. Food in the last 3 hours slows that to 60–90 min and cuts what reaches your blood by about 15%.</li>
+            <li><b>Your volume.</b> Your weight, height, age and sex estimate your body water, which sets how far each drink is diluted.</li>
+            <li><b>Fixed recovery.</b> Blood alcohol falls about 0.015% an hour. Water, coffee and sleep don't speed it up.</li>
+            <li><b>Health bar.</b> Six equal slices between the milestones 0.02, 0.05, 0.08, 0.11, 0.15 and 0.25%, so early drinks are visible.</li>
+            <li><b>Next-day debuffs</b> come from total grams per kg of body weight, your peak, and how much alcohol is still in your system at bedtime.</li>
+          </ul>
+        </section>
+        <section aria-labelledby="refHead">
+          <div class="sec-head"><h2 id="refHead">Where each effect comes from</h2><span class="label">Verify before launch</span></div>
+          <ul class="refs">
+            <li><canvas width="16" height="16" data-icon="sleep"></canvas><div><b>Impaired sleep</b><p>Alcohol still in your system at bedtime suppresses REM sleep and breaks up the second half of the night, more so at higher doses.</p><small>Ebrahim et al., 2013, Alcoholism: Clinical and Experimental Research</small></div></li>
+            <li><canvas width="16" height="16" data-icon="hrv"></canvas><div><b>HRV drain</b><p>Overnight heart-rate variability recovery fell about 9%, 24% and 39% at low, moderate and high intake per kg of body weight. <a href="#" class="info-link" data-info="hrv">What is HRV?</a></p><small>Pietilä et al., 2018, JMIR Mental Health</small></div></li>
+            <li><canvas width="16" height="16" data-icon="hangover"></canvas><div><b>Hangover</b><p>Hangovers peak as blood alcohol returns to zero and become much more common after a peak above about 0.11%.</p><small>Verster and colleagues, Alcohol Hangover Research Group</small></div></li>
+            <li><canvas width="16" height="16" data-icon="dehydration"></canvas><div><b>Dehydration</b><p>Alcohol suppresses vasopressin, the hormone that helps your kidneys hold onto water.</p><small>Hobson and Maughan, 2010, Alcohol and Alcoholism</small></div></li>
+            <li><canvas width="16" height="16" data-icon="hangxiety"></canvas><div><b>Hangxiety</b><p>Next-day anxiety as the brain rebounds from alcohol's calming effect.</p><small>Marsh et al., 2019, Personality and Individual Differences</small></div></li>
+            <li><canvas width="16" height="16" data-icon="recovery"></canvas><div><b>Slow recovery</b><p>Heavy drinking after exercise cut muscle protein synthesis by roughly a quarter to a third.</p><small>Parr et al., 2014, PLoS One</small></div></li>
+            <li><canvas width="16" height="16" data-icon="fatpause"></canvas><div><b>Fat burning paused</b><p>The body clears alcohol first; whole-body fat burning dropped sharply after a moderate dose.</p><small>Siler et al., 1999, American Journal of Clinical Nutrition</small></div></li>
+            <li><canvas width="16" height="16" data-icon="munchies"></canvas><div><b>Munchies</b><p>Alcohol increases appetite and food intake at the next meal, often called the apéritif effect.</p><small>Yeomans, 2010, Physiology and Behavior</small></div></li>
+            <li><canvas width="16" height="16" data-icon="lined"></canvas><div><b>Model inputs</b><p>Body water estimate, elimination rate and the effect of food on absorption.</p><small>Watson et al., 1980, American Journal of Clinical Nutrition · Jones, 2010, Forensic Science International · Jones and Jönsson, 1994, Journal of Forensic Sciences</small></div></li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="view" id="view-options" hidden>
+        <section aria-labelledby="lookHead">
+          <div class="sec-head"><h2 id="lookHead">Appearance</h2></div>
+          <div class="seg" id="themePick" role="group" aria-label="Theme">
+            <button class="btn small" data-theme-pick="system">Match device</button>
+            <button class="btn small" data-theme-pick="light">Light</button>
+            <button class="btn small" data-theme-pick="dark">Dark</button>
+          </div>
+        </section>
+        <section aria-labelledby="charHead">
+          <div class="sec-head"><h2 id="charHead">Character sheet</h2></div>
+          <p class="lead">Used to estimate how far each drink spreads through your body.</p>
+          <div class="form">
+            <div class="field"><label for="pWeight">Weight (kg)</label><input id="pWeight" type="number" min="35" max="250" step="1"></div>
+            <div class="field"><label for="pHeight">Height (cm)</label><input id="pHeight" type="number" min="120" max="230" step="1"></div>
+            <div class="field"><label for="pAge">Age</label><input id="pAge" type="number" min="18" max="100" step="1"></div>
+            <div class="field"><label for="pSex">Body-water formula</label><select id="pSex"><option value="m">Male</option><option value="f">Female</option></select></div>
+            <div class="field"><label for="pBed">Usual bedtime</label><input id="pBed" type="time"></div>
+            <div class="field"><label for="pWake">Usual wake time</label><input id="pWake" type="time"></div>
+          </div>
+        </section>
+        <section aria-labelledby="unitHead">
+          <div class="sec-head"><h2 id="unitHead">Units and calories</h2></div>
+          <div class="form">
+            <div class="field"><label for="pRegion">Standard drinks</label><select id="pRegion"><option value="ca">Canada (13.45 g)</option><option value="uk">UK units (8 g)</option><option value="us">US (14 g)</option><option value="au">Australia (10 g)</option><option value="eu">Europe (10 g)</option></select></div>
+            <div class="field"><label for="pEquiv">Compare calories with</label><select id="pEquiv"><option value="pizza">Slices of pizza</option><option value="doughnut">Glazed doughnuts</option><option value="burger">Cheeseburgers</option></select></div>
+            <div class="field"><label for="pCurrency">Currency</label><select id="pCurrency"><option value="$">$ Dollar (CAD or USD)</option><option value="£">£ Pound</option><option value="€">€ Euro</option><option value="A$">A$ Australian dollar</option></select></div>
+            <div class="field"><label for="pPrice">Average price per drink</label><input id="pPrice" type="number" min="0" max="100" step="0.5"></div>
+            <label class="check field full" for="pCal"><input id="pCal" type="checkbox"> <span>Show calories and food-related debuffs. Some people find calorie tracking unhelpful, so this stays optional.</span></label>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="bench" aria-label="Prototype controls">
+      <div class="px">
+        <h3>Time machine</h3>
+        <p class="lead">Prototype only. Speed up the night to watch the absorption lag, the peak, the slow recovery and the morning-after report.</p>
+        <div class="bench-clock" id="benchClock">--:--</div>
+        <div class="seg" id="speeds" role="group" aria-label="Speed">
+          <button class="btn small" data-speed="0">Pause</button>
+          <button class="btn small" data-speed="1">1×</button>
+          <button class="btn small" data-speed="60">60×</button>
+          <button class="btn small" data-speed="600">600×</button>
+        </div>
+        <div class="row">
+          <button class="btn small" data-skip="15">+15 min</button>
+          <button class="btn small" data-skip="60">+1 hour</button>
+          <button class="btn small" id="toMorning">Skip to morning</button>
+        </div>
+        <div class="row">
+          <button class="btn small" id="loadSample">Load sample night</button>
+          <button class="btn small" id="emptyNight">Start an empty night</button>
+        </div>
+        <div class="row">
+          <button class="btn small" id="replayOnboard">Replay first-run setup</button>
+        </div>
+      </div>
+
+      <p class="fine">The time machine is a prototype tool and won't be in the real app.</p>
+    </aside>
+  </div>
+</div>
+
+<!-- Drink sheet -->
+<div class="overlay" id="drinkOverlay" hidden>
+  <div class="sheet px" role="dialog" aria-modal="true" aria-labelledby="drinkTitle">
+    <div class="sheet-head"><h2 id="drinkTitle">Log a drink</h2><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="sheet-warn" id="drinkWarn" hidden>You're already in a high range. Water might be the better pick right now.</div>
+    <div class="pay">
+      <label class="label" for="payAmt">Paid (optional)</label>
+      <div class="pay-inputs">
+        <span class="cur" id="payCur">$</span>
+        <input id="payAmt" type="number" min="0" max="5000" step="0.01" inputmode="decimal" placeholder="0.00">
+        <select id="payFor" aria-label="What the price covers">
+          <option value="one">for this drink</option>
+          <option value="round">for a round</option>
+          <option value="pack">for a pack or bottle</option>
+        </select>
+        <span id="payPackWrap" hidden><input id="payCount" type="number" min="2" max="48" step="1" value="6" aria-label="Drinks in the pack or bottle"> drinks in it</span>
+      </div>
+      <p class="fine" id="payHint">Enter the price, then pick the drink below.</p>
+      <div class="packs" id="packs"></div>
+    </div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-cat="mine">My drinks</button>
+      <button class="tab" role="tab" data-cat="beer">Beer &amp; cider</button>
+      <button class="tab" role="tab" data-cat="wine">Wine</button>
+      <button class="tab" role="tab" data-cat="spirits">Spirits</button>
+      <button class="tab" role="tab" data-cat="mixed">Mixed</button>
+      <button class="tab" role="tab" data-cat="custom">Custom</button>
+    </div>
+    <div class="presets" id="presets"></div>
+    <form id="customForm" class="form" hidden>
+      <div class="field full"><label for="cName">Name</label><input id="cName" type="text" maxlength="40" placeholder="e.g. Imperial IPA" style="font-family:var(--f-display);font-size:16px"></div>
+      <div class="field"><label for="cType">Type</label><select id="cType"><option value="beer">Beer or cider</option><option value="wine">Wine</option><option value="spirit">Spirit, neat</option><option value="cocktail">Cocktail or mixer</option></select></div>
+      <div class="field"><label for="cMl">Volume (ml)</label><input id="cMl" type="number" min="10" max="2000" step="1" value="473"></div>
+      <div class="field full"><div class="sizes" id="cSizes"></div></div>
+      <div class="field"><label for="cAbv">ABV %</label><input id="cAbv" type="number" min="0.5" max="75" step="0.1" value="7"></div>
+      <div class="field"><label for="cKcal">Label kcal (optional)</label><input id="cKcal" type="number" min="0" max="3000" step="1" placeholder="estimate"></div>
+      <div class="field full"><input id="cAbvRange" type="range" min="0.5" max="60" step="0.5" value="7" aria-label="ABV slider" style="accent-color:var(--gold)"></div>
+      <div class="preview field full" id="cPreview"></div>
+      <label class="check field full" for="cSave"><input id="cSave" type="checkbox" checked> <span>Save to My drinks so you can log it again in one tap</span></label>
+      <button class="btn primary field full" type="submit">Log drink</button>
+    </form>
+    <div class="scan"><button class="btn small" disabled>Scan barcode</button><span>Coming later: reads ABV and calories from a product database. Until then, use a preset or the label.</span></div>
+  </div>
+</div>
+
+<!-- Morning report -->
+<div class="overlay" id="reportOverlay" hidden>
+  <div class="sheet px" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+    <div class="sheet-head"><div><div class="label" id="reportDate"></div><h2 id="reportTitle">Morning-after report</h2></div><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="report-rows" id="reportRows"></div>
+    <div>
+      <div class="label" style="margin-bottom:8px">How do you feel?</div>
+      <div class="feel" id="feel">
+        <button data-feel="good" aria-pressed="false"><canvas width="12" height="12" data-face="good"></canvas>Good</button>
+        <button data-feel="meh" aria-pressed="false"><canvas width="12" height="12" data-face="meh"></canvas>Meh</button>
+        <button data-feel="rough" aria-pressed="false"><canvas width="12" height="12" data-face="rough"></canvas>Rough</button>
+      </div>
+      <p class="fine" id="feelNote" style="margin-top:8px">Your answer tunes the thresholds to you over time.</p>
+    </div>
+    <div class="row" style="margin-top:0">
+      <button class="btn primary" id="newNight">Start a new night</button>
+      <button class="btn" data-close>Back to last night</button>
+    </div>
+  </div>
+</div>
+
+<!-- First-run character setup -->
+<div class="overlay" id="onboard" hidden>
+  <div class="sheet px" role="dialog" aria-modal="true" aria-labelledby="obTitle">
+    <div class="ob-head">
+      <canvas id="obHeart" width="7" height="6" aria-hidden="true"></canvas>
+      <div><div class="label" id="obStep">Step 1 of 2</div><h2 id="obTitle">Create your character</h2></div>
+    </div>
+    <div class="ob-pips" aria-hidden="true"><i class="on" id="obPip1"></i><i id="obPip2"></i></div>
+
+    <div id="ob1" class="ob-step">
+      <p class="lead">Your stats decide how far each drink spreads through your body, which sets how fast your health bar drops. They stay on this device.</p>
+      <div class="form">
+        <div class="field"><label for="obWeight">Weight</label>
+          <div class="unitrow"><input id="obWeight" type="number" min="1" max="600" step="1" inputmode="numeric">
+            <select id="obWUnit" aria-label="Weight unit"><option value="lb">lb</option><option value="kg">kg</option></select></div></div>
+        <div class="field"><label for="obHeight">Height</label>
+          <div class="unitrow">
+            <span id="obHcm" class="unitrow grow"><input id="obHeight" type="number" min="100" max="250" step="1" inputmode="numeric" aria-label="Height in centimetres"></span>
+            <span id="obHft" class="unitrow grow"><input id="obFt" type="number" min="3" max="8" step="1" inputmode="numeric" aria-label="Feet"><input id="obIn" type="number" min="0" max="11" step="1" inputmode="numeric" aria-label="Inches"></span>
+            <select id="obHUnit" aria-label="Height unit"><option value="ft">ft / in</option><option value="cm">cm</option></select></div></div>
+        <div class="field"><label for="obAge">Age</label><input id="obAge" type="number" min="18" max="100" step="1" inputmode="numeric"></div>
+        <div class="field"><label for="obSex">Body-water formula</label><select id="obSex"><option value="m">Male</option><option value="f">Female</option></select></div>
+        <p class="fine field full">The formula choice is only used to estimate body water. Pick whichever is closer to your body composition.</p>
+      </div>
+      <p class="ob-err" id="obErr1" hidden>Add your weight, height and age to continue, or skip for now.</p>
+      <div class="row"><button class="btn primary" id="obNext">Next</button><button class="btn" id="obSkip">Skip for now</button></div>
+    </div>
+
+    <div id="ob2" class="ob-step" hidden>
+      <p class="lead">Your sleep window drives the sleep debuff and when your morning-after report arrives.</p>
+      <div class="form">
+        <div class="field"><label for="obBed">Usual bedtime</label><input id="obBed" type="time"></div>
+        <div class="field"><label for="obWake">Usual wake time</label><input id="obWake" type="time"></div>
+        <div class="field"><label for="obRegion">Guidelines</label><select id="obRegion"><option value="ca">Canada (13.45 g)</option><option value="us">US (14 g)</option><option value="uk">UK units (8 g)</option><option value="au">Australia (10 g)</option><option value="eu">Europe (10 g)</option></select></div>
+        <div class="field"><label for="obCur">Currency</label><select id="obCur"><option value="$">$ Dollar</option><option value="£">£ Pound</option><option value="€">€ Euro</option><option value="A$">A$ Australian dollar</option></select></div>
+        <label class="check field full" for="obCal"><input id="obCal" type="checkbox" checked> <span>Show calories and food-related debuffs. You can turn this off any time.</span></label>
+      </div>
+      <div class="row"><button class="btn primary" id="obDone">Start the night</button><button class="btn" id="obBack">Back</button></div>
+    </div>
+    <p class="fine">For people of legal drinking age. Every number is an estimate and never a driving clearance. You can change these later in Options.</p>
+  </div>
+</div>
+
+<!-- Info pop-up -->
+<div class="overlay" id="infoOverlay" hidden>
+  <div class="sheet px" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+    <div class="sheet-head"><div class="info-title"><canvas width="16" height="16" id="infoIcon" aria-hidden="true"></canvas><h2 id="infoTitle"></h2></div><button class="x" id="infoClose" aria-label="Close">×</button></div>
+    <div class="info-body" id="infoBody"></div>
+    <button class="btn" id="infoDone">Got it</button>
+  </div>
+</div>
+
+<!-- Safety -->
+<div class="overlay" id="safetyOverlay" hidden>
+  <div class="safety" role="alertdialog" aria-modal="true" aria-labelledby="safetyTitle">
+    <h2 id="safetyTitle">Time to stop and check in</h2>
+    <p>Your estimated level is in a range where alcohol poisoning is a real risk. Stop drinking and make sure someone sober is with you.</p>
+    <div class="label" style="color:#9fc0d2">Call emergency services if you see any of these</div>
+    <ul>
+      <li>Confusion, or can't stay awake or be woken</li>
+      <li>Vomiting while drowsy or passed out</li>
+      <li>Slow or irregular breathing (fewer than 8 breaths a minute)</li>
+      <li>Pale or blue-tinged skin, or feeling very cold</li>
+      <li>Seizures</li>
+    </ul>
+    <div class="numbers">
+      <div><small>UK</small>999</div><div><small>US / CANADA</small>911</div>
+      <div><small>EUROPE</small>112</div><div><small>AUSTRALIA</small>000</div>
+    </div>
+    <p>Lay someone who is drowsy on their side. Don't leave them alone, and don't rely on coffee or a cold shower.</p>
+    <button class="btn" id="safetyOk">I'm with someone. Show my status.</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const MIN = 60000, HOUR = 3600000;
+const BETA = 0.015, KA_EMPTY = 0.08, KA_FED = 0.03, FED_WINDOW = 180*MIN, FED_BIO = 0.85;
+const TH = [0, 0.02, 0.05, 0.08, 0.11, 0.15, 0.25];
+const STORE = 'status-effects-v1';
+
+const REGIONS = {
+  ca:{g:13.45, unit:'std drinks', one:'std drink'},
+  uk:{g:8, unit:'units', one:'unit'},
+  us:{g:14, unit:'std drinks', one:'std drink'},
+  au:{g:10, unit:'std drinks', one:'std drink'},
+  eu:{g:10, unit:'std drinks', one:'std drink'}
+};
+const PHASES = [
+  {name:'Fresh', desc:'No meaningful alcohol in your blood.'},
+  {name:'Buzzed', desc:'Relaxed and chattier. If this is still in your system at bedtime, your sleep takes a hit.'},
+  {name:'Tipsy', desc:'Judgment and coordination are slipping and risk-taking goes up. At 0.05% most Canadian provinces issue roadside suspensions, and it is over the limit in much of Europe and Australia.'},
+  {name:'Drunk', desc:"Over the 0.08% criminal driving limit in Canada and the US. Balance, reaction time and speech are impaired."},
+  {name:'Rough', desc:'A hangover is very likely tomorrow, along with a dip in mood and focus.'},
+  {name:'Wasted', desc:'Memory gaps and vomiting are likely. Switch to water and stay with people you trust.'},
+  {name:'Danger', desc:'Risk of alcohol poisoning. Stop drinking and make sure someone sober is with you.'}
+];
+const PRESETS = {
+  beer:[
+    {name:'Lager', size:'Pint', ml:568, abv:4.5, carb:3.0},
+    {name:'Lager', size:'Bottle', ml:341, abv:5, carb:3.0},
+    {name:'Lager', size:'Tallboy', ml:473, abv:5, carb:3.0},
+    {name:'IPA', size:'Can', ml:440, abv:6.5, carb:4.0},
+    {name:'Double IPA', size:'Can', ml:440, abv:8.5, carb:5.5},
+    {name:'Stout', size:'Pint', ml:568, abv:4.2, carb:3.5},
+    {name:'Cider', size:'Pint', ml:568, abv:4.5, carb:5.0}
+  ],
+  wine:[
+    {name:'Red wine', size:'Medium glass', ml:175, abv:13.5, carb:0.8},
+    {name:'White wine', size:'Medium glass', ml:175, abv:12, carb:1.2},
+    {name:'White wine', size:'Large glass', ml:250, abv:12, carb:1.2},
+    {name:'Rosé', size:'Medium glass', ml:175, abv:12, carb:1.5},
+    {name:'Prosecco', size:'Flute', ml:125, abv:11, carb:1.5}
+  ],
+  spirits:[
+    {name:'Vodka or gin', size:'Single, 25 ml', ml:25, abv:40, carb:0},
+    {name:'Whisky', size:'Double, 50 ml', ml:50, abv:40, carb:0},
+    {name:'Tequila', size:'Shot, 30 ml', ml:30, abv:38, carb:0},
+    {name:'Spirit', size:'1.5 oz pour, 43 ml', ml:43, abv:40, carb:0}
+  ],
+  mixed:[
+    {name:'Gin and tonic', size:'Double + 150 ml tonic', ml:200, abv:10, carbAbs:13},
+    {name:'Rum and cola', size:'Double + 200 ml cola', ml:250, abv:8, carbAbs:21},
+    {name:'Aperol spritz', size:'Wine glass', ml:200, abv:8, carbAbs:14},
+    {name:'Margarita', size:'Coupe', ml:150, abv:13, carbAbs:15},
+    {name:'Espresso martini', size:'Coupe', ml:125, abv:19, carbAbs:18}
+  ]
+};
+Object.keys(PRESETS).forEach(k => PRESETS[k].forEach(p => { p.cat = k; }));
+const CUSTOM_CARB = {beer:3.5, wine:1.0, spirit:0, cocktail:8};
+const CUSTOM_CAT = {beer:'beer', wine:'wine', spirit:'spirits', cocktail:'mixed'};
+const EQUIV = {
+  pizza:{kcal:285, one:'slice of pizza', many:'slices of pizza'},
+  doughnut:{kcal:250, one:'glazed doughnut', many:'glazed doughnuts'},
+  burger:{kcal:300, one:'cheeseburger', many:'cheeseburgers'}
+};
+const DEFAULT_PROFILE = {weight:80, height:178, age:32, sex:'m', region:'ca', bed:'23:30', wake:'07:30', calories:true, equiv:'pizza', theme:'system', price:6, currency:'$'};
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+function mkDrink(p, t){
+  const grams = p.ml * (p.abv/100) * 0.789;
+  const carbs = p.carbAbs != null ? p.carbAbs : p.ml * (p.carb || 0) / 100;
+  let kcalAlc = Math.round(grams*7);
+  let kcal = p.kcal != null ? Math.round(p.kcal) : Math.round(grams*7 + carbs*4);
+  if (p.kcal != null) kcalAlc = Math.min(kcalAlc, kcal);
+  return {id:uid(), type:'drink', t, name:p.name, size:p.size || (p.ml+' ml'), ml:p.ml, abv:p.abv, cat:p.cat || null, grams, kcal, kcalAlc};
+}
+function sampleState(profile, myDrinks){
+  const d = new Date();
+  const at = (h, m) => { const x = new Date(d); x.setHours(h, m, 0, 0); return x.getTime(); };
+  return {
+    v:1, profile:Object.assign({}, DEFAULT_PROFILE, profile || {}),
+    events:[
+      {id:uid(), type:'food', t:at(18,50), name:'Dinner'},
+      Object.assign(mkDrink(PRESETS.beer[0], at(19,30)), {cost:5.8}),
+      Object.assign(mkDrink(PRESETS.beer[0], at(20,15)), {cost:24, round:true}),
+      mkDrink(PRESETS.beer[3], at(20,55)),
+      {id:uid(), type:'water', t:at(21,10), name:'Water'},
+      Object.assign(mkDrink(PRESETS.spirits[1], at(21,30)), {cost:9.5})
+    ],
+    packs:[],
+    endedAt:null, sample:true, simNow:at(21,40), speed:1, reportSeen:false, feel:null, safetyAck:false,
+    myDrinks: myDrinks || []
+  };
+}
+function load(){
+  try { const raw = localStorage.getItem(STORE); if (!raw) return null; const s = JSON.parse(raw); if (!s || s.v !== 1) return null; s.profile = Object.assign({}, DEFAULT_PROFILE, s.profile);
+    if (!s.profile.caDefault){ s.profile.region = 'ca'; s.profile.currency = '$'; s.profile.caDefault = true; } s.myDrinks = Array.isArray(s.myDrinks) ? s.myDrinks : []; s.packs = Array.isArray(s.packs) ? s.packs : []; return s; } catch(e){ return null; }
+}
+let lastSave = 0;
+function save(force){
+  const n = Date.now(); if (!force && n - lastSave < 2000) return; lastSave = n;
+  try { localStorage.setItem(STORE, JSON.stringify(S)); } catch(e){}
+}
+let S = load() || sampleState();
+let version = 0; // bumps when events/profile change
+function changed(){ version++; save(true); if (typeof FX !== 'undefined') FX.prev = null; }
+
+/* ---------- Time helpers ---------- */
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const pad = n => String(n).padStart(2, '0');
+const fmtT = t => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const fmtDT = t => DAYS[new Date(t).getDay()] + ' ' + fmtT(t);
+function dur(ms){
+  ms = Math.max(0, ms); const m = Math.round(ms/MIN);
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m/60), r = m % 60; return h + 'h ' + pad(r) + 'm';
+}
+const pct = b => b.toFixed(3) + '%';
+function hm(s){ const [h, m] = String(s || '0:0').split(':').map(Number); return [h || 0, m || 0]; }
+function nightTimes(anchor){
+  const [bh, bm] = hm(S.profile.bed), [wh, wm] = hm(S.profile.wake);
+  const b = new Date(anchor); b.setHours(bh, bm, 0, 0);
+  if (b.getTime() < anchor - 4*HOUR) b.setDate(b.getDate() + 1);
+  const w = new Date(b); w.setHours(wh, wm, 0, 0);
+  if (w <= b) w.setDate(w.getDate() + 1);
+  return {bed:b.getTime(), wake:w.getTime()};
+}
+
+/* ---------- Engine ---------- */
+function bodyModel(p){
+  const tbw = p.sex === 'm'
+    ? 2.447 - 0.09516*p.age + 0.1074*p.height + 0.3362*p.weight
+    : -2.097 + 0.1069*p.height + 0.2466*p.weight;
+  const vdDl = Math.max(10, tbw) / 0.806 * 10; // distribution volume in decilitres
+  return {tbw, vdDl, elim: BETA/60*vdDl};      // grams eliminated per minute
+}
+function phaseIndex(b){ let k = 0; while (k < 6 && b >= TH[k+1]) k++; return k; }
+function hpFromBac(b){
+  if (b >= 0.25) return 0;
+  const k = phaseIndex(b); const frac = (b - TH[k]) / (TH[k+1] - TH[k]);
+  return clamp(100 - (k + frac) * 100/6, 0, 100);
+}
+function compute(evs, nowArg){
+  const p = S.profile, body = bodyModel(p), now = nowArg == null ? S.simNow : nowArg;
+  const ev = [...(evs || S.events)].sort((a, b) => a.t - b.t);
+  const drinks = ev.filter(e => e.type === 'drink');
+  const foods = ev.filter(e => e.type === 'food').map(e => e.t);
+  const waters = ev.filter(e => e.type === 'water');
+  const start = ev.length ? Math.min(ev[0].t, now) : now;
+  const t0 = Math.floor(start/MIN)*MIN;
+  const nt = nightTimes(drinks.length ? drinks[0].t : start);
+  const fed = t => foods.some(f => f <= t && t - f < FED_WINDOW);
+  const nowIdx = Math.max(0, Math.floor((now - t0)/MIN));
+  const samples = []; let stomach = 0, bodyG = 0, i = 0, stomachNow = 0;
+  const cap = Math.max(now, t0) + 48*HOUR;
+  for (let t = t0; ; t += MIN){
+    while (i < drinks.length && drinks[i].t <= t){ stomach += drinks[i].grams * (fed(drinks[i].t) ? FED_BIO : 1); i++; }
+    const a = stomach * (fed(t) ? KA_FED : KA_EMPTY);
+    stomach -= a; bodyG = Math.max(0, bodyG + a - body.elim);
+    samples.push(bodyG / body.vdDl);
+    if (samples.length - 1 === nowIdx) stomachNow = stomach;
+    if (t >= now && i >= drinks.length && stomach < 0.05 && bodyG <= 0 && t >= nt.bed) break;
+    if (t > cap) break;
+  }
+  const tAt = k => t0 + k*MIN;
+  const at = t => { const k = Math.round((t - t0)/MIN); return (k < 0 || k >= samples.length) ? 0 : samples[k]; };
+  const bacNow = samples[Math.min(nowIdx, samples.length - 1)] || 0;
+  let peak = 0, peakT = t0, futurePeak = bacNow, futurePeakT = now;
+  samples.forEach((b, k) => { if (b > peak){ peak = b; peakT = tAt(k); } if (k >= nowIdx && b > futurePeak){ futurePeak = b; futurePeakT = tAt(k); } });
+  // Interval at or after now where BAC >= th: returns {s, e, active, max} or null
+  function span(th){
+    let k = nowIdx; while (k < samples.length && samples[k] < th) k++;
+    if (k >= samples.length) return null;
+    let s = k, mx = 0; while (s > 0 && samples[s-1] >= th) s--;
+    let e = k; while (e < samples.length && samples[e] >= th){ mx = Math.max(mx, samples[e]); e++; }
+    return {s:tAt(s), e:tAt(e), active:k === nowIdx, max:mx};
+  }
+  let lastPos = -1; for (let k = samples.length - 1; k >= 0; k--){ if (samples[k] > 1e-4){ lastPos = k; break; } }
+  const clearedT = lastPos >= 0 ? tAt(lastPos + 1) : null;
+  const totalG = drinks.reduce((s, d) => s + d.grams, 0);
+  return {
+    body, now, t0, samples, drinks, waters, foods, events:ev, bed:nt.bed, wake:nt.wake,
+    bacNow, peak, peakT, futurePeak, futurePeakT, stomachNow, span, at, clearedT,
+    soberT: clearedT && clearedT > now ? clearedT : now,
+    bedBAC: at(nt.bed), bedG: at(nt.bed) * body.vdDl, totalG, gkg: totalG / p.weight,
+    kcal: drinks.reduce((s, d) => s + d.kcal, 0), kcalAlc: drinks.reduce((s, d) => s + d.kcalAlc, 0),
+    lastDrink: drinks[drinks.length - 1] || null, firstDrink: drinks[0] || null
+  };
+}
+
+/* ---------- Effects (debuffs and buffs) ---------- */
+const HRV_PCT = [9, 24, 39];
+function hrvSev(gkg){ return gkg < 0.25 ? 0 : gkg < 0.75 ? 1 : 2; }
+function effects(r){
+  const now = r.now, p = S.profile, reg = REGIONS[p.region], de = [], bu = [];
+  const add = (list, e) => { if (e.e > now) list.push(e); };
+  if (r.drinks.length){
+    const fd = r.firstDrink.t, ld = r.lastDrink.t;
+    const j = r.span(0.02);
+    if (j) add(de, {id:'judgment', name:'Impaired judgment', shape:'vial', color:'#e9a23b', s:j.s, e:j.e, status:j.active ? 'active' : 'incoming',
+      sev: j.max < 0.05 ? 0 : j.max < 0.08 ? 1 : 2,
+      desc:`Slower reactions and bolder decisions until about ${fmtT(j.e)}. This is an estimate, not a driving clearance. Don't drive tonight.`});
+    if (now < r.wake){
+      const sevG = r.gkg < 0.25 ? 0 : r.gkg < 0.75 ? 1 : 2;
+      const sevB = r.bedBAC >= 0.05 ? 2 : r.bedBAC >= 0.01 ? 1 : 0;
+      add(de, {id:'sleep', name:'Impaired sleep', shape:'round', color:'#6a63e0', s:fd, e:r.wake, status:'active', sev:Math.max(sevG, sevB),
+        desc: r.bedBAC > 0.001
+          ? `You'll still have about ${(r.bedG/reg.g).toFixed(1)} ${reg.unit} of alcohol in your system at your ${fmtT(r.bed)} bedtime, not cleared until around ${fmtT(r.soberT)}. That cuts REM sleep and breaks up the second half of the night. Each hour you stop before bed helps.`
+          : `You should be near zero by your ${fmtT(r.bed)} bedtime, which softens the hit. Another drink would push alcohol into your sleep.`});
+    }
+    const hs = hrvSev(r.gkg);
+    add(de, {id:'hrv', name:'HRV drain', shape:'bottle', color:'#d8344a', s:fd, e:r.wake + [1,6,12][hs]*HOUR, status:'active', sev:hs,
+      desc:`At about ${r.gkg.toFixed(2)} g of alcohol per kg, overnight heart-rate variability recovery drops roughly ${HRV_PCT[hs]}%. Expect a higher resting heart rate tomorrow.`});
+    const n = r.drinks.length, w = r.waters.length, deficit = Math.max(0, n - w);
+    add(de, {id:'dehydration', name:'Dehydration', shape:'vial', color:'#c2703d', s:fd, e:r.soberT + deficit*45*MIN, status:'active',
+      sev: deficit === 0 ? 0 : deficit <= 2 ? 1 : 2,
+      desc:`Alcohol blocks the hormone that helps your kidneys hold onto water. ${w} water for ${n} drink${n === 1 ? '' : 's'} so far.${deficit ? ' A glass now shortens this.' : ''}`});
+    if (r.peak >= 0.08){
+      const sev = r.peak < 0.11 ? 0 : r.peak < 0.15 ? 1 : 2;
+      const s = r.soberT, e = s + [10,16,24][sev]*HOUR;
+      add(de, {id:'hangover', name:'Hangover', shape:'round', color:'#8fb339', s, e, status: now < s ? 'incoming' : 'active', sev, sevLabels:['Possible','Likely','Severe'],
+        desc:`Hangovers peak as your level returns to zero, around ${fmtDT(s)}. Your estimated peak tonight is ${pct(r.peak)}; hangovers get much more common above about 0.11%.`});
+      const s2 = r.soberT;
+      add(de, {id:'hangxiety', name:'Hangxiety', shape:'bottle', color:'#a066d3', s:s2, e:s2 + 18*HOUR, status: now < s2 ? 'incoming' : 'active', sev: r.peak >= 0.11 ? 1 : 0,
+        desc:'Next-day anxiety and low mood as your brain rebounds from alcohol\'s calming effect.'});
+    }
+    if (r.gkg >= 0.5){
+      const heavy = r.gkg >= 1;
+      add(de, {id:'recovery', name:'Slow recovery', shape:'bottle', color:'#8296b0', s:ld, e:ld + (heavy ? 48 : 24)*HOUR, status:'active', sev: heavy ? 2 : 1,
+        desc:'Heavy drinking slows how your muscles rebuild after exercise by roughly a quarter to a third. Go easy on hard training.'});
+    }
+    if (p.calories){
+      if (r.soberT > now || r.bacNow > 0) add(de, {id:'fatpause', name:'Fat burning paused', shape:'round', color:'#ff7a2e', s:fd, e:r.soberT, status:'active', sev:null,
+        desc:`Your body clears alcohol before anything else, so fat burning drops sharply until it's gone. Paused for about ${dur(r.soberT - fd)} in total tonight.`});
+      const m = r.span(0.04);
+      if (m && m.active) add(de, {id:'munchies', name:'Munchies', shape:'vial', color:'#e46fa0', s:m.s, e:m.e, status:'active', sev:null,
+        desc:'Alcohol raises appetite and lowers restraint. Late-night food is often the bigger calorie hit, so log it too.'});
+    }
+  }
+  const lastW = r.waters[r.waters.length - 1];
+  if (lastW) add(bu, {id:'hydrated', name:'Hydrated', shape:'round', color:'#4aa3f0', s:lastW.t, e:lastW.t + 60*MIN, status:'active', buff:true,
+    desc:'Water slows your pace and offsets some fluid loss. It doesn\'t lower your BAC.'});
+  const lastF = r.foods[r.foods.length - 1];
+  if (lastF != null) add(bu, {id:'lined', name:'Lined stomach', shape:'bottle', color:'#d0a062', s:lastF, e:lastF + FED_WINDOW, status:'active', buff:true,
+    desc:'Food slows absorption, so you get a lower, later peak. Drinks logged in this window count about 15% less.'});
+  if (r.lastDrink && !S.endedAt && now - r.lastDrink.t >= 45*MIN && now < r.wake){
+    const perHour = r.body.elim*60;
+    bu.push({id:'pace', name:'Steady pace', shape:'vial', color:'#4fd1a5', s:r.lastDrink.t, e:Infinity, status:'ongoing', buff:true,
+      desc:`${dur(now - r.lastDrink.t)} since your last drink. Your liver clears about ${perHour.toFixed(0)} g an hour, roughly ${(perHour/reg.g).toFixed(1)} ${reg.unit}, so gaps let it catch up.`});
+  }
+  if (S.endedAt && S.endedAt < r.bed) add(bu, {id:'called', name:'Called it', shape:'round', color:'#f2c14e', s:S.endedAt, e:r.wake, status:'active', buff:true,
+    desc:`You ended the night ${dur(r.bed - S.endedAt)} before bedtime. Less alcohol in your system at bedtime means better sleep.`});
+  const rank = e => (e.status === 'incoming' ? 10 : 0) - (e.sev || 0);
+  de.sort((a, b) => rank(a) - rank(b));
+  return {de, bu};
+}
+
+/* ---------- Pixel art ---------- */
+const OUTLINE = '#100c18';
+function hex(c){ const n = parseInt(c.slice(1), 16); return [n>>16 & 255, n>>8 & 255, n & 255]; }
+function mix(c, to, f){ const a = hex(c), b = hex(to); return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v)*f)).join(',') + ')'; }
+const drainCache = {};
+function drained(c){
+  if (!drainCache[c]){ const [r, g, b] = hex(c); const v = Math.round((0.3*r + 0.59*g + 0.11*b)*0.3 + 38); drainCache[c] = 'rgb(' + v + ',' + (v - 4) + ',' + (v + 16) + ')'; }
+  return drainCache[c];
+}
+// Draws a char-map sprite with an automatic 1px outline. Rows above the fill level are drawn drained (grey).
+function drawSprite(ctx, rows, pal, ox, oy, opts){
+  opts = opts || {};
+  const H = rows.length, W = Math.max(...rows.map(r => r.length));
+  const at = (x, y) => (y >= 0 && y < H && x >= 0 && x < rows[y].length) ? rows[y][x] : '.';
+  let top = H, bot = -1; rows.forEach((r, y) => { if (/[^.]/.test(r)){ top = Math.min(top, y); bot = Math.max(bot, y); } });
+  const fill = opts.fill == null ? 1 : clamp(opts.fill, 0, 1), level = bot + 1 - Math.round(fill*(bot - top + 1));
+  ctx.globalAlpha = opts.dim ? 0.5 : 1;
+  ctx.fillStyle = OUTLINE;
+  for (let y = -1; y <= H; y++) for (let x = -1; x <= W; x++){
+    if (at(x, y) !== '.') continue;
+    if (at(x - 1, y) !== '.' || at(x + 1, y) !== '.' || at(x, y - 1) !== '.' || at(x, y + 1) !== '.') ctx.fillRect(ox + x, oy + y, 1, 1);
+  }
+  for (let y = 0; y < H; y++) for (let x = 0; x < rows[y].length; x++){
+    let c = pal[rows[y][x]]; if (!c) continue;
+    if (y < level && c[0] === '#') c = drained(c);
+    ctx.fillStyle = c; ctx.fillRect(ox + x, oy + y, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+}
+const E = '................';
+const ICONS = {
+  sleep:{pal:{m:'#f2d98a', M:'#c9a24a', z:'#b9b4ff'}, rows:[E,
+    '.........zzzz...', '...........z....', '.....mmm..z.....', '...mmmm..zzzz...', '..mmmm..........', '..mmm......zzz..', '.mmmm.......z...',
+    '.mmmm......zzz..', '.mmmm...........', '.mmmmm..........', '..mmmmm.....mm..', '..MmmmmmmmmmMm..', '...MMmmmmmmMM...', '.....MMMMMM.....', E]},
+  judgment:{pal:{p:'#f29bb8', P:'#c9607f', d:'#c9607f', y:'#f2c14e'}, rows:[E,
+    '..y..........y..', '.yyy........yyy.', '..y...pppp...y..', '....ppPppPpp....', '...pPpppppPpp...', '..ppppPpppppPp..', '..pPppppPppppp..',
+    '..ppppPppPpppp..', '...pPpppppPpp...', '....pppPpppp....', '.......dd.......', '.......dd.......', E, E, E]},
+  hrv:{pal:{r:'#e5484f', h:'#ff9a86', R:'#a3243a', w:'#fff1e6'}, rows:[E, E,
+    '...rrr....rrr...', '..rhrrr..rrrrr..', '.rhhrrrrrrrrrrr.', '.rhrrrrwrrrrrrr.', '.rrrrrrwrrrrrrR.', '.rrrrrrwrrrrrrR.',
+    'wwwwwwwwwwwwwwww', '...rrrrrwrrRR...', '....rrrrwrRR....', '.....rrrrRR.....', '......rrRR......', '.......RR.......', E, E]},
+  dehydration:{pal:{b:'#8fb4cc', h:'#d5e8f4', B:'#5d7f99', c:'#3a2a1f'}, rows:[E,
+    '.......bb.......', '......bbbb......', '......bhbb......', '.....bhbbbb.....', '.....hbbbbb.....', '....bhbbcbbb....', '....hbbbbcbb....',
+    '...bhbbbcbbbb...', '...bbbbbbcbbb...', '...bbbbbcbbbB...', '...bbbbbbbbbB...', '....bbbbbbbB....', '.....BBBBBB.....', E, E]},
+  hangover:{pal:{g:'#a8c46a', G:'#71913a', e:'#24301a'}, rows:[E,
+    '.....gggggg.....', '...gggggggggg...', '..gggggggggggg..', '..gggggggggggg..', '.gggeeggggeeggg.', '.gggggggggggggg.', '.gggggggggggggg.',
+    '.ggggegegegggGg.', '.gggggegegeggGg.', '..ggggggggggGG..', '..gggggggggGGG..', '...gggggggGGG...', '.....GGGGGG.....', E, E]},
+  hangxiety:{pal:{c:'#9b8fc4', C:'#6b5f99', y:'#f2c14e', b:'#6f93ff'}, rows:[E, E,
+    '......ccc.......', '....ccccccc.....', '..ccccccccccc...', '.ccccccccccccc..', '.cccccccccccccc.', '.CCCCCCCCCCCCCC.',
+    '......yy........', '.....yy...b.....', '....yyyy........', '......yy....b...', '.....yy.........', '.....y..........', E, E]},
+  recovery:{pal:{h:'#c3cad6', W:'#7f8a9c', b:'#9aa3b2', B:'#5d6573'}, rows:[E, E, E, E,
+    '.hh..........hh.', '.hhW........hhW.', '.hhW........hhW.', '.hhWbbbbbbbbhhW.', '.hhWBBBBBBBBhhW.', '.hhW........hhW.', '.hhW........hhW.', '.WW..........WW.', E, E, E, E]},
+  fatpause:{pal:{f:'#ff7a2e', y:'#ffd166', P:'#5a1f0c'}, rows:[E,
+    '......f.........', '......ff........', '.....fff........', '.....ffff..f....', '....fffff.ff....', '...ffffffffff...', '...ffyyyyyyff...',
+    '..ffyyyyyyyyff..', '..ffyyPyyPyyff..', '..ffyyPyyPyyff..', '..ffyyPyyPyyff..', '...ffyyyyyyff...', '....ffffffff....', E, E]},
+  hydrated:{pal:{g:'#cfe6ff', a:'#3d4a6b', w:'#bfe3ff', b:'#4aa3f0', h:'#a8d8ff'}, rows:[E, E,
+    '...gaaaaaaaag...', '...gaaaaaaaag...', '...gwwwwwwwwg...', '...gbbbbbbbbg...', '....gbbbbbbg....', '....gbbbbbbg....', '....gbhbbbbg....',
+    '....gbbbbbbg....', '....gbbbbbbg....', '.....gbbbbg.....', '.....gggggg.....', E, E, E]},
+  lined:{pal:{c:'#b0703a', b:'#f3d9a4'}, rows:[E, E,
+    '....cccccccc....', '..cccccccccccc..', '.ccbbbbbbbbbbcc.', '.cbbbbbbbbbbbbc.', '.cbbbbbbbbbbbbc.', '..cbbbbbbbbbbc..', '..cbbbbbbbbbbc..',
+    '..cbbbbbbbbbbc..', '..cbbbbbbbbbbc..', '..cbbbbbbbbbbc..', '..cccccccccccc..', E, E, E]},
+  pace:{pal:{w:'#c08a52', g:'#cfe6ff', a:'#3d4a6b', s:'#f2c14e'}, rows:[E,
+    '..wwwwwwwwwwww..', '...gaaaaaaaag...', '...gssssssssg...', '....gssssssg....', '.....gssssg.....', '......gssg......', '.......ss.......',
+    '......gssg......', '.....gassag.....', '....gaassaag....', '...gaassssaag...', '...gssssssssg...', '..wwwwwwwwwwww..', E, E]},
+  called:{pal:{y:'#f2c14e', h:'#fff1b0', Y:'#b8862a'}, rows:[E, E,
+    '...yyyyyyyyyy...', '.yyyhyyyyyyyYyy.', '.y.yhyyyyyyyY.y.', '.y.yhyyyyyyyY.y.', '..yyhyyyyyyyYy..', '....yyyyyyyY....', '.....yyyyyY.....',
+    '......yyyY......', '.......yY.......', '.......yY.......', '.....yyyyyY.....', '....YYYYYYYY....', E, E]}
+};
+function drawIcon(cv, key, fill, dim){
+  const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+  const ic = ICONS[key]; if (ic) drawSprite(ctx, ic.rows, ic.pal, 0, 0, {fill, dim});
+}
+// Drink tally glasses. L/H/D are filled from the drink's liquid colour.
+const GLASSES = {
+  pint:['.wwwwwww.', 'wwwwwwwww', 'gLLLLLLLg', 'gLHLLLLLg', 'gLHLLLLLg', 'gLLLLLLDg', '.gLLLLDg.', '.gLLLLDg.', '.gLLLLDg.', '.ggggggg.'],
+  bottle:['..kk..', '..bb..', '..bb..', '.bbbb.', 'bhbbbB', 'bhbbbB', 'llllll', 'llllll', 'bhbbbB', 'bhbbbB', 'BBBBBB'],
+  wine:['aeeeeeeea', 'aLLLLLLLa', 'aLHLLLLDa', '.aLLLLDa.', '..aLLDa..', '...aaa...', '....a....', '....a....', '..aaaaa..'],
+  shot:['aeeeeea', 'aLLLLLa', 'aHLLLDa', 'aLLLLDa', '.aaaaa.'],
+  cocktail:['aaaaaaaaa', 'aLLLLLLLa', '.aLHLLDa.', '..aLLDa..', '...aLa...', '....a....', '....a....', '..aaaaa..']
+};
+const GLASS_PAL = {a:'#aab4d6', g:'#aab4d6', e:'#3a3a5a', w:'#fff3dc', k:'#c9ced8', b:'#7a4a22', h:'#b07a44', B:'#4a2a12', l:'#f0e5cd'};
+function guessCat(n){
+  n = (n || '').toLowerCase();
+  if (/wine|ros|prosecco|champ/.test(n)) return 'wine';
+  if (/tonic|cola|spritz|margarita|martini|cocktail|mojito|negroni/.test(n)) return 'mixed';
+  if (/vodka|gin|whisk|tequila|rum|spirit|shot|bourbon/.test(n)) return 'spirits';
+  return 'beer';
+}
+function glassFor(d){ const c = d.cat || guessCat(d.name); return c === 'wine' ? 'wine' : c === 'spirits' ? 'shot' : c === 'mixed' ? 'cocktail' : d.ml >= 500 ? 'pint' : 'bottle'; }
+function liquidFor(d){
+  const n = (d.name || '').toLowerCase();
+  const m = [[/stout|porter|espresso/, '#3b2418'], [/cola/, '#5a2a1a'], [/red wine/, '#8e1f3a'], [/ros/, '#f08da0'], [/white|prosecco|champ/, '#e9dd8a'],
+    [/whisk|bourbon|rum/, '#c97f2b'], [/aperol|spritz/, '#f27a2a'], [/margarita/, '#cfe08a'], [/cider/, '#f0c75a'], [/vodka|gin|tequila|tonic/, '#d8ecf5']];
+  for (const [re, c] of m) if (re.test(n)) return c;
+  const c = d.cat || guessCat(n);
+  return c === 'wine' ? '#8e1f3a' : c === 'spirits' ? '#c97f2b' : c === 'mixed' ? '#e46fa0' : '#e8a73a';
+}
+function drawGlass(ctx, d, ox, oy){
+  const color = liquidFor(d);
+  drawSprite(ctx, GLASSES[glassFor(d)], Object.assign({}, GLASS_PAL, {L:color, H:mix(color, '#ffffff', .45), D:mix(color, '#000000', .3)}), ox, oy);
+}
+function drawMap(ctx, rows, pal){ rows.forEach((row, y) => { for (let x = 0; x < row.length; x++){ const c = pal[row[x]]; if (c){ ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); } } }); }
+const SPR = {
+  heart:{rows:['.oo.oo.','ohRRRRo','oRRRRRo','.oRRRo.','..oRo..','...o...'], pal:{o:OUTLINE, R:'#e5484f', h:'#ff9a86'}},
+  pizza:{rows:['oooooooooooo','oCCCCCCCCCCo','.oyyryyyyyo.','.oyrryyyryo.','..oyyyyrro..','..oyyyyyyo..','...oyryyo...','...oyyyyo...','....oyyo....','....oyyo....','.....oo.....'],
+    pal:{o:'#4a2410', C:'#d99a4e', y:'#f6d155', r:'#c8372d'}},
+  burger:{rows:['............','...oooooo...','.ooBBBBBBoo.','oBBwBBBwBBBo','oBBBBBBBBBBo','gggggggggggg','MMMMMMMMMMMM','yyyyyyyyyyy.','obbbbbbbbbbo','.oooooooooo.'],
+    pal:{o:'#4a2410', B:'#d8913f', w:'#fbe7bf', g:'#5cae3a', M:'#6b3a22', y:'#f6c64a', b:'#c47c33'}}
+};
+function drawDoughnut(ctx){
+  const sprinkles = {'3,2':'#7ad3ff','7,2':'#fff3a0','2,5':'#9cf09c','9,4':'#7ad3ff','5,1':'#ffffff','8,7':'#fff3a0','3,8':'#7ad3ff'};
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++){
+    const d = Math.hypot(x + .5 - 6, y + .5 - 6);
+    if (d > 5.9 || d < 1.9) continue;
+    let c = (d > 5.1 || d < 2.6) ? '#4a2410' : (y < 7 || (y === 7 && (x % 3 !== 0))) ? '#f08ab8' : '#cf8a45';
+    if (c === '#f08ab8' && sprinkles[x + ',' + y]) c = sprinkles[x + ',' + y];
+    ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1);
+  }
+}
+function drawEquiv(cv, key, frac){
+  const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, 12, 12);
+  if (key === 'doughnut') drawDoughnut(ctx); else drawMap(ctx, SPR[key].rows, SPR[key].pal);
+  if (frac < 1) ctx.clearRect(Math.round(12*frac), 0, 12, 12);
+}
+ICONS.munchies = {pal:SPR.burger.pal, rows:[E, E, E, ...SPR.burger.rows.map(r => '..' + r + '..'), E, E, E]};
+function drawFace(cv, kind){
+  const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, 12, 12);
+  const fill = {good:'#f2c14e', meh:'#d8c48a', rough:'#a8c46a'}[kind];
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++){
+    const d = Math.hypot(x + .5 - 6, y + .5 - 6); if (d > 5.9) continue;
+    ctx.fillStyle = d > 5.0 ? OUTLINE : fill; ctx.fillRect(x, y, 1, 1);
+  }
+  ctx.fillStyle = OUTLINE; ctx.fillRect(4, 4, 1, 2); ctx.fillRect(7, 4, 1, 2);
+  const px = {good:[[3,7],[4,8],[5,8],[6,8],[7,8],[8,7]], meh:[[4,8],[5,8],[6,8],[7,8]], rough:[[3,9],[4,8],[5,8],[6,8],[7,8],[8,9]]}[kind];
+  px.forEach(([x, y]) => ctx.fillRect(x, y, 1, 1));
+}
+
+/* ---------- Rendering ---------- */
+let cssCache = {};
+const cssVar = n => cssCache[n] || (cssCache[n] = getComputedStyle(document.documentElement).getPropertyValue(n).trim());
+drawMap($('#heart').getContext('2d'), SPR.heart.rows, SPR.heart.pal);
+$$('[data-face]').forEach(cv => drawFace(cv, cv.dataset.face));
+$$('[data-icon]').forEach(cv => drawIcon(cv, cv.dataset.icon, 1, false));
+
+function applyTheme(){
+  const t = S.profile.theme || 'system';
+  if (t === 'system') document.documentElement.removeAttribute('data-app-theme');
+  else document.documentElement.setAttribute('data-app-theme', t);
+  $$('#themePick button').forEach(b => b.classList.toggle('on', b.dataset.themePick === t));
+  cssCache = {};
+}
+const INFO = {
+  hrv:{icon:'hrv', title:'What is HRV?', html:`
+    <div><h3>The gap between heartbeats</h3><p>Heart rate variability (HRV) is the small, constantly changing gap between one heartbeat and the next. Your heart isn't a metronome. Even at 60 beats a minute, the gaps shift slightly from beat to beat.</p></div>
+    <div class="beats">Gaps between beats: <b>0.96 s</b> · <b>1.04 s</b> · <b>0.99 s</b> · <b>1.07 s</b> · <b>0.94 s</b></div>
+    <div><h3>Why it matters</h3><p>Those shifts are steered by your nervous system. When you're relaxed and recovering, your heart adapts freely and HRV is higher. When your body is under strain, from illness, stress, poor sleep, hard training or alcohol, the rhythm gets more rigid and HRV drops. That makes overnight HRV one of the best signs of how well you actually recovered.</p></div>
+    <div><h3>What alcohol does to it</h3><p>Processing alcohol keeps your body working through the night. Resting heart rate goes up and HRV goes down. In a large study of real-world drinkers, overnight recovery fell by about 9% after a little alcohol and about 39% after a lot. It's why you can sleep a full night and still wake up flat.</p></div>
+    <div><h3>Reading your own numbers</h3><p>Smartwatches and smart rings measure HRV while you sleep. Everyone's normal is different, so compare against your own baseline rather than other people's numbers. Higher than your usual generally means better recovered.</p></div>`}
+};
+function openInfo(key){
+  const it = INFO[key]; if (!it) return;
+  $('#infoTitle').textContent = it.title; $('#infoBody').innerHTML = it.html;
+  drawIcon($('#infoIcon'), it.icon, 1, false);
+  $('#infoOverlay').hidden = false; $('#infoClose').focus();
+}
+const closeInfo = () => { $('#infoOverlay').hidden = true; };
+document.addEventListener('click', e => { const l = e.target.closest('[data-info]'); if (!l) return; e.preventDefault(); e.stopPropagation(); openInfo(l.dataset.info); }, true);
+$('#infoClose').addEventListener('click', closeInfo);
+$('#infoDone').addEventListener('click', closeInfo);
+$('#infoOverlay').addEventListener('click', e => { if (e.target.id === 'infoOverlay') closeInfo(); });
+
+function showView(v){
+  $$('.view').forEach(el => { el.hidden = el.id !== 'view-' + v; });
+  $$('#appnav .tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.view === v)));
+  if (v === 'history') renderHistory();
+  tick(true);
+}
+
+const expanded = new Set();
+function makePotion(e){
+  const el = document.createElement('div');
+  el.className = 'potion'; el.dataset.id = e.id; el.setAttribute('aria-expanded', 'false');
+  el.setAttribute('role', 'button'); el.tabIndex = 0;
+  el.innerHTML = '<canvas width="16" height="16" aria-hidden="true"></canvas><span class="p-name"></span><span class="p-time"></span><span class="p-sev"></span><span class="p-desc" hidden><span class="p-dtext"></span>'
+    + (e.id === 'hrv' ? ' <a href="#" class="info-link" data-info="hrv">What is HRV?</a>' : '') + '</span>';
+  el.addEventListener('keydown', ev => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target === el){ ev.preventDefault(); el.click(); } });
+  el.addEventListener('click', () => { if (expanded.has(e.id)) expanded.delete(e.id); else expanded.add(e.id); lastFrame = null; tick(true); });
+  return el;
+}
+function setText(el, v){ if (el.textContent !== v) el.textContent = v; }
+function renderPotions(box, emptyEl, list, now){
+  const existing = new Map($$('#' + box.id + ' > .potion').map(el => [el.dataset.id, el]));
+  list.forEach((e, idx) => {
+    let el = existing.get(e.id); if (!el) el = makePotion(e); existing.delete(e.id);
+    if (box.children[idx] !== el) box.insertBefore(el, box.children[idx] || null);
+    const open = expanded.has(e.id);
+    el.setAttribute('aria-expanded', String(open));
+    el.classList.toggle('buff', !!e.buff); el.classList.toggle('incoming', e.status === 'incoming');
+    setText(el.querySelector('.p-name'), e.name);
+    const timeEl = el.querySelector('.p-time');
+    const tHtml = e.status === 'incoming' ? '<em>in</em> ' + dur(e.s - now) : e.status === 'ongoing' ? 'Active' : dur(e.e - now) + ' <em>left</em>';
+    if (timeEl.innerHTML !== tHtml) timeEl.innerHTML = tHtml;
+    const sevEl = el.querySelector('.p-sev');
+    let sevTxt = '', cls = 'p-sev';
+    if (e.buff){ sevTxt = 'BUFF'; cls += ' buffsev'; }
+    else if (e.status === 'incoming'){ sevTxt = 'INCOMING · ' + (e.sevLabels || ['Minor','Moderate','Severe'])[e.sev || 0].toUpperCase(); cls += ' s' + (e.sev || 0); }
+    else if (e.sev != null){ sevTxt = (e.sevLabels || ['Minor','Moderate','Severe'])[e.sev].toUpperCase(); cls += ' s' + e.sev; }
+    else sevTxt = 'ACTIVE';
+    setText(sevEl, sevTxt); if (sevEl.className !== cls) sevEl.className = cls;
+    const d = el.querySelector('.p-desc'); d.hidden = !open; setText(el.querySelector('.p-dtext'), e.desc);
+    el.setAttribute('aria-label', e.name + ', ' + timeEl.textContent + ', ' + sevTxt.toLowerCase());
+    const fill = e.status === 'incoming' || e.status === 'ongoing' ? 1 : clamp((e.e - now) / Math.max(1, e.e - e.s), 0.06, 1);
+    drawIcon(el.querySelector('canvas'), e.id, fill, e.status === 'incoming');
+  });
+  existing.forEach(el => el.remove());
+  emptyEl.hidden = list.length > 0;
+}
+
+// Damage feedback: floating numbers, a trailing "recent damage" bar, a hit flash and a status chip
+const FX = {prev:null, trail:null, hold:0, dmg:0, heal:0, lastPop:0};
+function popNum(text, kind, at){
+  if (reduceMotion) return;
+  const s = document.createElement('span'); s.className = 'pop ' + kind; s.textContent = text;
+  s.style.left = clamp(at, 5, 95) + '%'; $('#barWrap').appendChild(s);
+  setTimeout(() => s.remove(), 1300);
+}
+function hit(){
+  if (reduceMotion) return;
+  const h = $('#heart'), b = $('#bar');
+  h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
+  setTimeout(() => h.classList.remove('hit'), 400);
+  b.classList.add('hurt'); setTimeout(() => b.classList.remove('hurt'), 160);
+}
+function hpFx(hp, r, incoming){
+  const now = performance.now();
+  if (FX.prev == null || Math.abs(hp - FX.prev) > 25){ FX.prev = hp; FX.trail = hp; FX.dmg = FX.heal = 0; } // first frame or a reset: no fanfare
+  const d = hp - FX.prev; FX.prev = hp;
+  if (d < -0.001){ FX.dmg += -d; FX.heal = 0; if (FX.trail - hp < 0.6) FX.hold = now + 900; } // hold only at the start of a burst
+  else if (d > 0.001){ FX.heal += d; FX.dmg = 0; }
+  if (now - FX.lastPop > 650){
+    if (FX.dmg >= 1){ const n = Math.round(FX.dmg); popNum('−' + n, 'dmg', hp); hit(); FX.dmg -= n; FX.lastPop = now; }
+    else if (FX.heal >= 1){ const n = Math.round(FX.heal); popNum('+' + n, 'heal', hp); FX.heal -= n; FX.lastPop = now; }
+  }
+  if (hp >= FX.trail) FX.trail = hp;
+  else if (now > FX.hold) FX.trail = Math.max(hp, FX.trail - Math.max(0.8, (FX.trail - hp)*0.35));
+  $('#barTrail').style.width = FX.trail + '%';
+  const taking = incoming > 0.5 || d < -0.001, healing = !taking && r.bacNow > 0;
+  const chip = $('#dmgChip'), edge = $('#barEdge');
+  chip.hidden = !(taking || healing);
+  chip.className = 'dmg-chip ' + (taking ? 'dmg' : 'heal');
+  setText(chip, taking ? 'TAKING DAMAGE' : 'REGENERATING');
+  edge.className = 'bar-edge' + (taking ? ' dmg' : healing ? ' heal' : '');
+  edge.style.left = hp + '%';
+
+  // Healing: how much HP the next hour gives back, shown on the bar and as a rate
+  const regen = $('#barRegen'), line = $('#rateLine'), heart = $('#heart');
+  const hp1h = healing ? hpFromBac(r.at(r.now + HOUR)) : hp, gain = Math.max(0, hp1h - hp);
+  if (healing && gain > 0.3){
+    regen.hidden = false; regen.style.left = hp + '%'; regen.style.width = gain + '%';
+    setText($('#regenTxt'), gain >= 13 ? `+${Math.round(gain)} HP next hour` : gain >= 6 ? `+${Math.round(gain)}` : '');
+  } else regen.hidden = true;
+  let lineHtml = '', cls = '';
+  if (healing){
+    cls = 'heal';
+    const rate = gain >= 1 ? Math.round(gain) : gain.toFixed(1);
+    lineHtml = `▲ +${rate} HP/hr <small>Full health around ${fmtT(r.soberT)}. Next-day debuffs keep running after that.</small>`;
+  } else if (taking && incoming > 0.5){
+    cls = 'dmg';
+    lineHtml = `▼ −${Math.round(incoming)} HP still to land <small>Peak around ${fmtT(r.futurePeakT)}, even if you stop now.</small>`;
+  }
+  line.hidden = !lineHtml; line.className = 'rateline ' + cls;
+  if (line.innerHTML !== lineHtml) line.innerHTML = lineHtml;
+  heart.classList.toggle('regen', healing);
+  if (healing && !reduceMotion && now - (FX.lastSpark || 0) > 450 && !document.hidden){
+    FX.lastSpark = now;
+    const s = document.createElement('span');
+    const plus = Math.random() < 0.35;
+    s.className = 'spark' + (plus ? ' plus' : ''); if (plus) s.textContent = '+';
+    s.style.left = clamp(hp + (Math.random()*4 - 1), 1, 99) + '%';
+    s.style.setProperty('--dx', (Math.random()*16 - 4).toFixed(0) + 'px');
+    $('#barWrap').appendChild(s); setTimeout(() => s.remove(), 1250);
+  }
+}
+function renderHP(r){
+  const hp = hpFromBac(r.bacNow), hpPeak = hpFromBac(r.futurePeak);
+  const k = r.bacNow >= 0.25 ? 6 : phaseIndex(r.bacNow);
+  $('#barFill').style.width = hp + '%';
+  const ghost = $('#barGhost'), incoming = hp - hpPeak;
+  if (incoming > 0.5){
+    ghost.hidden = false; ghost.style.left = hpPeak + '%'; ghost.style.width = incoming + '%';
+    setText($('#ghostTxt'), incoming >= 13 ? `−${Math.round(incoming)} HP incoming` : incoming >= 6 ? `−${Math.round(incoming)}` : '');
+  } else ghost.hidden = true;
+  hpFx(hp, r, incoming);
+  $('#bar').setAttribute('aria-valuenow', Math.round(hp));
+  setText($('#phaseName'), PHASES[k].name);
+  $('#phaseName').style.color = k >= 5 ? 'var(--bad)' : k >= 3 ? 'var(--warn)' : 'var(--ink)';
+  setText($('#hpNum'), 'HP ' + Math.round(hp));
+  setText($('#bacNow'), 'Blood alcohol ≈ ' + r.bacNow.toFixed(3) + '%');
+  $$('#segLabels span').forEach(s => s.classList.toggle('on', +s.dataset.k === Math.min(k, 5) && r.drinks.length > 0));
+  setText($('#phaseDesc'), PHASES[k].desc);
+  const lines = [];
+  if (!r.drinks.length) lines.push('Full health. Log a drink to start the night.');
+  else if (r.futurePeak > r.bacNow + 0.003) lines.push(`Still absorbing. Your level keeps rising after you stop: est. peak ${pct(r.futurePeak)} around ${fmtT(r.futurePeakT)}. The striped section is HP you'll still lose.`);
+  else if (r.bacNow > 0) lines.push(`Recovering at about 0.015% an hour. Alcohol cleared around ${fmtDT(r.soberT)} (estimate).`);
+  else lines.push('Alcohol cleared. Next-day debuffs are still running.');
+  let nudge = '';
+  if (r.lastDrink && r.bacNow > 0 && k < 5 && !S.endedAt){
+    const nextTh = TH[phaseIndex(r.futurePeak) + 1];
+    const need = (nextTh - r.futurePeak) * r.body.vdDl;
+    if (need > 0 && need <= r.lastDrink.grams * 1.15) nudge = `One more ${r.lastDrink.name.toLowerCase()} would likely take you into ${PHASES[phaseIndex(r.futurePeak) + 1].name}.`;
+  }
+  const html = lines.map(l => '<span>' + esc(l) + '</span>').join('') + (nudge ? '<span class="nudge">' + esc(nudge) + '</span>' : '');
+  const tr = $('#trend'); if (tr.innerHTML !== html) tr.innerHTML = html;
+  $('#warnBand').hidden = !(r.bacNow >= 0.15 && r.bacNow < 0.25);
+  $('#noDrive').hidden = !(r.drinks.length && r.now < r.wake);
+}
+
+let calKey = '';
+function renderCalories(r){
+  const p = S.profile; $('#calSection').hidden = !p.calories; if (!p.calories) return;
+  const eq = EQUIV[p.equiv] || EQUIV.pizza, count = r.kcal / eq.kcal;
+  setText($('#kcal'), r.kcal.toLocaleString());
+  setText($('#kcalEq'), r.kcal ? `≈ ${count.toFixed(1)} ${Math.abs(count - 1) < 0.05 ? eq.one : eq.many}` : 'No calories logged yet.');
+  const key = p.equiv + ':' + count.toFixed(2) + ':' + r.kcalAlc + ':' + r.kcal;
+  $$('#eqPick button').forEach(b => b.classList.toggle('on', b.dataset.eq === p.equiv));
+  if (key === calKey) return; calKey = key;
+  const box = $('#kcalIcons'); box.innerHTML = '';
+  const shown = Math.min(count, 12);
+  for (let i = 0; i < Math.ceil(shown - 1e-6); i++){
+    const cv = document.createElement('canvas'); cv.width = 12; cv.height = 12;
+    drawEquiv(cv, p.equiv, Math.min(1, shown - i)); box.appendChild(cv);
+  }
+  if (count > 12){ const s = document.createElement('span'); s.className = 'num'; s.style.fontSize = '22px'; s.textContent = '+' + (count - 12).toFixed(1); box.appendChild(s); }
+  const alc = r.kcal ? r.kcalAlc / r.kcal * 100 : 0;
+  $('#kcalSplit').innerHTML = r.kcal ? `<i style="width:${alc}%;background:var(--warn)"></i><i style="width:${100 - alc}%;background:var(--mana)"></i>` : '';
+  $('#kcalKey').innerHTML = r.kcal ? `<span><b style="background:var(--warn)"></b>${r.kcalAlc} from the alcohol itself</span><span><b style="background:var(--mana)"></b>${r.kcal - r.kcalAlc} from sugars and carbs</span>` : '';
+}
+
+function renderChart(r){
+  const cv = $('#chart'), rect = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const W = Math.max(1, Math.round(rect.width*dpr)), H = Math.max(1, Math.round(rect.height*dpr));
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, W, H);
+  ctx.font = '700 ' + (11*dpr) + 'px "Atkinson Hyperlegible", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+  if (!r.drinks.length){ ctx.fillStyle = cssVar('--ink-faint'); ctx.textAlign = 'center'; ctx.fillText('Your curve appears after the first drink.', W/2, H/2); ctx.textAlign = 'left'; return; }
+  const padL = 34*dpr, padR = 12*dpr, padT = 14*dpr, padB = 22*dpr;
+  const x0 = r.t0, x1 = Math.max(r.now + HOUR, r.soberT + 30*MIN, Math.min(r.bed, r.now + 10*HOUR) + 15*MIN);
+  const ymax = Math.max(0.1, r.peak*1.2);
+  const X = t => padL + (t - x0)/(x1 - x0)*(W - padL - padR), Y = b => padT + (1 - b/ymax)*(H - padT - padB);
+  ctx.lineWidth = 1*dpr;
+  TH.slice(1).forEach(th => { if (th > ymax) return; ctx.strokeStyle = cssVar('--edge-hi'); ctx.setLineDash([3*dpr, 4*dpr]); ctx.beginPath(); ctx.moveTo(padL, Math.round(Y(th))); ctx.lineTo(W - padR, Math.round(Y(th))); ctx.stroke(); ctx.fillStyle = cssVar('--ink-faint'); ctx.fillText(th.toFixed(2).slice(1), 4*dpr, Y(th)); });
+  ctx.setLineDash([]);
+  ctx.strokeStyle = cssVar('--edge-hi'); ctx.beginPath(); ctx.moveTo(padL, Y(0)); ctx.lineTo(W - padR, Y(0)); ctx.stroke();
+  // hour ticks
+  ctx.fillStyle = cssVar('--ink-faint'); ctx.textAlign = 'center';
+  const span = x1 - x0, step = span > 14*HOUR ? 4*HOUR : span > 7*HOUR ? 2*HOUR : HOUR;
+  const firstH = new Date(x0); firstH.setMinutes(0, 0, 0);
+  for (let t = firstH.getTime() + HOUR; t < x1; t += HOUR){ const h = new Date(t).getHours(); if ((h*HOUR) % step) continue; ctx.fillText(pad(h) + ':00', X(t), H - 8*dpr); }
+  ctx.textAlign = 'left';
+  // curve
+  const nowK = Math.round((r.now - r.t0)/MIN);
+  const pts = []; for (let k = 0; k < r.samples.length; k++){ const t = r.t0 + k*MIN; if (t > x1) break; pts.push([X(t), Y(r.samples[k]), k]); }
+  const past = pts.filter(p => p[2] <= nowK), fut = pts.filter(p => p[2] >= nowK);
+  if (past.length > 1){
+    ctx.beginPath(); ctx.moveTo(past[0][0], Y(0)); past.forEach(p => ctx.lineTo(p[0], p[1])); ctx.lineTo(past[past.length - 1][0], Y(0)); ctx.closePath();
+    ctx.fillStyle = 'rgba(229,72,79,0.22)'; ctx.fill();
+    ctx.beginPath(); past.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.strokeStyle = cssVar('--hp'); ctx.lineWidth = 2.5*dpr; ctx.stroke();
+  }
+  if (fut.length > 1){
+    ctx.beginPath(); fut.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.strokeStyle = cssVar('--hp-hi'); ctx.lineWidth = 2*dpr; ctx.setLineDash([2*dpr, 4*dpr]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // drink markers
+  r.drinks.forEach(d => { const x = X(d.t); if (x < padL || x > W - padR) return; ctx.fillStyle = cssVar('--gold'); ctx.fillRect(Math.round(x - 2*dpr), Math.round(Y(0) - 2*dpr), Math.round(4*dpr), Math.round(4*dpr)); });
+  const vline = (t, color, label) => { const x = Math.round(X(t)); if (x < padL || x > W - padR) return; ctx.strokeStyle = color; ctx.lineWidth = 2*dpr; ctx.beginPath(); ctx.moveTo(x, padT - 4*dpr); ctx.lineTo(x, Y(0)); ctx.stroke(); ctx.fillStyle = color; const tw = ctx.measureText(label).width; ctx.fillText(label, Math.min(x + 4*dpr, W - padR - tw), padT); };
+  vline(r.bed, cssVar('--mana'), 'BED');
+  vline(r.now, cssVar('--gold'), 'NOW');
+  if (r.now < x1){ ctx.fillStyle = cssVar('--gold'); const y = Y(r.bacNow); ctx.fillRect(Math.round(X(r.now) - 3*dpr), Math.round(y - 3*dpr), Math.round(6*dpr), Math.round(6*dpr)); }
+}
+
+let logVer = -1;
+function renderLog(r){
+  if (logVer === version) return; logVer = version;
+  const reg = REGIONS[S.profile.region], showCal = S.profile.calories;
+  const items = [...r.events].reverse();
+  $('#log').innerHTML = items.map(e => {
+    let name = esc(e.name), sub = '', q = '';
+    if (e.type === 'drink'){ sub = `${esc(e.size)} · ${e.abv}% · ` + (e.cost != null ? `${money(e.cost)}${e.round ? ' round' : ''}` : `<button class="addprice" data-price="${e.id}">Add price</button>`); q = (e.grams/reg.g).toFixed(1) + ' ' + reg.unit.split(' ')[0] + (showCal ? '<br><span style="color:var(--ink-faint)">' + e.kcal + ' kcal</span>' : ''); }
+    else if (e.type === 'water'){ sub = 'Hydrated buff'; q = '<span style="color:var(--mana)">water</span>'; }
+    else { sub = 'Slows absorption for 3 h'; q = '<span style="color:var(--good)">food</span>'; }
+    return `<li><span class="t">${fmtT(e.t)}</span><span class="n">${name}<small>${sub}</small></span><span class="q">${q}</span><button class="del" data-del="${e.id}" aria-label="Remove ${name}">×</button></li>`;
+  }).join('');
+  $('#logEmpty').hidden = items.length > 0;
+  const spent = r.drinks.reduce((s, d) => s + (d.cost || 0), 0);
+  setText($('#logTotal'), r.drinks.length ? `${(r.totalG/reg.g).toFixed(1)} ${reg.unit}${spent ? ' · ' + money(spent) + ' spent' : ''}` : '');
+  $('#endNight').textContent = S.endedAt ? 'Resume' : 'End night';
+}
+
+let tallyVer = -1;
+function renderTally(r){
+  if (tallyVer === version) return; tallyVer = version;
+  const reg = REGIONS[S.profile.region], box = $('#tallyIcons'), n = r.drinks.length;
+  box.innerHTML = '';
+  r.drinks.slice(0, 24).forEach(d => {
+    const rows = GLASSES[glassFor(d)], w = Math.max(...rows.map(x => x.length)) + 2, h = rows.length + 2;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    cv.style.width = (w*2) + 'px'; cv.style.height = (h*2) + 'px'; cv.title = d.name + ', ' + fmtT(d.t);
+    drawGlass(cv.getContext('2d'), d, 1, 1); box.appendChild(cv);
+  });
+  if (n > 24){ const s = document.createElement('span'); s.className = 'more'; s.textContent = '+' + (n - 24); box.appendChild(s); }
+  if (!n){ const s = document.createElement('span'); s.className = 'more'; s.textContent = 'Your glasses stack up here.'; box.appendChild(s); }
+  $('#tallyText').innerHTML = `${n} drink${n === 1 ? '' : 's'}<small>${(r.totalG/reg.g).toFixed(1)} ${esc(reg.unit)}</small>`;
+}
+
+function renderClock(){
+  const t = fmtDT(S.simNow), sp = S.speed > 1 ? '<small>×' + S.speed + '</small>' : S.speed === 0 ? '<small>PAUSED</small>' : '';
+  const h = esc(t) + sp; if ($('#clock').innerHTML !== h) $('#clock').innerHTML = h;
+  setText($('#benchClock'), t);
+  $$('#speeds button').forEach(b => b.classList.toggle('on', +b.dataset.speed === S.speed));
+  $('#sampleChip').hidden = !S.sample;
+}
+
+function renderSafety(r){
+  if (r.bacNow < 0.2) S.safetyAck = false;
+  $('#safetyOverlay').hidden = !(r.bacNow >= 0.25 && !S.safetyAck);
+}
+
+/* ---------- Morning report ---------- */
+function openReport(){
+  const r = compute(), p = S.profile, reg = REGIONS[p.region];
+  if (!r.drinks.length){ toast('Log a drink first. The report summarises a night.'); return; }
+  S.speed = 0;
+  const wake = r.wake, rows = [];
+  const hs = hrvSev(r.gkg);
+  const sleepSev = Math.max(r.gkg < 0.25 ? 0 : r.gkg < 0.75 ? 1 : 2, r.bedBAC >= 0.05 ? 2 : r.bedBAC >= 0.01 ? 1 : 0);
+  const sevWord = ['Minor', 'Moderate', 'Severe'];
+  rows.push(['drinks', 'Drinks', `${r.drinks.length} drinks · ${(r.totalG/reg.g).toFixed(1)} ${reg.unit} · ${r.totalG.toFixed(0)} g alcohol`]);
+  rows.push(['judgment', 'Peak', `Blood alcohol peaked around ${fmtT(r.peakT)} at about ${r.peak.toFixed(2)}%, in the ${PHASES[r.peak >= 0.25 ? 6 : phaseIndex(r.peak)].name} zone`]);
+  rows.push(['sleep', 'Sleep', r.bedG > 0.5
+    ? `${sevWord[sleepSev]} hit. You went to bed at ${fmtT(r.bed)} with about ${(r.bedG/reg.g).toFixed(1)} ${reg.unit} still in your system; it didn't clear until around ${fmtT(r.clearedT || r.bed)}.`
+    : `${sevWord[sleepSev]} hit. Alcohol had cleared by your ${fmtT(r.bed)} bedtime.`]);
+  rows.push(['hrv', 'HRV recovery', `About ${HRV_PCT[hs]}% lower overnight`]);
+  rows.push(['hangover', 'Hangover', r.peak >= 0.15 ? 'Severe likely' : r.peak >= 0.11 ? 'Likely' : r.peak >= 0.08 ? 'Possible' : 'Unlikely at this peak']);
+  rows.push(['hydrated', 'Water', `${r.waters.length} water for ${r.drinks.length} drinks`]);
+  if (p.calories){
+    const eq = EQUIV[p.equiv] || EQUIV.pizza, c = r.kcal / eq.kcal;
+    rows.push(['fatpause', 'Calories', `${r.kcal.toLocaleString()} kcal ≈ ${c.toFixed(1)} ${Math.abs(c - 1) < 0.05 ? eq.one : eq.many} · fat burning paused ${dur((r.clearedT || r.now) - r.firstDrink.t)}`]);
+  }
+  if (r.clearedT && r.clearedT > wake) rows.push(['judgment', 'This morning', `Alcohol not cleared until about ${fmtT(r.clearedT)}. You may still be over the driving limit.`]);
+  const fx = effects(Object.assign({}, r, {now: wake}));
+  const still = fx.de.filter(e => e.status === 'active' || e.status === 'incoming').map(e => e.name);
+  if (still.length) rows.push(['hangxiety', 'Still running today', still.join(', ')]);
+  $('#reportDate').textContent = 'Report for ' + fmtDT(r.firstDrink.t).split(' ')[0] + ' night';
+  $('#reportRows').innerHTML = rows.map((row, i) => `<div class="rrow"><canvas width="16" height="16" data-ri="${i}"></canvas><div><div class="rk">${esc(row[1])}</div><div class="rv">${esc(row[2])}${row[0] === 'hrv' ? ' <a href="#" class="info-link" data-info="hrv">What is HRV?</a>' : ''}</div></div></div>`).join('');
+  rows.forEach((row, i) => {
+    const cv = $(`[data-ri="${i}"]`);
+    if (row[0] === 'drinks') drawGlass(cv.getContext('2d'), {name:'Lager', cat:'beer', ml:568}, 3, 3);
+    else drawIcon(cv, row[0], 1, false);
+  });
+  $$('#feel button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.feel === S.feel)));
+  setFeelNote();
+  openOverlay('#reportOverlay');
+  S.reportSeen = true; save(true);
+}
+function setFeelNote(){
+  const n = $('#feelNote');
+  n.textContent = S.feel ? `Saved. After a few nights the app learns how a peak like ${pct(compute().peak)} feels for you, and tunes your hangover thresholds.` : 'Your answer tunes the thresholds to you over time.';
+}
+
+/* ---------- Overlays and toast ---------- */
+let lastFocus = null;
+function openOverlay(sel){ lastFocus = document.activeElement; const o = $(sel); o.hidden = false; const f = o.querySelector('button, input, select'); if (f) f.focus(); }
+function closeOverlays(){ $$('.overlay').forEach(o => { if (o.id !== 'safetyOverlay') o.hidden = true; }); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+$$('[data-close]').forEach(b => b.addEventListener('click', closeOverlays));
+$$('.overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o && !['safetyOverlay', 'infoOverlay', 'onboard'].includes(o.id)) closeOverlays(); }));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlays(); });
+let toastTimer = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600); }
+
+/* ---------- Drink sheet ---------- */
+let cat = 'beer';
+function presetHtml(p, attr){
+  const reg = REGIONS[S.profile.region], d = mkDrink(p, 0);
+  return `<button class="preset" ${attr}><span class="pn">${esc(p.name)}</span><span class="pq">${(d.grams/reg.g).toFixed(1)} ${reg.unit.split(' ')[0]}${S.profile.calories ? `<span>${d.kcal} kcal</span>` : ''}</span><span class="pd">${esc(p.size)} · ${p.ml} ml · ${p.abv}%</span></button>`;
+}
+function renderPresets(){
+  $$('#tabs .tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.cat === cat)));
+  const custom = cat === 'custom';
+  $('#presets').hidden = custom; $('#customForm').hidden = !custom;
+  if (custom){ updateCustomPreview(); return; }
+  if (cat === 'mine'){
+    $('#presets').innerHTML = S.myDrinks.length
+      ? S.myDrinks.map(p => `<div class="mine-row">${presetHtml(p, `data-mine="${p.id}"`)}<button class="x" data-unmine="${p.id}" aria-label="Remove ${esc(p.name)} from My drinks">×</button></div>`).join('')
+      : '<p class="empty">Drinks you create under Custom are saved here, ready to log again in one tap.</p>';
+    return;
+  }
+  $('#presets').innerHTML = PRESETS[cat].map((p, i) => presetHtml(p, `data-i="${i}"`)).join('');
+}
+const cur = () => S.profile.currency || '$';
+const money = v => cur() + (Math.round(v*100)/100).toFixed(2).replace(/\.00$/, '');
+const PAY_HINT = {one:'Enter the price, then pick the drink below.', round:'The whole amount counts as money you spent, even though some drinks were for friends.', pack:'The price is split across the pack. Later drinks of the same kind come out of it automatically.'};
+function resetPay(){ $('#payAmt').value = ''; $('#payFor').value = 'one'; $('#payCount').value = 6; syncPay(); }
+function syncPay(){
+  const m = $('#payFor').value; $('#payPackWrap').hidden = m !== 'pack'; $('#payHint').textContent = PAY_HINT[m];
+  $('#payCur').textContent = cur();
+  $('#packs').innerHTML = S.packs.length ? '<div class="label">Your packs</div>' + S.packs.map(k => `<div class="pack"><span><b>${esc(k.name)}</b> (${k.ml} ml) · ${k.left} left · ${money(k.per)} each</span><button class="del" data-pack-del="${k.id}" aria-label="Remove ${esc(k.name)} pack">×</button></div>`).join('') : '';
+}
+$('#payFor').addEventListener('change', syncPay);
+$('#packs').addEventListener('click', e => { const b = e.target.closest('[data-pack-del]'); if (!b) return; S.packs = S.packs.filter(k => k.id !== b.dataset.packDel); save(true); syncPay(); });
+function logDrink(p, note){
+  const d = mkDrink(p, S.simNow);
+  const amt = parseFloat($('#payAmt').value), mode = $('#payFor').value;
+  let extra = '';
+  if (isFinite(amt) && amt > 0){
+    if (mode === 'pack'){
+      const n = clamp(Math.round(+$('#payCount').value || 6), 2, 48);
+      d.cost = amt/n;
+      S.packs.push({id:uid(), name:d.name, ml:d.ml, per:d.cost, left:n - 1});
+      extra = `. Pack of ${n}: ${n - 1} left at ${money(d.cost)} each`;
+    } else { d.cost = amt; d.round = mode === 'round'; extra = '. ' + money(amt) + (d.round ? ' round' : '') + ' logged'; }
+  } else {
+    const pk = S.packs.find(k => k.name === d.name && k.ml === d.ml && k.left > 0);
+    if (pk){ d.cost = pk.per; pk.left--; extra = `. From your pack: ${pk.left} left`; }
+  }
+  S.packs = S.packs.filter(k => k.left > 0);
+  S.events.push(d); S.sample = false; changed(); closeOverlays(); resetPay();
+  const reg = REGIONS[S.profile.region];
+  toast(`Logged ${d.name}: ${(d.grams/reg.g).toFixed(1)} ${reg.unit}${extra}${note || ''}`);
+  tick(true);
+}
+function saveMine(c){
+  if (S.myDrinks.some(m => m.name === c.name && m.ml === c.ml && m.abv === c.abv && m.kcal === c.kcal)) return false;
+  S.myDrinks.unshift(Object.assign({id:uid()}, c)); S.myDrinks = S.myDrinks.slice(0, 30); return true;
+}
+$('#tabs').addEventListener('click', e => { const t = e.target.closest('.tab'); if (!t) return; cat = t.dataset.cat; renderPresets(); });
+$('#presets').addEventListener('click', e => {
+  const un = e.target.closest('[data-unmine]');
+  if (un){ S.myDrinks = S.myDrinks.filter(m => m.id !== un.dataset.unmine); save(true); renderPresets(); return; }
+  const b = e.target.closest('.preset'); if (!b) return;
+  if (b.dataset.mine){ const m = S.myDrinks.find(x => x.id === b.dataset.mine); if (m) logDrink(m); return; }
+  logDrink(PRESETS[cat][+b.dataset.i]);
+});
+const SIZES = [25, 50, 125, 175, 250, 330, 440, 473, 500, 568];
+$('#cSizes').innerHTML = SIZES.map(s => `<button type="button" data-ml="${s}">${s}</button>`).join('');
+$('#cSizes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $('#cMl').value = b.dataset.ml; updateCustomPreview(); });
+function customDrink(){
+  const ml = clamp(+$('#cMl').value || 0, 10, 2000), abv = clamp(+$('#cAbv').value || 0, 0.5, 75);
+  const kcalIn = $('#cKcal').value.trim();
+  return {name: $('#cName').value.trim() || 'Custom drink', size: ml + ' ml', ml, abv, carb: CUSTOM_CARB[$('#cType').value], cat: CUSTOM_CAT[$('#cType').value], kcal: kcalIn === '' ? null : Math.max(0, +kcalIn)};
+}
+function updateCustomPreview(){
+  const d = mkDrink(customDrink(), 0), reg = REGIONS[S.profile.region];
+  $('#cPreview').innerHTML = `<b>${d.grams.toFixed(1)} g</b> alcohol · <b>${(d.grams/reg.g).toFixed(1)}</b> ${reg.unit}` + (S.profile.calories ? ` · <b>${d.kcal}</b> kcal${$('#cKcal').value.trim() === '' ? ' (est.)' : ''}` : '');
+}
+['cName', 'cType', 'cMl', 'cKcal'].forEach(id => $('#' + id).addEventListener('input', updateCustomPreview));
+$('#cAbv').addEventListener('input', () => { $('#cAbvRange').value = $('#cAbv').value; updateCustomPreview(); });
+$('#cAbvRange').addEventListener('input', () => { $('#cAbv').value = $('#cAbvRange').value; updateCustomPreview(); });
+$('#customForm').addEventListener('submit', e => {
+  e.preventDefault(); const c = customDrink();
+  const saved = $('#cSave').checked && saveMine(c);
+  logDrink(c, saved ? '. Saved to My drinks.' : '');
+});
+
+/* ---------- Main actions ---------- */
+$('#addDrink').addEventListener('click', () => {
+  const r = compute(); $('#drinkWarn').hidden = r.bacNow < 0.15;
+  if (S.myDrinks.length) cat = 'mine'; else if (cat === 'mine') cat = 'beer';
+  syncPay();
+  renderPresets(); openOverlay('#drinkOverlay'); });
+$('#addWater').addEventListener('click', () => { S.events.push({id:uid(), type:'water', t:S.simNow, name:'Water'}); S.sample = false; changed(); toast('Water logged. Hydrated buff for 60 min.'); tick(true); });
+$('#addFood').addEventListener('click', () => { S.events.push({id:uid(), type:'food', t:S.simNow, name:'Food'}); S.sample = false; changed(); toast('Food logged. Absorption slows for the next 3 hours.'); tick(true); });
+$('#endNight').addEventListener('click', () => {
+  if (S.endedAt){ S.endedAt = null; toast('Night resumed.'); }
+  else { S.endedAt = S.simNow; toast('Night ended. Recovery from here is steady.'); }
+  changed(); tick(true);
+});
+$('#log').addEventListener('click', e => {
+  const ap = e.target.closest('[data-price]'); if (!ap) return;
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.min = '0'; inp.step = '0.01'; inp.className = 'priceinp'; inp.dataset.pid = ap.dataset.price;
+  inp.setAttribute('aria-label', 'Price paid'); inp.placeholder = cur();
+  ap.replaceWith(inp); inp.focus();
+});
+function commitPrice(inp){
+  const v = parseFloat(inp.value), d = S.events.find(x => x.id === inp.dataset.pid);
+  if (d && isFinite(v) && v > 0){ d.cost = v; changed(); toast('Price added: ' + money(v)); }
+  logVer = -1; tick(true);
+}
+$('#log').addEventListener('keydown', e => { if (e.target.classList.contains('priceinp') && e.key === 'Enter'){ e.preventDefault(); e.target.blur(); } });
+$('#log').addEventListener('focusout', e => { if (e.target.classList.contains('priceinp')) commitPrice(e.target); });
+$('#log').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (!b) return; S.events = S.events.filter(x => x.id !== b.dataset.del); changed(); tick(true); });
+
+$('#speeds').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.speed = +b.dataset.speed; save(true); tick(true); });
+$$('[data-skip]').forEach(b => b.addEventListener('click', () => { S.simNow += +b.dataset.skip*MIN; tick(true); }));
+$('#toMorning').addEventListener('click', () => {
+  const r = compute(); if (!r.drinks.length){ toast('Log a drink first. Morning only comes after a night.'); return; }
+  S.simNow = Math.max(S.simNow, r.wake); tick(true); openReport();
+});
+$('#loadSample').addEventListener('click', () => { const pk = S.packs, ob = S.onboarded, au = S.audit; S = sampleState(S.profile, S.myDrinks); S.packs = pk; S.onboarded = ob; S.audit = au; changed(); expanded.clear(); closeOverlays(); tick(true); toast('Sample night loaded.'); });
+function newNight(){
+  const d = new Date(S.simNow); if (d.getHours() < 19){ d.setHours(19, 0, 0, 0); S.simNow = d.getTime(); }
+  S.events = []; S.endedAt = null; S.reportSeen = false; S.feel = null; S.sample = false; S.speed = 1;
+  changed(); expanded.clear(); closeOverlays(); tick(true); toast('New night started. Full health.');
+}
+$('#emptyNight').addEventListener('click', newNight);
+$('#newNight').addEventListener('click', newNight);
+$('#feel').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.feel = b.dataset.feel; $$('#feel button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); setFeelNote(); save(true); });
+$('#safetyOk').addEventListener('click', () => { S.safetyAck = true; $('#safetyOverlay').hidden = true; save(true); });
+$('#eqPick').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.profile.equiv = b.dataset.eq; $('#pEquiv').value = b.dataset.eq; changed(); tick(true); });
+
+/* ---------- Character sheet ---------- */
+function fillProfile(){
+  const p = S.profile;
+  $('#pWeight').value = p.weight; $('#pHeight').value = p.height; $('#pAge').value = p.age; $('#pSex').value = p.sex;
+  $('#pRegion').value = p.region; $('#pEquiv').value = p.equiv; $('#pPrice').value = p.price; $('#pCurrency').value = p.currency; $('#pBed').value = p.bed; $('#pWake').value = p.wake; $('#pCal').checked = p.calories;
+}
+function readProfile(){
+  const p = S.profile;
+  const num = (id, a, b, d) => { const v = +$('#' + id).value; return isFinite(v) && v > 0 ? clamp(v, a, b) : d; };
+  p.weight = num('pWeight', 35, 250, p.weight); p.height = num('pHeight', 120, 230, p.height); p.age = num('pAge', 18, 100, p.age);
+  p.sex = $('#pSex').value; p.region = $('#pRegion').value; p.equiv = $('#pEquiv').value;
+  p.currency = $('#pCurrency').value;
+  { const pr = +$('#pPrice').value; if (isFinite(pr) && pr >= 0) p.price = clamp(pr, 0, 100); }
+  p.bed = $('#pBed').value || p.bed; p.wake = $('#pWake').value || p.wake; p.calories = $('#pCal').checked;
+  if (S.onboarded === 'skipped') S.onboarded = true;
+  calKey = ''; changed(); tick(true);
+}
+
+/* ---------- First-run setup ---------- */
+const LB = 0.45359237, IN = 2.54;
+function obUnits(){
+  const ft = $('#obHUnit').value === 'ft';
+  $('#obHcm').hidden = ft; $('#obHft').hidden = !ft;
+}
+function openOnboard(){
+  const p = S.profile, imperial = p.region === 'ca' || p.region === 'us';
+  $('#obWUnit').value = imperial ? 'lb' : 'kg'; $('#obHUnit').value = imperial ? 'ft' : 'cm';
+  $('#obWeight').value = imperial ? Math.round(p.weight/LB) : Math.round(p.weight);
+  const totIn = p.height/IN; $('#obFt').value = Math.floor(totIn/12); $('#obIn').value = Math.round(totIn - Math.floor(totIn/12)*12);
+  $('#obHeight').value = Math.round(p.height); $('#obAge').value = p.age; $('#obSex').value = p.sex;
+  $('#obBed').value = p.bed; $('#obWake').value = p.wake; $('#obRegion').value = p.region; $('#obCur').value = p.currency; $('#obCal').checked = p.calories;
+  obUnits(); obStep(1); $('#obErr1').hidden = true;
+  drawMap($('#obHeart').getContext('2d'), SPR.heart.rows, SPR.heart.pal);
+  $('#onboard').hidden = false; $('#obWeight').focus();
+}
+function obStep(n){
+  $('#ob1').hidden = n !== 1; $('#ob2').hidden = n !== 2;
+  $('#obStep').textContent = `Step ${n} of 2`; $('#obTitle').textContent = n === 1 ? 'Create your character' : 'Your routine';
+  $('#obPip2').classList.toggle('on', n === 2);
+}
+function obBody(){
+  const w = +$('#obWeight').value, age = +$('#obAge').value;
+  const h = $('#obHUnit').value === 'ft' ? ((+$('#obFt').value || 0)*12 + (+$('#obIn').value || 0))*IN : +$('#obHeight').value;
+  if (!(w > 0) || !(h > 0) || !(age > 0)) return null;
+  return {weight:clamp(Math.round(($('#obWUnit').value === 'lb' ? w*LB : w)*10)/10, 35, 250), height:clamp(Math.round(h), 120, 230), age:clamp(Math.round(age), 18, 100), sex:$('#obSex').value};
+}
+$('#obWUnit').addEventListener('change', e => { const v = +$('#obWeight').value; if (v > 0) $('#obWeight').value = Math.round(e.target.value === 'lb' ? v/LB : v*LB); });
+$('#obHUnit').addEventListener('change', e => {
+  if (e.target.value === 'cm'){ const t = (+$('#obFt').value || 0)*12 + (+$('#obIn').value || 0); if (t) $('#obHeight').value = Math.round(t*IN); }
+  else { const c = +$('#obHeight').value; if (c){ const t = c/IN; $('#obFt').value = Math.floor(t/12); $('#obIn').value = Math.round(t - Math.floor(t/12)*12); } }
+  obUnits();
+});
+$('#obNext').addEventListener('click', () => { if (!obBody()){ $('#obErr1').hidden = false; return; } $('#obErr1').hidden = true; obStep(2); $('#obBed').focus(); });
+$('#obBack').addEventListener('click', () => obStep(1));
+$('#obSkip').addEventListener('click', () => { $('#onboard').hidden = true; if (S.onboarded !== true) S.onboarded = 'skipped'; save(true); tick(true); });
+$('#obDone').addEventListener('click', () => {
+  const b = obBody(); if (!b){ obStep(1); $('#obErr1').hidden = false; return; }
+  Object.assign(S.profile, b, {bed:$('#obBed').value || S.profile.bed, wake:$('#obWake').value || S.profile.wake, region:$('#obRegion').value, currency:$('#obCur').value, calories:$('#obCal').checked});
+  S.onboarded = true; $('#onboard').hidden = true;
+  fillProfile(); calKey = ''; changed(); tick(true);
+  toast('Character saved. Your health bar now uses your stats.');
+});
+$('#setupNudge').addEventListener('click', () => showView('options'));
+$('#replayOnboard').addEventListener('click', openOnboard);
+['pWeight', 'pHeight', 'pAge', 'pSex', 'pRegion', 'pEquiv', 'pBed', 'pWake', 'pCal', 'pPrice', 'pCurrency'].forEach(id => $('#' + id).addEventListener('change', readProfile));
+fillProfile();
+$('#themePick').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.profile.theme = b.dataset.themePick; applyTheme(); save(true); tick(true); });
+$('#appnav').addEventListener('click', e => { const t = e.target.closest('.tab'); if (t) showView(t.dataset.view); });
+$('#reportReady').addEventListener('click', openReport);
+applyTheme();
+
+/* ---------- History ---------- */
+const DAY_MS = 24*HOUR;
+const HIST_ANCHOR = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const dayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+const keyTime = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+const addDays = (t, n) => { const d = new Date(t); d.setDate(d.getDate() + n); return d.getTime(); };
+const fmtDate = t => { const d = new Date(t); return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; };
+const HIST_FIRST = addDays(HIST_ANCHOR, -365);
+const CUR = {uk:'£', us:'$', au:'A$', eu:'€'};
+const MIX_COL = {beer:'#e8a73a', wine:'#b5405e', spirits:'#6f93ff', mixed:'#3fbf95'};
+const MIX_NAME = {beer:'Beer & cider', wine:'Wine', spirits:'Spirits', mixed:'Mixed'};
+const FEEL_COL = {good:'var(--good)', meh:'var(--gold)', rough:'var(--bad)'};
+let histCache = null, histKey = '', histVer = -1, period = 'week', cursor = HIST_ANCHOR, selDay = null, auditOpen = false;
+const dayStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const weekStartOf = t => addDays(dayStart(t), -((new Date(t).getDay() + 6) % 7));
+const daysBetween = (a, b) => Math.round((b - a)/DAY_MS);
+function rangeOf(per, c){
+  const d = new Date(c);
+  if (per === 'week'){ const s = weekStartOf(c); return {s, e:addDays(s, 6)}; }
+  if (per === 'month') return {s:new Date(d.getFullYear(), d.getMonth(), 1).getTime(), e:new Date(d.getFullYear(), d.getMonth() + 1, 0).getTime()};
+  return {s:new Date(d.getFullYear(), 0, 1).getTime(), e:new Date(d.getFullYear(), 11, 31).getTime()};
+}
+function stepCursor(per, c, dir){
+  const d = new Date(c);
+  if (per === 'week') return addDays(weekStartOf(c), 7*dir);
+  if (per === 'month') return new Date(d.getFullYear(), d.getMonth() + dir, 1).getTime();
+  return new Date(d.getFullYear() + dir, 0, 1).getTime();
+}
+function fmtRange(s, e){
+  const a = new Date(s), b = new Date(e);
+  if (a.getFullYear() !== b.getFullYear()) return `${MONTHS[a.getMonth()]} ${a.getDate()}, ${a.getFullYear()} – ${MONTHS[b.getMonth()]} ${b.getDate()}, ${b.getFullYear()}`;
+  if (a.getMonth() !== b.getMonth()) return `${MONTHS[a.getMonth()]} ${a.getDate()} – ${MONTHS[b.getMonth()]} ${b.getDate()}, ${b.getFullYear()}`;
+  return `${MONTHS[a.getMonth()]} ${a.getDate()}–${b.getDate()}, ${a.getFullYear()}`;
+}
+const fmtMD = t => { const d = new Date(t); return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); };
+
+function guideline(){
+  const p = S.profile;
+  if (p.region === 'ca') return {g:2*13.45, g2:6*13.45, ca:true, txt:"Canada's Guidance on Alcohol and Health (2023): 2 or fewer drinks a week is low risk, 3–6 is moderate risk, 7 or more is increasingly high risk"};
+  if (p.region === 'uk') return {g:112, txt:'UK guideline: 14 units a week'};
+  if (p.region === 'us') return p.sex === 'f' ? {g:98, txt:'US guideline: up to 7 drinks a week'} : {g:196, txt:'US guideline: up to 14 drinks a week'};
+  if (p.region === 'au') return {g:100, ca:false, txt:'Australian guideline: 10 standard drinks a week'};
+  return {g:100, txt:'About 10 standard drinks a week (varies by country)'};
+}
+function rng(seed){ return () => { seed = (seed*1664525 + 1013904223) >>> 0; return seed / 4294967296; }; }
+function summarize(evs){
+  const drinks = evs.filter(e => e.type === 'drink'); if (!drinks.length) return null;
+  const first = Math.min(...drinks.map(d => d.t)), last = Math.max(...drinks.map(d => d.t));
+  const r = compute(evs, first), fx = effects(r);
+  let maxEnd = first; fx.de.forEach(e => { if (isFinite(e.e) && e.e > maxEnd) maxEnd = e.e; });
+  const mix = {beer:0, wine:0, spirits:0, mixed:0};
+  drinks.forEach(d => { mix[d.cat || guessCat(d.name)] += d.grams; });
+  return {t:first, n:drinks.length, grams:r.totalG, kcal:r.kcal, peak:r.peak, bedG:r.bedG,
+    sleepH: r.clearedT ? Math.max(0, Math.min(r.clearedT, r.wake) - r.bed)/HOUR : 0,
+    debuffH: (maxEnd - first)/HOUR, end: maxEnd,
+    spend: drinks.reduce((s, d) => s + (d.cost || 0), 0), priced: drinks.filter(d => d.cost != null).length, waters: evs.filter(e => e.type === 'water').length,
+    spanH: Math.max(1, (last - first)/HOUR + 0.75), mix};
+}
+function genPast(){
+  const R = rng(20261110), nights = {};
+  const pick = arr => arr[Math.floor(R()*arr.length)];
+  for (let i = 365; i >= 1; i--){
+    const day = addDays(HIST_ANCHOR, -i), dow = new Date(day).getDay();
+    const pDrink = [0.2, 0.08, 0.1, 0.14, 0.3, 0.7, 0.62][dow] * (i < 60 ? 0.8 : 1);
+    if (R() > pDrink) continue;
+    const weekend = dow === 5 || dow === 6;
+    let n = weekend ? 2 + Math.floor(R()*5) : 1 + Math.floor(R()*3);
+    if (R() < 0.07) n += 3;
+    const style = R();
+    const pool = style < 0.5 ? PRESETS.beer.slice(0, 4) : style < 0.78 ? PRESETS.wine : style < 0.92 ? PRESETS.mixed : PRESETS.spirits.slice(0, 2).concat(PRESETS.beer.slice(0, 1));
+    const start = new Date(day); start.setHours(18 + Math.floor(R()*3), Math.floor(R()*4)*15, 0, 0);
+    const evs = [];
+    if (R() < 0.6) evs.push({id:uid(), type:'food', t:start.getTime() - 30*MIN, name:'Dinner'});
+    let t = start.getTime();
+    for (let k = 0; k < n; k++){
+      evs.push(mkDrink(pick(pool), t));
+      if (R() < 0.3) evs.push({id:uid(), type:'water', t:t + 20*MIN, name:'Water'});
+      t += ((weekend ? 38 : 55) + Math.floor(R()*35))*MIN;
+    }
+    const s = summarize(evs);
+    const pr = s.peak < 0.04 ? 0.03 : s.peak < 0.07 ? 0.15 : s.peak < 0.1 ? 0.5 : 0.82, x = R();
+    s.feel = R() < 0.85 ? (x < pr ? 'rough' : x < pr + 0.3 ? 'meh' : 'good') : null;
+    nights[dayKey(day)] = s;
+  }
+  return nights;
+}
+function historyNights(){
+  const p = S.profile, key = [p.weight, p.height, p.age, p.sex, p.bed, p.wake, p.calories].join('|');
+  if (!histCache || key !== histKey){ histCache = genPast(); histKey = key; }
+  const nights = Object.assign({}, histCache);
+  const tn = summarize(S.events);
+  if (tn){ tn.feel = S.feel; tn.tonight = true; nights[dayKey(tn.t)] = tn; }
+  return nights;
+}
+function periodStats(nights, n, endT){
+  const st = {days:0, dry:0, list:[], grams:0, spend:0, priced:0, kcal:0, heavy:0, debuffH:0, sleepN:0, sleepH:0, drinks:0, waters:0, spanH:0, mix:{beer:0, wine:0, spirits:0, mixed:0}, dow:[0,0,0,0,0,0,0]};
+  for (let i = 0; i < n; i++){
+    const t = addDays(endT, -i); if (t < HIST_FIRST) break;
+    st.days++;
+    const nt = nights[dayKey(t)]; if (!nt){ st.dry++; continue; }
+    st.list.push(nt); st.grams += nt.grams; st.kcal += nt.kcal; st.sleepH += nt.sleepH;
+    st.drinks += nt.n; st.waters += nt.waters; st.spanH += nt.spanH;
+    st.spend += nt.spend + (nt.n - nt.priced) * S.profile.price; st.priced += nt.priced;
+    if (nt.peak >= 0.08) st.heavy++;
+    if (nt.bedG > 0.5) st.sleepN++;
+    Object.keys(st.mix).forEach(k => { st.mix[k] += nt.mix[k]; });
+    st.dow[(new Date(nt.t).getDay() + 6) % 7] += nt.grams;
+  }
+  // Hours debuffed = union of each night's debuff window, so overlapping nights aren't double-counted
+  const iv = st.list.map(n => [n.t, n.end]).sort((a, b) => a[0] - b[0]);
+  let cs = null, ce = null;
+  iv.forEach(([s, e]) => { if (ce == null || s > ce){ if (ce != null) st.debuffH += (ce - cs)/HOUR; cs = s; ce = e; } else ce = Math.max(ce, e); });
+  if (ce != null) st.debuffH += (ce - cs)/HOUR;
+  return st;
+}
+function weekTotals(nights, count){
+  const d = new Date(HIST_ANCHOR), ws = addDays(HIST_ANCHOR, -((d.getDay() + 6) % 7)), out = [];
+  for (let w = count - 1; w >= 0; w--){
+    const s = addDays(ws, -7*w); let g = 0, full = true;
+    for (let i = 0; i < 7; i++){ const t = addDays(s, i); if (t > HIST_ANCHOR || t < HIST_FIRST){ full = false; continue; } const nt = nights[dayKey(t)]; if (nt) g += nt.grams; }
+    out.push({start:s, g, full});
+  }
+  return out;
+}
+function dryStreaks(nights){
+  let cur = 0;
+  for (let t = HIST_ANCHOR; t >= HIST_FIRST && !nights[dayKey(t)]; t = addDays(t, -1)) cur++;
+  let best = 0, run = 0;
+  for (let t = HIST_FIRST; t <= HIST_ANCHOR; t = addDays(t, 1)){ if (nights[dayKey(t)]) run = 0; else { run++; best = Math.max(best, run); } }
+  return {cur, best};
+}
+function roundBar(x, base, w, h, r){
+  if (h <= 0.5) return '';
+  r = Math.min(r, h, w/2); const y = base - h;
+  return `M${x},${base}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${base}Z`;
+}
+function barChart(items, o){
+  const W = 360, H = o.h || 160, pl = 4, pr = 4, pt = 20, pb = 22;
+  const max = Math.max(o.min || 0, ...items.map(i => i.v), 0.001) * 1.12;
+  const y = v => pt + (1 - v/max)*(H - pt - pb), base = y(0), slot = (W - pl - pr)/items.length, bw = Math.min(o.bw || 18, slot - 6);
+  let s = `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`;
+  s += `<line x1="${pl}" x2="${W - pr}" y1="${base}" y2="${base}" stroke="var(--edge-hi)" stroke-width="1"/>`;
+  items.forEach((it, i) => {
+    const x = pl + slot*i + (slot - bw)/2, h = base - y(it.v);
+    s += `<g class="bar"><title>${esc(it.tip)}</title><rect x="${pl + slot*i}" y="${pt}" width="${slot}" height="${base - pt}" fill="transparent"/>`;
+    s += `<path d="${roundBar(x, base, bw, h, 4)}" fill="var(--hp)" opacity="${it.faint ? 0.5 : 1}"/>`;
+    if (it.val) s += `<text x="${x + bw/2}" y="${base - h - 5}" text-anchor="middle" class="ct strong">${esc(it.val)}</text>`;
+    if (it.label) s += `<text x="${x + bw/2}" y="${H - 6}" text-anchor="middle" class="ct">${esc(it.label)}</text>`;
+    s += '</g>';
+  });
+  (o.lines || []).forEach(l => { const ly = y(l.v); s += `<line x1="${pl}" x2="${W - pr}" y1="${ly}" y2="${ly}" stroke="var(--ink-dim)" stroke-width="1.5" stroke-dasharray="4 4"/><text x="${W - pr}" y="${ly - 5}" text-anchor="end" class="ct strong halo">${esc(l.label)}</text>`; });
+  return s + '</svg>';
+}
+const AUDIT_Q = () => {
+  const uk = S.profile.region === 'uk', unit = uk ? 'units' : 'standard drinks';
+  return [
+    {q:'How often do you have a drink containing alcohol?', a:['Never', 'Monthly or less', '2–4 times a month', '2–3 times a week', '4 or more times a week']},
+    {q:`How many ${unit} do you have on a typical day when you're drinking?`, a: uk ? ['0–2', '3–4', '5–6', '7–9', '10 or more'] : ['1–2', '3–4', '5–6', '7–9', '10 or more']},
+    {q: uk ? 'How often do you have 6 or more units (women) or 8 or more (men) on a single occasion?' : 'How often do you have 6 or more drinks on one occasion?', a:['Never', 'Less than monthly', 'Monthly', 'Weekly', 'Daily or almost daily']}
+  ];
+};
+const HELPLINES = {ca:'Your family doctor or nurse practitioner can help, and Health Canada lists free substance-use support services for every province and territory.', uk:'Drinkline (free): 0300 123 1110', us:'SAMHSA helpline (free, 24/7): 1-800-662-4357', au:'National Alcohol and Other Drug Hotline: 1800 250 015', eu:'Your GP or local health service can point you to support near you.'};
+function auditHtml(){
+  if (S.audit && !auditOpen){
+    const p = S.profile, cut = p.region === 'uk' ? 5 : p.sex === 'f' ? 3 : 4, flag = S.audit.score >= cut;
+    return `<div class="audit"><div class="label">Last check-in · ${fmtDate(S.audit.t)}</div>
+      <p><b>${flag ? 'Your answers suggest your drinking may be raising your health risks.' : 'Your answers suggest lower-risk drinking.'}</b> Score ${S.audit.score} of 12.</p>
+      ${flag ? `<p>That's common, and it's worth acting on. A full assessment or a chat with your GP can help. ${esc(HELPLINES[p.region])}</p>` : '<p>Keep an eye on the patterns above. We\'ll offer this check-in again in a few months.</p>'}
+      <p class="fine">AUDIT-C is a screening questionnaire, not a diagnosis.</p>
+      <button class="btn small" data-audit="open">Retake check-in</button></div>`;
+  }
+  if (!auditOpen) return `<div class="audit"><p>Three quick questions every few months help spot whether your drinking pattern is drifting into higher risk. Your answers stay on this device.</p><button class="btn small" data-audit="open">Take the 1-minute check-in</button></div>`;
+  return `<form class="audit" id="auditForm">${AUDIT_Q().map((q, i) => `<div class="field"><label for="aq${i}">${esc(q.q)}</label><select id="aq${i}" required><option value="">Choose an answer</option>${q.a.map((a, v) => `<option value="${v}">${esc(a)}</option>`).join('')}</select></div>`).join('')}
+    <div class="row"><button class="btn small primary" type="submit">See result</button><button class="btn small" type="button" data-audit="cancel">Cancel</button></div></form>`;
+}
+
+function renderHistory(){
+  histVer = version;
+  const p = S.profile, reg = REGIONS[p.region], gl = guideline(), nights = historyNights();
+  const uf = g => (g/reg.g).toFixed(1), unitShort = reg.unit.split(' ')[0];
+  $$('#periodPick button').forEach(b => b.classList.toggle('on', b.dataset.period === period));
+
+  // The selected calendar period, and the slice of it that has data
+  if (cursor > HIST_ANCHOR) cursor = HIST_ANCHOR;
+  if (rangeOf(period, cursor).e < HIST_FIRST) cursor = HIST_FIRST;
+  const R = rangeOf(period, cursor), live = R.e >= HIST_ANCHOR;
+  const endT = Math.min(R.e, HIST_ANCHOR), n = daysBetween(R.s, endT) + 1;
+  const st = periodStats(nights, n, endT);
+  const P = rangeOf(period, stepCursor(period, R.s, -1));
+  const prev = P.s >= HIST_FIRST ? periodStats(nights, n, Math.min(P.e, addDays(P.s, n - 1))) : null;
+  const word = {week:'week', month:'month', year:'year'}[period];
+  const isPrev = rangeOf(period, stepCursor(period, HIST_ANCHOR, -1)).s === R.s;
+  const kicker = live ? `This ${word} so far` : isPrev ? `Last ${word}` : word[0].toUpperCase() + word.slice(1);
+  const dates = period === 'week' ? fmtRange(R.s, R.e) : period === 'month' ? `${MONTHS_LONG[new Date(R.s).getMonth()]} ${new Date(R.s).getFullYear()}` : String(new Date(R.s).getFullYear());
+  const short = period === 'week' ? fmtRange(R.s, R.e).replace(/, \d{4}$/, '') : dates;
+  let note = !live ? '' : period === 'week' ? `${st.days} of 7 days so far` : `${fmtRange(R.s, endT)} · ${st.days} days`;
+  if (R.s < HIST_FIRST) note = `Sample data starts ${fmtMD(HIST_FIRST)} · ${st.days} days`;
+  const canPrev = rangeOf(period, stepCursor(period, R.s, -1)).e >= HIST_FIRST, canNext = !live;
+  const rangebar = `<div class="rangebar">
+    <button class="x" data-step="-1" aria-label="Previous ${word}" ${canPrev ? '' : 'disabled'}>‹</button>
+    <div class="range-mid" aria-live="polite"><div class="label">${kicker}</div><div class="range-dates">${dates}</div>${note ? `<div class="range-note">${note}</div>` : ''}</div>
+    <button class="x" data-step="1" aria-label="Next ${word}" ${canNext ? '' : 'disabled'}>›</button></div>`;
+  const prevName = live ? `the same point last ${word}` : `the previous ${word}`;
+
+  // Tiles
+  // A week is judged on its actual total against the weekly thresholds; months and years on their weekly average
+  const wks = period === 'week' ? 1 : Math.max(1, st.days) / 7, glP = gl.g * wks, gl2P = gl.g2 ? gl.g2 * wks : 0, over = st.grams > glP;
+  const mMax = Math.max(st.grams, glP, gl2P) * 1.1 || 1;
+  let delta = '';
+  if (prev && prev.grams > 0){ const d = (st.grams - prev.grams) / prev.grams * 100; delta = `${d <= 0 ? '↓' : '↑'} ${Math.abs(d).toFixed(0)}% vs ${prevName}`; }
+  let status;
+  if (gl.ca){
+    const perWk = st.grams/reg.g/wks;
+    status = perWk <= 2 ? `<span class="st-good">✓ Low risk</span>` : perWk <= 6 ? `<span class="st-warn">▲ Moderate risk</span>` : `<span class="st-bad">▲ Increasingly high risk</span>`;
+    status += period === 'week' ? (live ? ' so far this week' : ' for this week') : ` · ${perWk.toFixed(1)} a week on average`;
+  } else status = `<span class="${over ? 'st-warn' : 'st-good'}">${over ? '▲ Over' : '✓ Under'} guideline</span> of ${uf(glP)}${period === 'week' ? '' : ` (${uf(gl.g)} a week)`}`;
+  const tiles = `<div class="tiles">
+    <div class="tile"><div class="label">${esc(reg.unit)}</div><div class="tv">${uf(st.grams)}</div>
+      <div class="meter" aria-hidden="true"><i class="${over ? 'over' : ''}" style="width:${st.grams/mMax*100}%"></i><b style="left:${glP/mMax*100}%"></b>${gl2P ? `<b style="left:${gl2P/mMax*100}%"></b>` : ''}</div>
+      <div class="ts">${status}${delta ? '<br>' + delta : ''}</div></div>
+    <div class="tile"><div class="label">Alcohol-free days</div><div class="tv">${st.dry}<small> of ${st.days}</small></div><div class="ts">${period === 'week' ? (live && st.days < 7 ? `${7 - st.days} days still to come` : 'this week') : (st.dry/Math.max(1, st.days)*7).toFixed(1) + ' a week on average'}</div></div>
+    <div class="tile"><div class="label">Heavy nights</div><div class="tv">${st.heavy}</div><div class="ts">Nights that reached the Drunk zone (0.08% or more)</div></div>
+    <div class="tile"><div class="label">Hours debuffed</div><div class="tv">${Math.round(st.debuffH)}<small> h</small></div><div class="ts">${Math.round(st.sleepH)} h of sleep with alcohol in your system</div></div>
+  </div>`;
+
+  // Calendar: the month around the selected week/month, or 12 mini months for a year
+  const lvl = g => g < 20 ? 1 : g < 45 ? 2 : g < 75 ? 3 : 4;
+  const dayCls = t => { const nt = nights[dayKey(t)]; return t > HIST_ANCHOR ? 'future' : t < HIST_FIRST ? 'none' : nt ? 'l' + lvl(nt.grams) : 'dry'; };
+  let calBody, calTitle = '';
+  if (period === 'year'){
+    const y = new Date(R.s).getFullYear();
+    calBody = '<div class="year">' + MONTHS.map((mn, m) => {
+      const first = new Date(y, m, 1).getTime(), dim = new Date(y, m + 1, 0).getDate(), off = (new Date(first).getDay() + 6) % 7;
+      let g = '<i class="pad"></i>'.repeat(off);
+      for (let d = 1; d <= dim; d++) g += `<i class="${dayCls(new Date(y, m, d).getTime())}"></i>`;
+      const has = new Date(y, m + 1, 0).getTime() >= HIST_FIRST && first <= HIST_ANCHOR;
+      return `<button class="mini" ${has ? `data-month="${first}"` : 'disabled'} aria-label="Open ${MONTHS_LONG[m]} ${y}"><b>${mn}</b><span class="mg">${g}</span></button>`;
+    }).join('') + '</div><p class="fine">Tap a month to open it.</p>';
+  } else {
+    const mid = period === 'week' ? addDays(R.s, 3) : R.s, md = new Date(mid), cm = md.getMonth(), cy = md.getFullYear();
+    calTitle = `${MONTHS_LONG[cm]} ${cy}`;
+    const gs = weekStartOf(new Date(cy, cm, 1).getTime()), ge = addDays(weekStartOf(new Date(cy, cm + 1, 0).getTime()), 6);
+    let cells = ['M','T','W','T','F','S','S'].map(d => `<div class="dow" aria-hidden="true">${d}</div>`).join('');
+    for (let t = gs; t <= ge; t = addDays(t, 1)){
+      const k = dayKey(t), nt = nights[k], dc = dayCls(t), inR = t >= R.s && t <= R.e, dd = new Date(t);
+      let cls = 'cell ' + dc, label = fmtDate(t);
+      if (nt && dc[0] === 'l') label += `: ${nt.n} drinks, ${uf(nt.grams)} ${reg.unit}`; else if (dc === 'dry') label += ': alcohol-free';
+      if (!inR) cls += ' out'; else if (period === 'week') cls += ' inweek';
+      if (dd.getMonth() !== cm) cls += ' adj';
+      if (t === HIST_ANCHOR) cls += ' today';
+      if (k === selDay) cls += ' sel';
+      const ok = t <= HIST_ANCHOR && t >= HIST_FIRST;
+      cells += `<button class="${cls}" ${ok ? `data-day="${k}"` : 'disabled'} aria-label="${esc(label)}" title="${esc(label)}">${dd.getDate()}</button>`;
+    }
+    calBody = `<div class="cal">${cells}</div>`;
+  }
+  const sk = dryStreaks(nights);
+  let detail = '';
+  if (selDay){
+    const nt = nights[selDay], t = keyTime(selDay);
+    detail = nt
+      ? `<div class="daydetail"><b>${fmtDate(t)}${nt.tonight ? ' (tonight)' : ''}</b><br>${nt.n} drinks · ${uf(nt.grams)} ${esc(reg.unit)} · peak ${nt.peak.toFixed(2)}% · ${Math.round(nt.debuffH)} h debuffed${nt.feel ? ' · felt ' + nt.feel : ''}</div>`
+      : `<div class="daydetail"><b>${fmtDate(t)}</b><br>Alcohol-free day.</div>`;
+  }
+  const ru = g => Math.round(g/reg.g);
+  const calendar = `<section aria-labelledby="calTitle">
+    <div class="streaks">
+      <div class="tile"><div class="label">Alcohol-free streak</div><div class="tv">${sk.cur}<small> days</small></div><div class="ts">Current</div></div>
+      <div class="tile"><div class="label">Longest streak</div><div class="tv">${sk.best}<small> days</small></div><div class="ts">In the last 12 months</div></div>
+    </div>
+    <div class="sec-head"><h2 id="calTitle">${calTitle || 'Calendar'}</h2><span class="label">${period === 'week' ? 'Selected week underlined' : period === 'month' ? 'Tap a day for details' : ''}</span></div>
+    ${calBody}
+    <div class="cal-legend"><span><i style="background:var(--dry)"></i>Alcohol-free</span><span><i style="background:var(--heat-1)"></i>Under ${ru(20)}</span><span><i style="background:var(--heat-2)"></i>${ru(20)}–${ru(45)}</span><span><i style="background:var(--heat-3)"></i>${ru(45)}–${ru(75)}</span><span><i style="background:var(--heat-4)"></i>${ru(75)}+ ${esc(unitShort)}</span></div>
+    ${detail}
+  </section>`;
+
+  // Drinks chart: days of the week, weeks of the month, or months of the year
+  const gramsIn = (a, b) => { let g = 0; for (let t = Math.max(a, HIST_FIRST); t <= Math.min(b, HIST_ANCHOR); t = addDays(t, 1)){ const nt = nights[dayKey(t)]; if (nt) g += nt.grams; } return g; };
+  const wkG = gl.g/reg.g, Unit = reg.unit[0].toUpperCase() + reg.unit.slice(1);
+  let items, chartTitle, lines, cmin, chartNote;
+  if (period === 'week'){
+    chartTitle = `${Unit} each day`;
+    items = [0, 1, 2, 3, 4, 5, 6].map(i => { const t = addDays(R.s, i), g = gramsIn(t, t), fut = t > HIST_ANCHOR;
+      return {v:g/reg.g, faint:fut, label:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], val: g ? uf(g) : '', tip:`${fmtDate(t)}: ${fut ? 'still to come' : uf(g) + ' ' + reg.unit}`}; });
+    lines = gl.ca ? [{v:2, label:'2 on any one occasion'}] : []; cmin = gl.ca ? 2 : 0;
+    chartNote = gl.ca ? "Canada's guidance also advises no more than 2 drinks on any one occasion." : '';
+  } else if (period === 'month'){
+    chartTitle = `${Unit} each week`;
+    items = [];
+    for (let w = weekStartOf(R.s); w <= R.e; w = addDays(w, 7)){ const g = gramsIn(w, addDays(w, 6)), part = addDays(w, 6) > HIST_ANCHOR || w < HIST_FIRST, d = new Date(w);
+      items.push({v:g/reg.g, faint:part, label:`${MONTHS[d.getMonth()]} ${d.getDate()}`, tip:`Week of ${fmtRange(w, addDays(w, 6))}: ${uf(g)} ${reg.unit}${part ? ' (partial)' : ''}`}); }
+    lines = gl.ca ? [{v:2, label:'Low risk: 2'}, {v:6, label:'Moderate: 6'}] : [{v:wkG, label:`Guideline ${Math.round(wkG)}`}]; cmin = gl.g2 ? gl.g2/reg.g : wkG;
+    chartNote = gl.txt + '. Weeks run Monday to Sunday; faded bars are partial weeks.';
+  } else {
+    chartTitle = `${Unit} each month`;
+    const y = new Date(R.s).getFullYear(), f = 365/12/7;
+    items = MONTHS.map((mn, m) => { const a = new Date(y, m, 1).getTime(), b = new Date(y, m + 1, 0).getTime(), g = gramsIn(a, b), part = b > HIST_ANCHOR || a < HIST_FIRST;
+      return {v:g/reg.g, faint:part, label:mn[0], tip:`${MONTHS_LONG[m]} ${y}: ${uf(g)} ${reg.unit}${part ? ' (partial)' : ''}`}; });
+    lines = gl.ca ? [{v:2*f, label:'Low risk ≈ 9/mo'}, {v:6*f, label:'Moderate ≈ 26/mo'}] : [{v:wkG*f, label:`Guideline ≈ ${Math.round(wkG*f)}/mo`}]; cmin = (gl.g2 ? gl.g2/reg.g : wkG)*f;
+    chartNote = gl.txt + '. Monthly lines are the weekly guidance scaled up; faded bars are partial months.';
+  }
+  const weekChart = `<section aria-labelledby="wkHead"><div class="sec-head"><h2 id="wkHead">${esc(chartTitle)}</h2><span class="label">${esc(short)}</span></div>
+    ${barChart(items, {aria:chartTitle + ', ' + dates, bw: period === 'year' ? 14 : 18, min:cmin, lines})}
+    ${chartNote ? `<p class="fine">${esc(chartNote)}</p>` : ''}</section>`;
+
+  // Calories
+  let cal = '';
+  if (p.calories){
+    const eq = EQUIV[p.equiv] || EQUIV.pizza, c = st.kcal/eq.kcal;
+    const fat = p.region === 'us' ? (st.kcal/3500).toFixed(1) + ' lb' : (st.kcal/7700).toFixed(1) + ' kg';
+    cal = `<section aria-labelledby="hcalHead"><div class="sec-head"><h2 id="hcalHead">Calories from drinks</h2><span class="label">${esc(short)}</span></div>
+      <div class="stats2"><div class="tile"><div class="label">Total</div><div class="tv">${Math.round(st.kcal).toLocaleString()}<small> kcal</small></div><div class="ts">≈ ${c.toFixed(0)} ${c >= 1.5 ? eq.many : eq.one}</div></div>
+      <div class="tile"><div class="label">Energy equivalent</div><div class="tv">${fat}</div><div class="ts">The same energy as this much body fat</div></div></div>
+      <details class="why"><summary>Why energy, not weight gained?</summary><p>This doesn't mean you gained it. Your body burns alcohol first and puts other fuel on hold, so food eaten around drinking is more likely to be stored. Whether your weight changes depends on everything else you eat and do.</p></details></section>`;
+  }
+
+  // Sleep
+  const hrvAvg = st.list.length ? st.list.reduce((s, n) => s + HRV_PCT[hrvSev(n.grams/p.weight)], 0)/st.list.length : 0;
+  const sleep = `<section aria-labelledby="slHead"><div class="sec-head"><h2 id="slHead">Sleep and recovery</h2><span class="label">${esc(short)}</span></div>
+    <div class="stats2"><div class="tile"><div class="label">Bed with alcohol in you</div><div class="tv">${st.sleepN}<small> of ${st.list.length}</small></div><div class="ts">drinking nights</div></div>
+    <div class="tile"><div class="label">Avg HRV hit</div><div class="tv">${hrvAvg.toFixed(0)}<small>%</small></div><div class="ts">Estimated drop in overnight recovery on drinking nights. <a href="#" class="info-link" data-info="hrv">What is HRV?</a></div></div></div>
+    <div class="scan"><button class="btn small" disabled>Connect a wearable</button><span>Coming later: your own sleep and HRV, such as "your HRV is 18% lower on nights you drink".</span></div></section>`;
+
+  // Feel vs units (all check-ins)
+  const all = Object.values(nights).filter(n => n.feel);
+  const B = [[0, 32], [32, 64], [64, 96], [96, Infinity]];
+  const buckets = B.map(([lo, hi]) => { const ns = all.filter(n => n.grams >= lo && n.grams < hi); const c = {good:0, meh:0, rough:0}; ns.forEach(n => c[n.feel]++); return {lo, hi, n:ns.length, c}; });
+  const hit = buckets.find(b => b.n >= 3 && b.c.rough/b.n >= 0.5);
+  const feel = `<section aria-labelledby="fvHead"><div class="sec-head"><h2 id="fvHead">How you feel vs how much</h2><span class="label">All ${all.length} check-ins</span></div>
+    <div class="legend"><span><i style="background:var(--good)"></i>Good</span><span><i style="background:var(--gold)"></i>Meh</span><span><i style="background:var(--bad)"></i>Rough</span></div>
+    <div class="feelrows">${buckets.map(b => { const lab = b.hi === Infinity ? `${ru(b.lo)}+ ${unitShort}` : b.lo === 0 ? `Up to ${ru(b.hi)}` : `${ru(b.lo)}–${ru(b.hi)}`;
+      const seg = ['good', 'meh', 'rough'].filter(k => b.c[k]).map(k => `<i style="flex:${b.c[k]};background:${FEEL_COL[k]}" title="${k}: ${b.c[k]} mornings"></i>`).join('');
+      return `<div class="feelrow"><span>${lab}</span><div class="stack">${seg || '<i style="flex:1;background:var(--sunk)"></i>'}</div><span class="fr">${b.n ? Math.round(b.c.rough/b.n*100) + '% rough' : 'no data'}</span></div>`; }).join('')}</div>
+    <div class="insight">${hit ? `You usually feel rough after about <b>${ru(hit.lo)} ${esc(reg.unit)}</b> in a night. Planning to stop below that is your sweet spot.` : 'Keep doing morning check-ins and your personal threshold will show up here.'}</div></section>`;
+
+  // Patterns
+  const dowTot = st.dow.reduce((a, b) => a + b, 0) || 1, dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const top2 = [...st.dow.keys()].sort((a, b) => st.dow[b] - st.dow[a]).slice(0, 2);
+  const mixTot = Object.values(st.mix).reduce((a, b) => a + b, 0) || 1;
+  const pace = st.spanH ? st.drinks/st.spanH : 0;
+  const patterns = `<section aria-labelledby="ptHead"><div class="sec-head"><h2 id="ptHead">Patterns</h2><span class="label">${esc(short)}</span></div>
+    <div class="label" style="margin-bottom:4px">Share of ${esc(reg.unit)} by day</div>
+    ${barChart(st.dow.map((g, i) => ({v:g/dowTot*100, label:dowNames[i], val: top2.includes(i) && g ? Math.round(g/dowTot*100) + '%' : '', tip:`${dowNames[i]}: ${Math.round(g/dowTot*100)}% of your ${reg.unit}`})), {aria:'Share of units by day of week', h:140, bw:22})}
+    ${st.grams ? `<p class="fine">${dowNames[top2[0]]}s and ${dowNames[top2[1]]}s account for ${Math.round((st.dow[top2[0]] + st.dow[top2[1]])/dowTot*100)}% of your ${esc(reg.unit)}.</p>` : ''}
+    <div class="label" style="margin:14px 0 6px">Drink mix</div>
+    <div class="stack tall">${Object.keys(st.mix).filter(k => st.mix[k]).map(k => `<i style="flex:${st.mix[k]};background:${MIX_COL[k]}" title="${MIX_NAME[k]}: ${Math.round(st.mix[k]/mixTot*100)}%"></i>`).join('') || '<i style="flex:1;background:var(--sunk)"></i>'}</div>
+    <div class="legend" style="margin-top:8px">${Object.keys(st.mix).map(k => `<span><i style="background:${MIX_COL[k]}"></i>${MIX_NAME[k]} ${Math.round(st.mix[k]/mixTot*100)}%</span>`).join('')}</div>
+    <div class="stats2" style="margin-top:14px">
+      <div class="tile"><div class="label">Average pace</div><div class="tv">${pace.toFixed(1)}</div><div class="ts">drinks an hour</div></div>
+      <div class="tile"><div class="label">Water</div><div class="tv">${st.waters ? '1:' + (st.drinks/st.waters).toFixed(0) : '0'}</div><div class="ts">${st.waters ? `1 water for every ${(st.drinks/st.waters).toFixed(0)} drinks` : 'No water logged'}</div></div>
+      <div class="tile"><div class="label">Spent</div><div class="tv">${cur()}${Math.round(st.spend).toLocaleString()}</div><div class="ts">${st.priced ? `${st.priced} drinks with prices logged; ${st.drinks - st.priced} estimated at ${cur()}${p.price} each` : `${st.drinks} drinks estimated at ${cur()}${p.price} each. Add prices when you log to make this exact.`}</div></div>
+      <div class="tile"><div class="label">Per drinking night</div><div class="tv">${st.list.length ? uf(st.grams/st.list.length) : '0'}</div><div class="ts">${esc(reg.unit)} on average</div></div>
+    </div></section>`;
+
+  // Badges (whole year, good choices only)
+  const yr = periodStats(nights, 365, HIST_ANCHOR), m30 = periodStats(nights, 30, HIST_ANCHOR);
+  const yw = weekTotals(nights, 53).filter(w => w.full);
+  let runW = 0, bestW = 0; yw.forEach(w => { if (w.g <= gl.g){ runW++; bestW = Math.max(bestW, runW); } else runW = 0; });
+  let weekendOff = false;
+  for (let t = HIST_FIRST; t <= addDays(HIST_ANCHOR, -2); t = addDays(t, 1)){ if (new Date(t).getDay() === 5 && !nights[dayKey(t)] && !nights[dayKey(addDays(t, 1))] && !nights[dayKey(addDays(t, 2))]){ weekendOff = true; break; } }
+  let runC = 0, bestC = 0; Object.keys(nights).sort().forEach(k => { if (nights[k].bedG <= 0.5){ runC++; bestC = Math.max(bestC, runC); } else runC = 0; });
+  const ratio = m30.drinks ? m30.waters/m30.drinks : 0, pace30 = m30.spanH ? m30.drinks/m30.spanH : 0;
+  const badges = [
+    {icon:'called', name:'Dry week', on:sk.best >= 7, txt: sk.best >= 7 ? '7 alcohol-free days in a row' : `Best so far: ${sk.best} of 7 days`},
+    {icon:'lined', name:'Weekend off', on:weekendOff, txt: weekendOff ? 'A full Fri–Sun alcohol-free' : 'Go alcohol-free Friday to Sunday'},
+    {icon:'pace', name:'Under the line', on:bestW >= 4, txt: bestW >= 4 ? (gl.ca ? '4 weeks in a row at low risk' : '4 weeks in a row under guideline') : `Best run: ${bestW} of 4 weeks${gl.ca ? ' at 2 or fewer' : ''}`},
+    {icon:'hydrated', name:'Hydrated', on:ratio >= 0.5, txt: ratio >= 0.5 ? '1 water per 2 drinks this month' : `This month: 1 water per ${ratio ? (1/ratio).toFixed(0) : '–'} drinks; aim for 1 per 2`},
+    {icon:'sleep', name:'Clear by bedtime', on:bestC >= 5, txt: bestC >= 5 ? '5 drinking nights in a row cleared before bed' : `Best run: ${bestC} of 5 nights`},
+    {icon:'judgment', name:'Steady hand', on:pace30 > 0 && pace30 <= 1, txt: pace30 > 0 && pace30 <= 1 ? 'Averaged 1 drink an hour or less this month' : `This month: ${pace30.toFixed(1)} drinks an hour; aim for 1`}
+  ];
+  const badgeHtml = `<section aria-labelledby="bgHead"><div class="sec-head"><h2 id="bgHead">Achievements</h2><span class="label">${badges.filter(b => b.on).length} of ${badges.length} · last 12 months</span></div>
+    <div class="badges">${badges.map(b => `<div class="badge ${b.on ? '' : 'locked'}"><canvas width="16" height="16" data-bicon="${b.icon}" data-on="${b.on ? 1 : 0}"></canvas><div><b>${b.name}</b><small>${esc(b.txt)}</small></div></div>`).join('')}</div>
+    <p class="fine">Achievements only reward good choices, never how much you drank.</p></section>`;
+
+  const audit = `<section aria-labelledby="auHead"><div class="sec-head"><h2 id="auHead">Check-in</h2><span class="label">Every few months</span></div>${auditHtml()}</section>`;
+
+  $('#histBody').innerHTML = rangebar + tiles + calendar + weekChart + cal + sleep + feel + patterns + badgeHtml + audit;
+  $$('#histBody [data-bicon]').forEach(cv => drawIcon(cv, cv.dataset.bicon, cv.dataset.on === '1' ? 1 : 0, false));
+}
+$('#periodPick').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; period = b.dataset.period; if (selDay) cursor = keyTime(selDay); renderHistory(); });
+$('#histBody').addEventListener('click', e => {
+  const step = e.target.closest('[data-step]');
+  if (step){ cursor = stepCursor(period, rangeOf(period, cursor).s, +step.dataset.step); selDay = null; renderHistory(); return; }
+  const mo = e.target.closest('[data-month]');
+  if (mo){ period = 'month'; cursor = +mo.dataset.month; selDay = null; renderHistory(); return; }
+  const day = e.target.closest('[data-day]');
+  if (day){
+    const k = day.dataset.day;
+    selDay = selDay === k ? null : k;
+    if (selDay) cursor = keyTime(k);   // the week or month follows the day you tap
+    renderHistory(); return;
+  }
+  const a = e.target.closest('[data-audit]');
+  if (a){ auditOpen = a.dataset.audit === 'open'; renderHistory(); if (auditOpen){ const f = $('#aq0'); if (f) f.focus(); } }
+});
+$('#histBody').addEventListener('submit', e => {
+  if (e.target.id !== 'auditForm') return; e.preventDefault();
+  const score = [0, 1, 2].reduce((s, i) => s + (+$('#aq' + i).value || 0), 0);
+  S.audit = {score, t:S.simNow}; auditOpen = false; save(true); renderHistory();
+});
+
+/* ---------- Loop ---------- */
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let lastReal = performance.now(), lastFrame = null;
+function tick(force){
+  const t = performance.now(), dt = t - lastReal; lastReal = t;
+  if (S.speed > 0 && force !== true) S.simNow += Math.min(dt, 5000) * S.speed;
+  cssCache = {};
+  const r = compute(), fx = effects(r);
+  $('#reportReady').hidden = !(r.drinks.length && r.now >= r.wake);
+  $('#setupNudge').hidden = S.onboarded !== 'skipped';
+  if (!$('#view-history').hidden && histVer !== version) renderHistory();
+  renderClock(); renderHP(r); renderTally(r);
+  renderPotions($('#debuffs'), $('#debuffEmpty'), fx.de, r.now);
+  renderPotions($('#buffs'), $('#buffEmpty'), fx.bu, r.now);
+  renderCalories(r); renderChart(r); renderLog(r); renderSafety(r);
+  if (r.drinks.length && r.now >= r.wake && !S.reportSeen && $('#reportOverlay').hidden) openReport();
+  save(false);
+}
+window.addEventListener('resize', () => tick(true));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => tick(true));
+tick(true);
+setInterval(tick, 250);
+if (!S.onboarded) openOnboard();
+})();
+</script>
