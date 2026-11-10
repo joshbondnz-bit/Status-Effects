@@ -3,3 +3,5 @@ node_modules/
 Thumbs.db
 *.log
 .claude/settings.local.json
+.claude/launch.json
+.expo/
