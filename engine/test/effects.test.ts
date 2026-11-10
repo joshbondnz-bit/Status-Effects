@@ -56,8 +56,9 @@ test('an hour off earns Steady pace; ending the night early earns Called it', ()
 });
 
 test('HRV drain lasts longer after a heavier night', () => {
-  const light = simulateNight({ profile: REF, events: [drink(BOTTLE, 0)], now: at(10) });
-  const heavy = simulateNight({ profile: REF, events: Array.from({ length: 6 }, (_, i) => drink(PRESETS.beer[0], i * 30)), now: at(10) });
+  // One bottle at 10 pm vs. six pints from 8 pm, both reaching into the night.
+  const light = simulateNight({ profile: REF, events: [drink(BOTTLE, 180)], now: at(190) });
+  const heavy = simulateNight({ profile: REF, events: Array.from({ length: 6 }, (_, i) => drink(PRESETS.beer[0], 60 + i * 30)), now: at(190) });
   const end = (n: typeof light) => find(effects(n, { calories: false }).debuffs, 'hrv')!.end;
   assert.ok(end(heavy) - end(light) >= 5 * HOUR);
 });

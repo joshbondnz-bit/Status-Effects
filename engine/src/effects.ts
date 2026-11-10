@@ -35,10 +35,36 @@ export function hrvSeverity(gramsPerKg: number): Severity {
   return gramsPerKg < 0.25 ? 0 : gramsPerKg < 0.75 ? 1 : 2;
 }
 
-export function sleepSeverity(night: Night): Severity {
-  const byDose = hrvSeverity(night.gramsPerKg);
-  const byBed: Severity = night.bedBac >= 0.05 ? 2 : night.bedBac >= 0.01 ? 1 : 0;
-  return Math.max(byDose, byBed) as Severity;
+/** Grams still in the body at bedtime above which sleep counts as affected. */
+const BED_GRAMS_THRESHOLD = 1;
+/** Drinking this close to bedtime affects sleep even if the alcohol has just cleared. */
+export const SLEEP_WINDOW = 3 * HOUR;
+/** Overnight heart-rate recovery is affected by drinking this close to bedtime. */
+export const HRV_WINDOW = 4 * HOUR;
+
+/** Is there still alcohol in the body when you go to sleep? */
+export const alcoholAtBedtime = (night: Night) => night.bedGrams > BED_GRAMS_THRESHOLD;
+
+const drankWithin = (night: Night, window: number) => !!night.lastDrink && night.bed - night.lastDrink.t <= window;
+
+/**
+ * Sleep is only affected if alcohol is still in the body at bedtime, or the last drink was within
+ * 3 hours of it. A lunchtime drink that's long gone by bedtime does nothing to tonight's sleep.
+ * Returns null when sleep isn't affected.
+ */
+export function sleepSeverity(night: Night): Severity | null {
+  if (alcoholAtBedtime(night)) {
+    const byBed: Severity = night.bedBac >= 0.05 ? 2 : night.bedBac >= 0.01 ? 1 : 0;
+    return Math.max(byBed, hrvSeverity(night.gramsPerKg)) as Severity;
+  }
+  return drankWithin(night, SLEEP_WINDOW) ? 0 : null;
+}
+
+/** Overnight HRV hit: full severity if alcohol is present at bedtime, one step milder if drinking ended within 4 hours of it. */
+export function overnightHrvSeverity(night: Night): Severity | null {
+  const sev = hrvSeverity(night.gramsPerKg);
+  if (alcoholAtBedtime(night)) return sev;
+  return drankWithin(night, HRV_WINDOW) ? (Math.max(0, sev - 1) as Severity) : null;
 }
 
 export function hangoverSeverity(peak: number): Severity | null {
@@ -62,14 +88,18 @@ export function effects(night: Night, opts: EffectOptions): { debuffs: Effect[];
       severity: j.max < 0.05 ? 0 : j.max < 0.08 ? 1 : 2,
     });
 
-    if (now < night.wake) add(debuffs, {
-      id: 'sleep', kind: 'debuff', start: first, end: night.wake, status: 'active',
-      severity: sleepSeverity(night), data: { bedGrams: night.bedGrams, bedBac: night.bedBac },
+    // Sleep and HRV only apply when drinking reaches into the night, and they start at bedtime.
+    const ss = sleepSeverity(night);
+    if (ss != null) add(debuffs, {
+      id: 'sleep', kind: 'debuff', start: night.bed, end: night.wake,
+      status: now < night.bed ? 'incoming' : 'active',
+      severity: ss, data: { bedGrams: night.bedGrams, bedBac: night.bedBac },
     });
 
-    const hs = hrvSeverity(night.gramsPerKg);
-    add(debuffs, {
-      id: 'hrv', kind: 'debuff', start: first, end: night.wake + [1, 6, 12][hs] * HOUR, status: 'active',
+    const hs = overnightHrvSeverity(night);
+    if (hs != null) add(debuffs, {
+      id: 'hrv', kind: 'debuff', start: night.bed, end: night.wake + [1, 6, 12][hs] * HOUR,
+      status: now < night.bed ? 'incoming' : 'active',
       severity: hs, data: { dropPct: HRV_DROP_PCT[hs], gramsPerKg: night.gramsPerKg },
     });
 

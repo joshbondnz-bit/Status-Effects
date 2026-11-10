@@ -1,6 +1,6 @@
 // When does "tonight" end? Used to file a finished night away and start a fresh one.
 
-import { HOUR, nightWindow, simulateNight } from './bac.ts';
+import { HOUR, simulateNight } from './bac.ts';
 import type { LogEvent, Profile } from './types.ts';
 
 /** How long after wake time a night stays "current" (so the morning-after view has time to be seen). */
@@ -17,9 +17,7 @@ export function nightIsOver(profile: Profile, events: LogEvent[], now: number): 
   if (!events.length) return false;
   const drinks = events.filter(e => e.type === 'drink');
   if (!drinks.length) return now - Math.max(...events.map(e => e.t)) >= STALE_NON_DRINK_LOG;
-  const first = Math.min(...drinks.map(d => d.t));
-  const { wake } = nightWindow(profile, first);
-  if (now < wake + NIGHT_GRACE_AFTER_WAKE) return false;
   const night = simulateNight({ profile, events, now });
+  if (now < night.wake + NIGHT_GRACE_AFTER_WAKE) return false;
   return night.clearedAt == null || now >= night.clearedAt;
 }

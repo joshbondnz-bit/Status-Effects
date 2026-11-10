@@ -19,6 +19,10 @@ export const ABSORPTION_FED = 0.03;
 export const FED_WINDOW = 180 * MIN;
 /** Share of a drink that reaches the blood when fed (first-pass effect). */
 export const FED_BIOAVAILABILITY = 0.85;
+/** If someone drinks past their usual bedtime, assume they sleep this long after the last drink. */
+export const AFTER_LAST_DRINK = 15 * MIN;
+/** Never treat a night's sleep as shorter than this when bedtime gets pushed late. */
+const MIN_SLEEP = 4 * HOUR;
 /** Blood is about 80.6% water. */
 const BLOOD_WATER_FRACTION = 0.806;
 
@@ -49,13 +53,18 @@ function hm(s: string): [number, number] {
   return [h || 0, m || 0];
 }
 
-/** The bedtime and wake time for the night that starts around `anchor`. */
+/**
+ * The usual bedtime and wake time for the night that starts around `anchor`.
+ * Bedtime is the first one at or after (anchor − 6 h), so a first drink at 12:30 am still
+ * belongs to the bedtime that just passed, not tomorrow night's.
+ */
 export function nightWindow(p: Profile, anchor: number): { bed: number; wake: number } {
   const [bh, bm] = hm(p.bedtime);
   const [wh, wm] = hm(p.wakeTime);
-  const bed = new Date(anchor);
+  const earliest = anchor - 6 * HOUR;
+  const bed = new Date(earliest);
   bed.setHours(bh, bm, 0, 0);
-  if (bed.getTime() < anchor - 4 * HOUR) bed.setDate(bed.getDate() + 1);
+  if (bed.getTime() < earliest) bed.setDate(bed.getDate() + 1);
   const wake = new Date(bed);
   wake.setHours(wh, wm, 0, 0);
   if (wake <= bed) wake.setDate(wake.getDate() + 1);
@@ -84,6 +93,7 @@ export interface Night {
   drinks: DrinkEvent[];
   foods: FoodEvent[];
   waters: WaterEvent[];
+  /** When sleep starts: the usual bedtime, or just after the last drink if that's later. */
   bed: number;
   wake: number;
   bacNow: number;
@@ -133,7 +143,11 @@ export function simulateNight({ profile, events: input, now, maxHorizonHours = 4
 
   const start = events.length ? Math.min(events[0].t, now) : now;
   const t0 = Math.floor(start / MIN) * MIN;
-  const { bed, wake } = nightWindow(profile, drinks.length ? drinks[0].t : start);
+  const usual = nightWindow(profile, drinks.length ? drinks[0].t : start);
+  // You can't be asleep while still drinking: bedtime is the usual one, or shortly after the last drink.
+  const lastDrinkT = drinks.length ? drinks[drinks.length - 1].t : -Infinity;
+  const bed = Math.max(usual.bed, lastDrinkT + AFTER_LAST_DRINK);
+  const wake = Math.max(usual.wake, bed + MIN_SLEEP);
   const nowIdx = Math.max(0, Math.floor((now - t0) / MIN));
   const cap = Math.max(now, t0) + maxHorizonHours * HOUR;
 
