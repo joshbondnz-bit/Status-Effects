@@ -72,8 +72,8 @@ export function OptionsScreen() {
 
 const styles = StyleSheet.create({
   page: { paddingHorizontal: 16, gap: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
-  h1: { fontFamily: fonts.displayBold, fontSize: 30, color: colors.ink },
-  h2: { fontFamily: fonts.display, fontSize: 19, color: colors.ink },
+  h1: { fontFamily: fonts.displayBold, fontSize: 34, letterSpacing: 0.4, color: colors.ink },
+  h2: { fontFamily: fonts.display, fontSize: 23, letterSpacing: 0.4, color: colors.ink },
   card: { padding: 14, gap: 14 },
   lead: { fontFamily: fonts.body, fontSize: 14, color: colors.inkDim, lineHeight: 20 },
   nudge: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, backgroundColor: '#3a3220', borderWidth: 2, borderColor: '#6a5424', padding: 12, lineHeight: 20 },

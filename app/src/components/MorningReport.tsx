@@ -100,7 +100,7 @@ export function MorningReport({ night, profile, now, showCalories, onFeel, onClo
 const styles = StyleSheet.create({
   card: { padding: 14, gap: 10, borderColor: colors.gold },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontFamily: fonts.display, fontSize: 21, color: colors.gold },
+  title: { fontFamily: fonts.display, fontSize: 25, letterSpacing: 0.4, color: colors.gold },
   close: { fontSize: 22, color: colors.inkDim, paddingHorizontal: 6 },
   sub: { fontFamily: fonts.body, fontSize: 13, color: colors.inkFaint, marginTop: -6 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

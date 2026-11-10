@@ -148,7 +148,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 },
-  monthTitle: { fontFamily: fonts.display, fontSize: 18, color: colors.ink },
+  monthTitle: { fontFamily: fonts.display, fontSize: 22, letterSpacing: 0.4, color: colors.ink },
   hint: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
   row: { flexDirection: 'row', gap: DAY_GAP },
   dow: { flex: 1, textAlign: 'center', fontFamily: fonts.bodyBold, fontSize: 11, color: colors.inkFaint },

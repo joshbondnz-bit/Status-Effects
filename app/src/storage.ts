@@ -67,6 +67,8 @@ export interface SavedDrink {
   /** Calories from the label, if the user entered them; otherwise estimated. */
   kcal?: number;
   price?: Price;
+  /** For packs: how many are left at home, counting down as they're logged. Undefined = not tracked. */
+  left?: number;
 }
 
 /** Price of one drink. */

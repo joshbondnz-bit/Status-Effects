@@ -55,6 +55,8 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
   const [price, setPrice] = useState(initial.price ? trimNum(initial.price.amount) : '');
   const [count, setCount] = useState(initial.price?.per === 'pack' ? String(initial.price.count) : '6');
   const [save, setSave] = useState(true);
+  const [trackLeft, setTrackLeft] = useState(initial.left != null);
+  const [left, setLeft] = useState(initial.left != null ? String(initial.left) : '');
 
   const switchUnit = (u: 'ml' | 'oz') => {
     const n = num(vol);
@@ -72,6 +74,10 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
   if (kcal.trim() && !(kcalN >= 0 && kcalN < 5000)) errors.push('Calories look off.');
   if (priceMode !== 'none' && !(priceN > 0 && priceN < 10000)) errors.push('Enter a price, or choose No price.');
   if (priceMode === 'pack' && !(countN >= 2 && countN <= 100)) errors.push('A pack should have 2 to 100 drinks.');
+  // "Left" defaults to a full pack; logging it now uses one straight away.
+  const leftN = left.trim() === '' ? countN : Math.round(num(left));
+  const tracking = priceMode === 'pack' && trackLeft;
+  if (tracking && !(leftN >= 0 && leftN <= countN)) errors.push(`Left should be between 0 and ${countN || 'the pack size'}.`);
   const valid = errors.length === 0;
 
   const draft: SavedDrink | null = valid ? {
@@ -79,6 +85,7 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
     name: name.trim(), size: size.trim() || undefined, ml: Math.round(ml), abv: Math.round(abvN * 10) / 10, category,
     kcal: kcal.trim() ? Math.round(kcalN) : undefined,
     price: priceMode === 'drink' ? { per: 'drink', amount: priceN } : priceMode === 'pack' ? { per: 'pack', amount: priceN, count: countN } as Price : undefined,
+    left: tracking ? leftN : undefined,
   } : null;
   const spec = draft ? savedToSpec(draft) : null;
   const pv = useMemo(() => (spec ? preview(spec) : null), [spec?.ml, spec?.abv]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -116,6 +123,17 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
           </View>
         ) : null}
         {priceMode === 'pack' && priceN > 0 && countN >= 2 ? <Text style={styles.hint}>= {money(costPerDrink(priceN, countN))} a drink, logged each time you have one.</Text> : null}
+        {priceMode === 'pack' ? (
+          <>
+            <ToggleRow value={trackLeft} onChange={setTrackLeft} title="Count what's left"
+              body="Counts down each time you log one. When the pack runs out, it asks if you bought another." />
+            {trackLeft ? (
+              <View style={{ maxWidth: 200 }}>
+                <NumText value={left} onChange={setLeft} label="How many are left" suffix="left" placeholder={String(countN || 6)} />
+              </View>
+            ) : null}
+          </>
+        ) : null}
       </Field>
 
       {spec && pv ? (
@@ -130,7 +148,8 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
         <>
           <ToggleRow value={save} onChange={setSave} title="Save to My drinks" body="Log it again with one tap next time." />
           <View style={styles.row}>
-            <PixelButton label="Log it now" primary flex={1} disabled={!valid} onPress={() => draft && onLog(savedToSpec(draft), save ? draft : null)} />
+            <PixelButton label="Log it now" primary flex={1} disabled={!valid}
+              onPress={() => draft && onLog(savedToSpec(draft), save ? { ...draft, left: draft.left != null ? Math.max(0, draft.left - 1) : undefined } : null)} />
             {save ? <PixelButton label="Just save" flex={1} disabled={!valid} onPress={() => draft && onSave(draft)} /> : null}
           </View>
         </>
@@ -147,7 +166,7 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
 const styles = StyleSheet.create({
   wrap: { gap: 12 },
   back: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana },
-  title: { fontFamily: fonts.display, fontSize: 20, color: colors.ink },
+  title: { fontFamily: fonts.display, fontSize: 24, letterSpacing: 0.4, color: colors.ink },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   input: { flex: 1, minWidth: 0, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, color: colors.ink, fontFamily: fonts.body, fontSize: 17, paddingHorizontal: 10, paddingVertical: 9 },

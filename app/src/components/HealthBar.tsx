@@ -290,7 +290,7 @@ export function HealthBar({ night }: { night: Night }) {
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' },
-  phase: { fontFamily: fonts.displayBold, fontSize: 30 },
+  phase: { fontFamily: fonts.displayBold, fontSize: 32, letterSpacing: 0.4 },
   chip: { fontFamily: fonts.bodyBold, fontSize: 10.5, letterSpacing: 0.5, paddingHorizontal: 6, paddingVertical: 3, overflow: 'hidden' },
   chipDmg: { color: '#fff', backgroundColor: colors.hp },
   chipHeal: { color: colors.edge, backgroundColor: colors.good },

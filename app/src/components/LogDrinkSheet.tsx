@@ -12,6 +12,7 @@ import { colors, fonts } from '../theme';
 import { money } from '../format';
 import { DrinkForm } from './DrinkForm';
 import { hpText, zoneWarning } from './PreviewLine';
+import { PixelButton } from './Form';
 
 type Tab = DrinkCategory | 'mine';
 
@@ -49,7 +50,7 @@ export function LogDrinkSheet(props: Props) {
   const g = REGIONS[region].gramsPerStandardDrink;
 
   // Each time the sheet opens, start on the list (My drinks first if there are any).
-  useEffect(() => { if (visible) { setForm(null); setTab(myDrinks.length ? 'mine' : 'beer'); } }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (visible) { setForm(null); setRestock(null); setTab(myDrinks.length ? 'mine' : 'beer'); } }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (tab === 'mine' && !myDrinks.length) setTab('beer'); }, [tab, myDrinks.length]);
 
   const rows: { key: string; spec: DrinkSpec; saved?: SavedDrink }[] = tab === 'mine'
@@ -60,7 +61,16 @@ export function LogDrinkSheet(props: Props) {
   const previews = useMemo(() => (visible && !form ? rows.map(r => preview(r.spec)) : []),
     [visible, form, tab, myDrinks, events, profile, Math.floor(now / 60_000)]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const close = () => { setForm(null); onClose(); };
+  const close = () => { setForm(null); setRestock(null); onClose(); };
+
+  // Packs with "count what's left": each log uses one; at 0, ask whether another pack was bought.
+  const [restock, setRestock] = useState<SavedDrink | null>(null);
+  const pickRow = (spec: DrinkSpec, saved?: SavedDrink) => {
+    if (saved?.left == null) return onPick(spec);
+    if (saved.left > 0) { onSaveDrink({ ...saved, left: saved.left - 1 }); return onPick(spec); }
+    setRestock(saved);
+  };
+  const packCount = restock?.price?.per === 'pack' ? restock.price.count : 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
@@ -75,7 +85,19 @@ export function LogDrinkSheet(props: Props) {
           </View>
           {highRange ? <Text style={styles.warn}>You're already in a high range. Water might be the better pick right now.</Text> : null}
 
-          {form ? (
+          {restock && !form ? (
+            <View style={styles.restock}>
+              <Text style={styles.restockTitle}>That was your last {restock.name}</Text>
+              <Text style={styles.hint}>Did you buy another pack?</Text>
+              <PixelButton primary label={`Yes, ${packCount} for ${money(restock.price!.amount)}`} onPress={() => {
+                const spec = savedToSpec(restock);
+                onSaveDrink({ ...restock, left: packCount - 1 }); setRestock(null); onPick(spec);
+              }} />
+              <PixelButton label="Yes, but a different price" onPress={() => { setForm({ mode: 'edit', initial: { ...restock, left: packCount } }); setRestock(null); }} />
+              <PixelButton label="Log it without counting" onPress={() => { const spec = savedToSpec(restock); setRestock(null); onPick(spec); }} />
+              <Pressable onPress={() => setRestock(null)} accessibilityRole="button"><Text style={styles.back}>‹ Back to drinks</Text></Pressable>
+            </View>
+          ) : form ? (
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
               <DrinkForm key={form.initial.id ?? form.initial.name ?? 'new'} mode={form.mode} initial={form.initial} region={region} showCalories={showCalories}
                 preview={preview} onBack={() => setForm(null)}
@@ -93,7 +115,7 @@ export function LogDrinkSheet(props: Props) {
               <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 6 }}>
                 {rows.map((r, i) => (
                   <DrinkRow key={r.key} spec={r.spec} p={previews[i]} std={alcoholGrams(r.spec.ml, r.spec.abv) / g} showCalories={showCalories}
-                    onPress={() => onPick(r.spec)}
+                    left={r.saved?.left} onPress={() => pickRow(r.spec, r.saved)}
                     onEdit={() => setForm(r.saved
                       ? { mode: 'edit', initial: r.saved }
                       : { mode: 'new', initial: { name: r.spec.name, size: r.spec.size, ml: r.spec.ml, abv: r.spec.abv, category: r.spec.category } })}
@@ -120,8 +142,8 @@ function TabBtn({ label, on, onPress }: { label: string; on: boolean; onPress: (
   );
 }
 
-function DrinkRow({ spec, p, std, showCalories, onPress, onEdit, editLabel }: {
-  spec: DrinkSpec; p?: DrinkPreview; std: number; showCalories: boolean; onPress: () => void; onEdit: () => void; editLabel: string;
+function DrinkRow({ spec, p, std, showCalories, left, onPress, onEdit, editLabel }: {
+  spec: DrinkSpec; p?: DrinkPreview; std: number; showCalories: boolean; left?: number; onPress: () => void; onEdit: () => void; editLabel: string;
 }) {
   const warn = p ? zoneWarning(p) : null;
   const kcal = showCalories ? makeDrink(spec, 0, 'x').kcal : null;
@@ -132,7 +154,10 @@ function DrinkRow({ spec, p, std, showCalories, onPress, onEdit, editLabel }: {
         accessibilityLabel={`Log ${spec.name}${spec.size ? ', ' + spec.size : ''}${p ? `, about ${Math.round(p.hpLoss)} HP` : ''}${warn ? ', ' + warn.text : ''}`}>
         <View style={{ flex: 1, gap: 1 }}>
           <Text style={styles.pName}>{spec.name}</Text>
-          <Text style={styles.pSub}>{spec.size ? `${spec.size} · ` : ''}{spec.ml} ml · {spec.abv}%</Text>
+          <Text style={styles.pSub}>
+            {spec.size ? `${spec.size} · ` : ''}{spec.ml} ml · {spec.abv}%
+            {left != null ? <Text style={[styles.left, left === 0 && { color: colors.warn }]}>{'  '}{left === 0 ? 'none left' : `${left} left`}</Text> : null}
+          </Text>
           {warn ? <Text style={[styles.pWarn, { color: warn.color }]}>⚠ {warn.text}</Text> : null}
         </View>
         <View style={{ alignItems: 'flex-end', gap: 1 }}>
@@ -151,7 +176,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(9,7,14,0.78)' },
   sheet: { backgroundColor: colors.panel, borderTopWidth: 3, borderColor: colors.edgeHi, padding: 16, gap: 10 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontFamily: fonts.display, fontSize: 22, color: colors.ink },
+  title: { fontFamily: fonts.display, fontSize: 26, letterSpacing: 0.4, color: colors.ink },
   x: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi },
   xTxt: { color: colors.ink, fontSize: 20 },
   warn: { fontFamily: fonts.body, fontSize: 14, color: colors.alertInk, backgroundColor: colors.alertBg, borderWidth: 2, borderColor: colors.alertEdge, padding: 10 },
@@ -173,4 +198,8 @@ const styles = StyleSheet.create({
   custom: { paddingVertical: 11, alignItems: 'center', backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, borderStyle: 'dashed' },
   customTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
   hint: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
+  left: { fontFamily: fonts.bodyBold, color: colors.gold },
+  restock: { gap: 10, paddingVertical: 4 },
+  restockTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink },
+  back: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana, textAlign: 'center', paddingVertical: 6 },
 });

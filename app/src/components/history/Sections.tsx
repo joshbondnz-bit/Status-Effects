@@ -277,7 +277,7 @@ export function CheckInCard({ region, sex, last, onSave }: { region: RegionCode;
 const s = StyleSheet.create({
   card: { padding: 14, gap: 14 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 },
-  h2: { fontFamily: fonts.display, fontSize: 18, color: colors.ink },
+  h2: { fontFamily: fonts.display, fontSize: 22, letterSpacing: 0.4, color: colors.ink },
   label: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.5, color: colors.inkDim },
   subhead: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.5, color: colors.inkDim },
   body: { fontFamily: fonts.body, fontSize: 14, color: colors.inkDim, lineHeight: 20 },
