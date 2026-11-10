@@ -242,8 +242,8 @@ export function HealthBar({ night }: { night: Night }) {
           {showDmg ? <Zone kind="dmg" still={reduceMotion} left={hp - incoming} width={incoming} /> : null}
           {showHeal ? <Zone kind="heal" still={reduceMotion} left={hp} width={gain} /> : null}
           {[1, 2, 3, 4, 5].map(i => <View key={i} style={[styles.divider, { left: `${(i * 100) / 6}%` }]} />)}
-          {showDmg ? <ZoneLabel kind="dmg" left={hp - incoming} width={incoming} label={incoming >= 13 ? `−${Math.round(incoming)} HP incoming` : incoming >= 6 ? `−${Math.round(incoming)}` : ''} /> : null}
-          {showHeal ? <ZoneLabel kind="heal" left={hp} width={gain} label={gain >= 13 ? `+${Math.round(gain)} HP next hour` : gain >= 6 ? `+${Math.round(gain)}` : ''} /> : null}
+          {showDmg ? <ZoneLabel kind="dmg" left={hp - incoming} width={incoming} label={incoming >= 32 ? `−${Math.round(incoming)} HP incoming` : incoming >= 6 ? `−${Math.round(incoming)}` : ''} /> : null}
+          {showHeal ? <ZoneLabel kind="heal" left={hp} width={gain} label={gain >= 34 ? `+${Math.round(gain)} HP next hour` : gain >= 6 ? `+${Math.round(gain)}` : ''} /> : null}
           {direction ? <Animated.View pointerEvents="none" style={[styles.edge, { left: `${hp}%`, opacity: edgeGlow, backgroundColor: direction === 'down' ? '#ffffff' : colors.good }]} /> : null}
           {critical || warning ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, critical ? styles.critGlow : styles.warnGlow, { opacity: pulse }]} /> : null}
         </View>

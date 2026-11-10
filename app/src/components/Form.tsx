@@ -3,9 +3,10 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { colors, fonts } from '../theme';
 
-export function Field({ label, children, hint, minWidth = 140 }: { label: string; children: ReactNode; hint?: string; minWidth?: number }) {
+/** A labelled form field. `stack` is for fields in a vertical list (so they don't stretch or squash like row items). */
+export function Field({ label, children, hint, minWidth = 140, stack }: { label: string; children: ReactNode; hint?: string; minWidth?: number; stack?: boolean }) {
   return (
-    <View style={[styles.field, { minWidth }]}>
+    <View style={stack ? styles.fieldStack : [styles.field, { minWidth }]}>
       <Text style={styles.label}>{label}</Text>
       {children}
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
@@ -108,6 +109,7 @@ export function PixelButton({ label, onPress, primary, flex, disabled }: { label
 
 const styles = StyleSheet.create({
   field: { gap: 6, flex: 1, minWidth: 140 },
+  fieldStack: { gap: 6 },
   label: { fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 0.6, color: colors.inkDim, textTransform: 'uppercase' },
   hint: { fontFamily: fonts.body, fontSize: 13, color: colors.inkFaint, lineHeight: 18 },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

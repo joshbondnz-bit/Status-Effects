@@ -13,4 +13,9 @@ export function duration(ms: number): string {
   return Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm';
 }
 
-export const pct = (bac: number) => bac.toFixed(3) + '%';
+/** "$3.50", or "$12" for whole amounts. */
+export function money(n: number): string {
+  return '$' + (Number.isInteger(n) ? String(n) : n.toFixed(2));
+}
+
+export const pct =(bac: number) => bac.toFixed(3) + '%';

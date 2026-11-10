@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { standardDrinks, type LogEvent, type RegionCode } from '../../../engine/src/index.ts';
 import { colors, fonts } from '../theme';
-import { clock } from '../format';
+import { clock, money } from '../format';
 
 interface Props {
   events: LogEvent[];
@@ -18,7 +18,7 @@ export function NightLog({ events, region, onRemove }: Props) {
       {items.map(e => {
         const label = e.type === 'drink' ? e.name : e.type === 'water' ? 'Water' : 'Food';
         const sub = e.type === 'drink' ? `${e.size ?? e.ml + ' ml'} · ${e.abv}%` : e.type === 'water' ? 'Hydrated buff' : 'Slows absorption for 3 h';
-        const qty = e.type === 'drink' ? `${standardDrinks(e.grams, region).toFixed(1)} std` : '';
+        const qty = e.type === 'drink' ? `${standardDrinks(e.grams, region).toFixed(1)} std${e.cost != null ? ` · ${money(e.cost)}` : ''}` : '';
         return (
           <View key={e.id} style={styles.row}>
             <Text style={styles.time}>{clock(e.t)}</Text>

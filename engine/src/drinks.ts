@@ -42,8 +42,17 @@ export function makeDrink(spec: DrinkSpec, t: number, id: string): DrinkEvent {
     type: 'drink', id, t,
     name: spec.name, size: spec.size, ml: spec.ml, abv: spec.abv, category: spec.category,
     grams, kcal, kcalFromAlcohol,
+    ...(spec.cost != null && spec.cost > 0 ? { cost: Math.round(spec.cost * 100) / 100 } : {}),
   };
 }
+
+/** Price of one drink from a pack (e.g. a 6-pack for $18 is $3 a drink). */
+export function costPerDrink(packPrice: number, count: number): number {
+  return count > 0 ? Math.round((packPrice / count) * 100) / 100 : 0;
+}
+
+/** Rough carbohydrate per 100 ml by category, for custom drinks without a label. */
+export const DEFAULT_CARBS_PER_100ML: Record<DrinkCategory, number> = { beer: 3.5, wine: 1.2, spirits: 0, mixed: 8 };
 
 /** Best guess at a drink's category from its name, for drinks logged without one. */
 export function guessCategory(name: string): DrinkCategory {

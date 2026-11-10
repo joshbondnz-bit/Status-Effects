@@ -33,6 +33,8 @@ export interface DrinkSpec {
   /** Calories from the label; overrides the estimate. */
   kcal?: number | null;
   category?: DrinkCategory;
+  /** Price of one drink, if known (for a pack, the pack price divided by the count). */
+  cost?: number;
 }
 
 export interface DrinkEvent {

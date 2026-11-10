@@ -3,7 +3,7 @@
 // Everything lives in one JSON record with a version number. If the format changes later,
 // bump DATA_VERSION and add an upgrade step in `upgrade()` so existing users keep their data.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { LogEvent, Profile } from '../../engine/src/index.ts';
+import { DEFAULT_CARBS_PER_100ML, costPerDrink, type DrinkCategory, type DrinkSpec, type LogEvent, type Profile } from '../../engine/src/index.ts';
 
 const KEY = 'status-effects/data';
 const DATA_VERSION = 2;
@@ -45,6 +45,42 @@ export interface AppData {
   trackingSince: number;
   /** The most recent AUDIT-C check-in, if any. */
   audit?: { score: number; at: number };
+  /** Drinks the user has saved for one-tap logging, newest first. */
+  myDrinks?: SavedDrink[];
+}
+
+/** How a saved drink is priced: per drink, or as a pack that's split across its drinks. */
+export type Price = { per: 'drink'; amount: number } | { per: 'pack'; amount: number; count: number };
+
+/** A drink in "My drinks". */
+export interface SavedDrink {
+  id: string;
+  name: string;
+  size?: string;
+  ml: number;
+  abv: number;
+  category: DrinkCategory;
+  /** Calories from the label, if the user entered them; otherwise estimated. */
+  kcal?: number;
+  price?: Price;
+}
+
+/** Price of one drink. */
+export function unitPrice(p?: Price): number | undefined {
+  if (!p) return undefined;
+  return p.per === 'drink' ? p.amount : costPerDrink(p.amount, p.count);
+}
+
+/** Turn a saved drink into something the engine can log. */
+export function savedToSpec(d: SavedDrink): DrinkSpec {
+  return {
+    name: d.name, size: d.size, ml: d.ml, abv: d.abv, category: d.category,
+    carbPer100ml: DEFAULT_CARBS_PER_100ML[d.category], kcal: d.kcal ?? null, cost: unitPrice(d.price),
+  };
+}
+
+function isSavedDrink(x: any): x is SavedDrink {
+  return !!x && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.ml === 'number' && typeof x.abv === 'number';
 }
 
 export const DEFAULT_SETTINGS: Settings = { calories: true, units: 'imperial' };
@@ -89,6 +125,7 @@ function upgrade(raw: any): AppData | null {
     tonight: { ...raw.tonight, endedAt: raw.tonight.endedAt ?? null },
     past: raw.past.filter(isNight),
     audit: raw.audit && typeof raw.audit.score === 'number' && typeof raw.audit.at === 'number' ? raw.audit : undefined,
+    myDrinks: Array.isArray(raw.myDrinks) ? raw.myDrinks.filter(isSavedDrink) : [],
   };
 }
 

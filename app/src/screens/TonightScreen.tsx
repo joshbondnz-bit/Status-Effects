@@ -19,7 +19,7 @@ import { PixelSprite } from '../components/PixelSprite';
 import { SafetyCheck } from '../components/SafetyCheck';
 import { TimeMachine } from '../components/TimeMachine';
 import { ICONS } from '../sprites';
-import { clock } from '../format';
+import { clock, money } from '../format';
 import { useApp } from '../AppDataProvider';
 
 
@@ -75,6 +75,7 @@ export function TonightScreen() {
   };
 
   const total = standardDrinks(night.totalGrams, region);
+  const spent = Math.round(night.drinks.reduce((s, d) => s + (d.cost ?? 0), 0) * 100) / 100;
 
   return (
     <Screen>
@@ -109,6 +110,7 @@ export function TonightScreen() {
               <Text style={styles.faint}>{night.waters.length} water · {night.foods.length} food</Text>
             ) : null}
             <Text style={styles.faint}>{total.toFixed(1)} std drinks</Text>
+            {spent > 0 ? <Text style={styles.faint}>{money(spent)} spent</Text> : null}
           </View>
         </View>
 
@@ -182,7 +184,11 @@ export function TonightScreen() {
       ) : null}
       {error ? <Text style={styles.warn}>{error}</Text> : null}
 
-      <LogDrinkSheet visible={sheet && !showSafety} region={region} showCalories={settings.calories} highRange={night.bacNow >= WARNING_BAC} onClose={() => setSheet(false)} onPick={pickDrink} />
+      <LogDrinkSheet visible={sheet && !showSafety} region={region} showCalories={settings.calories} highRange={night.bacNow >= WARNING_BAC}
+        profile={profile} events={events} now={now} myDrinks={data.myDrinks ?? []}
+        onClose={() => setSheet(false)} onPick={pickDrink}
+        onSaveDrink={d => update(x => ({ ...x, myDrinks: [d, ...(x.myDrinks ?? []).filter(m => m.id !== d.id)] }))}
+        onDeleteDrink={id => update(x => ({ ...x, myDrinks: (x.myDrinks ?? []).filter(m => m.id !== id) }))} />
       <SafetyCheck visible={showSafety} region={region} critical={critical}
         onWithSomeone={() => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: currentTime() } }))} />
     </Screen>
