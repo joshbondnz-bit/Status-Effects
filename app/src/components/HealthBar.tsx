@@ -22,22 +22,32 @@ const NATIVE = Platform.OS !== 'web';
  */
 const SHINE_W = 22;
 /** Same 22/50/28 band split as the bar itself, in a duller, darker red (damage) or a soft green (healing). */
-const DMG_BANDS: [number, string][] = [[22, '#c9727a'], [50, '#a23446'], [28, '#5e1426']];
+const DMG_BANDS: [number, string][] = [[22, '#9c4652'], [50, '#76182e'], [28, '#460a1b']];
 const HEAL_BANDS: [number, string][] = [[22, 'rgba(127,240,184,0.5)'], [50, 'rgba(95,211,154,0.38)'], [28, 'rgba(60,160,112,0.3)']];
-function Zone({ left, width, kind, label, still }: { left: number; width: number; kind: 'dmg' | 'heal'; label: string; still: boolean }) {
+/** A zone's label, drawn as its own layer above the segment dividers so they never cut through the text. */
+function ZoneLabel({ left, width, kind, label }: { left: number; width: number; kind: 'dmg' | 'heal'; label: string }) {
+  if (!label) return null;
+  return (
+    <View pointerEvents="none" style={[styles.zoneLabel, { left: `${left}%`, width: `${width}%` }]}>
+      <Text numberOfLines={1} style={[styles.zoneTxt, { backgroundColor: kind === 'dmg' ? 'rgba(46,6,16,0.82)' : 'rgba(10,46,30,0.82)' }]}>{label}</Text>
+    </View>
+  );
+}
+
+function Zone({ left, width, kind, still }: { left: number; width: number; kind: 'dmg' | 'heal'; still: boolean }) {
   const [zoneW, setZoneW] = useState(0);
   const sweep = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (still || zoneW < 8) return;
     sweep.setValue(0);
     const loop = Animated.loop(Animated.sequence([
-      Animated.delay(1800),
+      Animated.delay(kind === 'dmg' ? 700 : 1800), // damage shines more often
       Animated.timing(sweep, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: NATIVE }),
       Animated.timing(sweep, { toValue: 0, duration: 0, useNativeDriver: NATIVE }),
     ]));
     loop.start();
     return () => loop.stop();
-  }, [still, zoneW, sweep]);
+  }, [still, zoneW, sweep, kind]);
   const from = -SHINE_W * 2, to = zoneW + SHINE_W;
   const translateX = sweep.interpolate({ inputRange: [0, 1], outputRange: kind === 'dmg' ? [to, from] : [from, to] });
   return (
@@ -52,7 +62,6 @@ function Zone({ left, width, kind, label, still }: { left: number; width: number
       <View style={styles.zoneFill}>
         {(kind === 'dmg' ? DMG_BANDS : HEAL_BANDS).map(([flex, color]) => <View key={flex} style={{ flex, backgroundColor: color }} />)}
       </View>
-      {label ? <Text style={[styles.zoneTxt, { textShadowColor: kind === 'dmg' ? '#3a0a14' : '#0d3a26' }]}>{label}</Text> : null}
     </View>
   );
 }
@@ -201,6 +210,7 @@ export function HealthBar({ night }: { night: Night }) {
   const chip = critical ? { text: 'CRITICAL', style: styles.chipCrit } : stabilising ? { text: 'STABILISING', style: styles.chipStab }
     : warning ? { text: 'WARNING', style: styles.chipWarn }
     : taking ? { text: 'TAKING DAMAGE', style: styles.chipDmg } : healing ? { text: 'REGENERATING', style: styles.chipHeal } : null;
+  const showDmg = taking, showHeal = (healing || stabilising) && gain > 0.3;
   const gainText = gain >= 1 ? Math.round(gain) : gain.toFixed(1);
 
   return (
@@ -229,9 +239,11 @@ export function HealthBar({ night }: { night: Night }) {
             <View style={[styles.band, { flex: 50, backgroundColor: colors.hp }]} />
             <View style={[styles.band, { flex: 28, backgroundColor: colors.hpLo }]} />
           </View>
-          {taking ? <Zone kind="dmg" still={reduceMotion} left={hp - incoming} width={incoming} label={incoming >= 13 ? `−${Math.round(incoming)} HP incoming` : incoming >= 6 ? `−${Math.round(incoming)}` : ''} /> : null}
-          {(healing || stabilising) && gain > 0.3 ? <Zone kind="heal" still={reduceMotion} left={hp} width={gain} label={gain >= 13 ? `+${Math.round(gain)} HP next hour` : gain >= 6 ? `+${Math.round(gain)}` : ''} /> : null}
+          {showDmg ? <Zone kind="dmg" still={reduceMotion} left={hp - incoming} width={incoming} /> : null}
+          {showHeal ? <Zone kind="heal" still={reduceMotion} left={hp} width={gain} /> : null}
           {[1, 2, 3, 4, 5].map(i => <View key={i} style={[styles.divider, { left: `${(i * 100) / 6}%` }]} />)}
+          {showDmg ? <ZoneLabel kind="dmg" left={hp - incoming} width={incoming} label={incoming >= 13 ? `−${Math.round(incoming)} HP incoming` : incoming >= 6 ? `−${Math.round(incoming)}` : ''} /> : null}
+          {showHeal ? <ZoneLabel kind="heal" left={hp} width={gain} label={gain >= 13 ? `+${Math.round(gain)} HP next hour` : gain >= 6 ? `+${Math.round(gain)}` : ''} /> : null}
           {direction ? <Animated.View pointerEvents="none" style={[styles.edge, { left: `${hp}%`, opacity: edgeGlow, backgroundColor: direction === 'down' ? '#ffffff' : colors.good }]} /> : null}
           {critical || warning ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, critical ? styles.critGlow : styles.warnGlow, { opacity: pulse }]} /> : null}
         </View>
@@ -305,7 +317,8 @@ const styles = StyleSheet.create({
   shine: { position: 'absolute', top: -4, bottom: -4, left: 0, width: SHINE_W, flexDirection: 'row', zIndex: 1 },
   shineSoft: { flex: 1, backgroundColor: 'rgba(255,255,255,0.18)' },
   shineCore: { flex: 1, backgroundColor: 'rgba(255,255,255,0.42)' },
-  zoneTxt: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
+  zoneLabel: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  zoneTxt: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#fff', paddingHorizontal: 4, paddingVertical: 1 },
   divider: { position: 'absolute', top: 0, bottom: 0, width: 3, marginLeft: -3, backgroundColor: colors.edge },
   edge: { position: 'absolute', top: 0, bottom: 0, width: 4, marginLeft: -2 },
   popLayer: { position: 'absolute', left: 3, right: 3, top: 0, bottom: 0 },
