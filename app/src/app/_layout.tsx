@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { PixelifySans_600SemiBold, PixelifySans_700Bold } from '@expo-google-fonts/pixelify-sans';
+import { Jersey10_400Regular } from '@expo-google-fonts/jersey-10';
 import { VT323_400Regular } from '@expo-google-fonts/vt323';
 import { AtkinsonHyperlegible_400Regular, AtkinsonHyperlegible_700Bold } from '@expo-google-fonts/atkinson-hyperlegible';
 import { AppDataProvider, useApp } from '../AppDataProvider';
@@ -16,7 +16,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    PixelifySans_600SemiBold, PixelifySans_700Bold, VT323_400Regular,
+    Jersey10_400Regular, VT323_400Regular,
     AtkinsonHyperlegible_400Regular, AtkinsonHyperlegible_700Bold,
   });
   useEffect(() => { if (loaded || error) SplashScreen.hideAsync(); }, [loaded, error]);

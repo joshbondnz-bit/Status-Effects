@@ -37,8 +37,9 @@ export const colors = {
 
 /** Font family names, as registered by useFonts in App.tsx. */
 export const fonts = {
-  display: 'PixelifySans_600SemiBold',
-  displayBold: 'PixelifySans_700Bold',
+  // Jersey 10: chunky pixel headings with clear letter shapes (Pixelify's F read as a P). One weight only.
+  display: 'Jersey10_400Regular',
+  displayBold: 'Jersey10_400Regular',
   num: 'VT323_400Regular',
   body: 'AtkinsonHyperlegible_400Regular',
   bodyBold: 'AtkinsonHyperlegible_700Bold',

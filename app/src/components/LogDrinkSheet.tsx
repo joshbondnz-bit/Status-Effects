@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(9,7,14,0.78)' },
   sheet: { backgroundColor: colors.panel, borderTopWidth: 3, borderColor: colors.edgeHi, padding: 16, gap: 10 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontFamily: fonts.display, fontSize: 26, letterSpacing: 0.4, color: colors.ink },
+  title: { fontFamily: fonts.display, fontSize: 34, letterSpacing: 0.4, color: colors.ink },
   x: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi },
   xTxt: { color: colors.ink, fontSize: 20 },
   warn: { fontFamily: fonts.body, fontSize: 14, color: colors.alertInk, backgroundColor: colors.alertBg, borderWidth: 2, borderColor: colors.alertEdge, padding: 10 },

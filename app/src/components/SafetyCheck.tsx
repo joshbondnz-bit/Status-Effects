@@ -79,7 +79,7 @@ export function SafetyCheck({ visible, region, critical, onWithSomeone }: { visi
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(9,7,14,0.92)', paddingHorizontal: 16, justifyContent: 'center' },
   card: { backgroundColor: '#1e2a33', borderWidth: 3, borderColor: '#3f6275', padding: 18, gap: 12, width: '100%', maxWidth: 480, alignSelf: 'center' },
-  title: { fontFamily: fonts.display, fontSize: 27, letterSpacing: 0.4, color: '#e9f6ff' },
+  title: { fontFamily: fonts.display, fontSize: 35, letterSpacing: 0.4, color: '#e9f6ff' },
   body: { fontFamily: fonts.body, fontSize: 15, color: '#cfe3ef', lineHeight: 21 },
   question: { fontFamily: fonts.bodyBold, fontSize: 17, color: '#ffffff', marginTop: 4 },
   row: { flexDirection: 'row', gap: 8 },

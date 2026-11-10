@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   card: { padding: 16, gap: 16 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   step: { fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 0.6, color: colors.inkDim },
-  title: { fontFamily: fonts.displayBold, fontSize: 29, letterSpacing: 0.4, color: colors.ink },
+  title: { fontFamily: fonts.displayBold, fontSize: 38, letterSpacing: 0.4, color: colors.ink },
   pips: { flexDirection: 'row', gap: 6 },
   pip: { flex: 1, height: 6, backgroundColor: colors.sunk, borderWidth: 1, borderColor: colors.edgeHi },
   pipOn: { backgroundColor: colors.hp, borderColor: colors.hp },

@@ -166,7 +166,7 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
 const styles = StyleSheet.create({
   wrap: { gap: 12 },
   back: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana },
-  title: { fontFamily: fonts.display, fontSize: 24, letterSpacing: 0.4, color: colors.ink },
+  title: { fontFamily: fonts.display, fontSize: 31, letterSpacing: 0.4, color: colors.ink },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   input: { flex: 1, minWidth: 0, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, color: colors.ink, fontFamily: fonts.body, fontSize: 17, paddingHorizontal: 10, paddingVertical: 9 },
