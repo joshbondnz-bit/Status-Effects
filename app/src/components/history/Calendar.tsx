@@ -123,7 +123,7 @@ export function Calendar(p: Props) {
                 style={[styles.cell, { width: daySize, height: daySize, backgroundColor: live ? BG[c] : 'transparent' }, !live && styles.cellEmpty,
                   !inRange && { opacity: 0.32 }, inRange && p.period === 'week' && styles.inWeek,
                   t === p.today && styles.today, key === p.selected && styles.selected]}>
-                <Text style={[styles.num, (c === 'l3' || c === 'l4') && { color: colors.heatInk }, otherMonth && { fontFamily: fonts.body }, !live && { color: colors.inkFaint }]}>
+                <Text style={[styles.num, { color: c === 'l4' ? colors.heatInk : colors.heatInkDark }, otherMonth && { fontFamily: fonts.body }, !live && { color: colors.inkFaint }]}>
                   {new Date(t).getDate()}
                 </Text>
                 {n?.critical ? <Text style={styles.critMark}>!</Text> : null}
@@ -158,8 +158,9 @@ const styles = StyleSheet.create({
   critMarkSmall: { fontFamily: fonts.bodyBold, fontSize: 9, color: '#ffffff', lineHeight: 11 },
   miniCrit: { borderColor: '#ffffff' },
   cellEmpty: { borderWidth: 1, borderColor: colors.edgeHi },
-  inWeek: { borderBottomWidth: 4, borderBottomColor: colors.gold },
-  today: { borderWidth: 2, borderColor: colors.gold },
+  // Blue, so they stand out from the green-to-red heatmap.
+  inWeek: { borderBottomWidth: 4, borderBottomColor: colors.mana },
+  today: { borderWidth: 2, borderColor: colors.mana },
   selected: { borderWidth: 3, borderColor: colors.ink },
   num: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.ink },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },

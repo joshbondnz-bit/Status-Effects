@@ -24,13 +24,15 @@ export const colors = {
   alertBg: '#3a1f22',
   alertEdge: '#7a3036',
   alertInk: '#ffd7cf',
-  // Calendar heatmap: alcohol-free, then more drinks = more red
-  dry: '#1f4636',
-  heat1: '#4a2236',
-  heat2: '#7a2638',
-  heat3: '#b8343f',
-  heat4: '#ff5d62',
+  // Calendar heatmap, like a traffic light: alcohol-free green, then yellow-green, yellow, orange, red
+  dry: '#3fae74',
+  heat1: '#bfd13f',
+  heat2: '#f5c431',
+  heat3: '#f5862c',
+  heat4: '#e5383b',
   heatInk: '#fff6ee',
+  /** Day numbers on the lighter heatmap colours. */
+  heatInkDark: '#1a1420',
 } as const;
 
 /** Font family names, as registered by useFonts in App.tsx. */
