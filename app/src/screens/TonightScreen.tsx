@@ -12,6 +12,8 @@ import { HealthBar } from '../components/HealthBar';
 import { EffectCard } from '../components/EffectCard';
 import { LogDrinkSheet } from '../components/LogDrinkSheet';
 import { NightLog } from '../components/NightLog';
+import { Rations } from '../components/Rations';
+import { CurveChart } from '../components/CurveChart';
 import { PixelSprite } from '../components/PixelSprite';
 import { clock } from '../format';
 import { useApp } from '../AppDataProvider';
@@ -137,6 +139,18 @@ export function TonightScreen() {
             ? fx.buffs.map(e => <EffectCard key={e.id} effect={e} night={night} region={region} />)
             : <Text style={styles.empty}>Log water, eat something, or take an hour off to earn buffs.</Text>}
         </View>
+      </View>
+
+      {settings.calories ? (
+        <View style={[panel, styles.card]}>
+          <View style={styles.logHead}><Text style={styles.h2}>Rations</Text><Text style={styles.faint}>Tonight's calories</Text></View>
+          <Rations night={night} compareWith={settings.compareWith ?? 'pizza'} />
+        </View>
+      ) : null}
+
+      <View style={[panel, styles.card]}>
+        <View style={styles.logHead}><Text style={styles.h2}>Tonight's curve</Text><Text style={styles.faint}>Blood alcohol (est.)</Text></View>
+        <CurveChart night={night} />
       </View>
 
       <View style={[panel, styles.card]}>

@@ -5,6 +5,7 @@ import {
   auditCCutoff, auditCScore, type Achievement, type AchievementId, type DrinkCategory, type PeriodStats, type RegionCode, type Sex,
 } from '../../../../engine/src/index.ts';
 import type { FoodCompare, Units } from '../../storage';
+import { FOOD } from '../../food';
 import { ICONS } from '../../sprites';
 import { PixelSprite } from '../PixelSprite';
 import { BarChart } from './BarChart';
@@ -46,12 +47,6 @@ function Expand({ title, children }: { title: string; children: React.ReactNode 
 }
 
 // ---------- Calories ----------
-
-const FOOD: Record<FoodCompare, { kcal: number; one: string; many: string }> = {
-  pizza: { kcal: 285, one: 'slice of pizza', many: 'slices of pizza' },
-  doughnut: { kcal: 250, one: 'glazed doughnut', many: 'glazed doughnuts' },
-  burger: { kcal: 300, one: 'cheeseburger', many: 'cheeseburgers' },
-};
 
 export function CaloriesCard({ st, label, units, compareWith }: { st: PeriodStats; label: string; units: Units; compareWith: FoodCompare }) {
   const f = FOOD[compareWith], n = st.kcal / f.kcal;
