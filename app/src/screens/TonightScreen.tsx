@@ -16,6 +16,7 @@ import { Rations } from '../components/Rations';
 import { CurveChart } from '../components/CurveChart';
 import { PixelSprite } from '../components/PixelSprite';
 import { SafetyCheck } from '../components/SafetyCheck';
+import { TimeMachine } from '../components/TimeMachine';
 import { ICONS } from '../sprites';
 import { clock } from '../format';
 import { useApp } from '../AppDataProvider';
@@ -37,7 +38,7 @@ export function TonightScreen() {
   const [sheet, setSheet] = useState(false);
   const [removed, setRemoved] = useState<LogEvent | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { data, error, update, now, tick } = useApp();
+  const { data, error, update, now, tick, currentTime } = useApp();
 
   const { profile, settings } = data;
   const events = data.tonight.events;
@@ -54,7 +55,7 @@ export function TonightScreen() {
     update(d => ({ ...d, tonight: { ...d.tonight, events: [...d.tonight.events, e] } }));
     tick();
   };
-  const pickDrink = (spec: DrinkSpec) => { log(makeDrink(spec, Date.now(), newId())); setSheet(false); };
+  const pickDrink = (spec: DrinkSpec) => { log(makeDrink(spec, currentTime(), newId())); setSheet(false); };
   const setEnded = (t: number | null) => update(d => ({ ...d, tonight: { ...d.tonight, endedAt: t } }));
 
   const remove = (e: LogEvent) => {
@@ -67,7 +68,7 @@ export function TonightScreen() {
 
   // A sample night to try things out. Only offered while tonight's log is empty, so it never replaces real entries.
   const loadSample = () => {
-    const t = Date.now();
+    const t = currentTime();
     update(d => ({ ...d, tonight: { ...d.tonight, endedAt: null, events: [
       { type: 'food', id: newId(), t: t - 170 * MIN },
       makeDrink(PRESETS.beer[0], t - 130 * MIN, newId()),
@@ -87,6 +88,8 @@ export function TonightScreen() {
         <Text style={styles.clock}>{clock(now)}</Text>
         {night.drinks.length ? <Text style={styles.noDrive}>NO DRIVING TONIGHT</Text> : null}
       </View>
+
+      <TimeMachine />
 
       {data.setup === 'skipped' ? (
         <Pressable onPress={() => router.navigate('/options')} accessibilityRole="button" style={styles.nudge}>
@@ -129,9 +132,9 @@ export function TonightScreen() {
 
         <View style={styles.actions}>
           <Button label="+ Drink" primary flex={2} onPress={() => setSheet(true)} />
-          <Button label="Water" onPress={() => log({ type: 'water', id: newId(), t: Date.now() })} />
-          <Button label="Food" onPress={() => log({ type: 'food', id: newId(), t: Date.now() })} />
-          <Button label={endedAt ? 'Resume' : 'End night'} flex={1.3} onPress={() => setEnded(endedAt ? null : Date.now())} />
+          <Button label="Water" onPress={() => log({ type: 'water', id: newId(), t: currentTime() })} />
+          <Button label="Food" onPress={() => log({ type: 'food', id: newId(), t: currentTime() })} />
+          <Button label={endedAt ? 'Resume' : 'End night'} flex={1.3} onPress={() => setEnded(endedAt ? null : currentTime())} />
         </View>
         {removed ? (
           <View style={styles.undo}>
@@ -185,7 +188,7 @@ export function TonightScreen() {
 
       <LogDrinkSheet visible={sheet && !showSafety} region={region} showCalories={settings.calories} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
       <SafetyCheck visible={showSafety} region={region}
-        onWithSomeone={() => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: Date.now() } }))} />
+        onWithSomeone={() => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: currentTime() } }))} />
     </Screen>
   );
 }
