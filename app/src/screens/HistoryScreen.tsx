@@ -194,6 +194,7 @@ export function HistoryScreen() {
           <View style={styles.dayDetail}>
             <Text style={styles.dayTitle}>{new Date(keyToTime(selected)).toDateString()}</Text>
             <Text style={styles.lead}>{sel ? `${sel.drinks} drinks · ${std(sel.grams)} standard drinks · peak ${sel.peak.toFixed(2)}%` : 'Alcohol-free day.'}</Text>
+            {sel?.critical ? <Text style={[styles.lead, { color: colors.bad }]}>Blood alcohol reached the critical range this night.</Text> : null}
           </View>
         ) : null}
       </View>

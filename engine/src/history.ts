@@ -23,6 +23,8 @@ export interface NightSummary {
   sleepHoursAffected: number;
   /** Estimated drop in overnight HRV recovery (%), or null if this night's drinking didn't reach bedtime. */
   hrvDropPct: number | null;
+  /** Blood alcohol reached the critical level (0.25%) this night. */
+  critical: boolean;
   waters: number;
   /** From first drink to 45 min after the last, in hours (for drinks-per-hour pace). */
   spanHours: number;
@@ -44,6 +46,7 @@ export function summarizeNight(profile: Profile, events: LogEvent[]): NightSumma
   const hrv = overnightHrvSeverity(night);
   return {
     hrvDropPct: hrv == null ? null : HRV_DROP_PCT[hrv],
+    critical: night.criticalAt != null,
     day: nightOf(first),
     start: first,
     debuffEnd,
@@ -71,6 +74,7 @@ export function byNight(summaries: NightSummary[]): Map<string, NightSummary> {
       drinks: prev.drinks + s.drinks, grams: prev.grams + s.grams, kcal: prev.kcal + s.kcal,
       peak: Math.max(prev.peak, s.peak), bedGrams: Math.max(prev.bedGrams, s.bedGrams),
       sleepHoursAffected: Math.max(prev.sleepHoursAffected, s.sleepHoursAffected),
+      critical: prev.critical || s.critical,
       hrvDropPct: prev.hrvDropPct == null ? s.hrvDropPct : s.hrvDropPct == null ? prev.hrvDropPct : Math.max(prev.hrvDropPct, s.hrvDropPct),
       waters: prev.waters + s.waters, spanHours: prev.spanHours + s.spanHours,
       mix: { beer: prev.mix.beer + s.mix.beer, wine: prev.mix.wine + s.mix.wine, spirits: prev.mix.spirits + s.mix.spirits, mixed: prev.mix.mixed + s.mix.mixed },

@@ -1,11 +1,15 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
-import { HOUR, PHASES, hpFromBac, phaseIndex, type Night } from '../../../engine/src/index.ts';
+import {
+  FED_WINDOW, PHASES, healthState, hpFromBac, hpGainNextHour, hpLossNextHour, phaseIndex, simulateNight, type Night,
+} from '../../../engine/src/index.ts';
 import { colors, fonts } from '../theme';
 import { HEART } from '../sprites';
 import { PixelSprite } from './PixelSprite';
 import { PHASE_COPY } from '../copy';
 import { clock } from '../format';
+import { useReduceMotion } from '../useReduceMotion';
 
 const SEGMENTS = ['WASTED', 'ROUGH', 'DRUNK', 'TIPSY', 'BUZZED', 'FRESH'];
 const TICKS = ['.15', '.11', '.08', '.05', '.02'];
@@ -30,24 +34,133 @@ function Zone({ left, width, kind, label }: { left: number; width: number; kind:
   );
 }
 
+/** A floating "−3" or "+1" that drifts up and fades. */
+function Pop({ text, kind, left }: { text: string; kind: 'dmg' | 'heal' | 'spark'; left: number }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 1200, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(); }, [v]);
+  const style = {
+    opacity: v.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 1, 0] }),
+    transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [8, kind === 'spark' ? -30 : -34] }) }],
+  };
+  if (kind === 'spark') return <Animated.View style={[styles.spark, { left: `${left}%` }, style]} />;
+  return <Animated.Text style={[styles.pop, { left: `${left}%`, color: kind === 'dmg' ? '#ff6a6f' : '#6fe3a8' }, style]}>{text}</Animated.Text>;
+}
+
+type PopItem = { id: number; text: string; kind: 'dmg' | 'heal' | 'spark'; left: number };
+
 export function HealthBar({ night }: { night: Night }) {
+  const reduceMotion = useReduceMotion();
+  const state = healthState(night);
   const hp = hpFromBac(night.bacNow);
   const incoming = hp - hpFromBac(night.futurePeak);
-  const taking = incoming > 0.5;
-  const healing = !taking && night.bacNow > 0;
-  const gain = healing ? Math.max(0, hpFromBac(night.bacAt(night.now + HOUR)) - hp) : 0;
+  const critical = state === 'critical', stabilising = state === 'stabilising';
+  const taking = !critical && !stabilising && incoming > 0.5;
+  const healing = !critical && !stabilising && !taking && night.bacNow > 0;
+  const loss = hpLossNextHour(night), gain = hpGainNextHour(night);
+
+  // If food is slowing things down, work out what the next hour would cost on an empty stomach.
+  const fedNow = night.foods.some(f => f.t <= night.now && night.now - f.t < FED_WINDOW);
+  const emptyStomachLoss = useMemo(() => {
+    if (!fedNow || !taking) return null;
+    const without = simulateNight({ profile: night.profile, events: [...night.drinks, ...night.waters], now: night.now });
+    return hpLossNextHour(without);
+  }, [fedNow, taking, night]);
+
   const k = night.bacNow >= 0.25 ? 6 : phaseIndex(night.bacNow);
-  const phaseColor = k >= 5 ? colors.bad : k >= 3 ? colors.warn : colors.ink;
+  const phaseColor = critical || k >= 5 ? colors.bad : k >= 3 ? colors.warn : colors.ink;
   const hasDrinks = night.drinks.length > 0;
+
+  // ----- Animations -----
+  // Trailing "recent damage" bar: holds briefly where health was, then slides down to catch up.
+  const trail = useRef(new Animated.Value(hp)).current;
+  const trailVal = useRef(hp);
+  // Floating numbers and sparkles.
+  const [pops, setPops] = useState<PopItem[]>([]);
+  const popId = useRef(0), prevHp = useRef<number | null>(null), acc = useRef(0);
+  // Heart: a shake when hit, a heartbeat while healing. Critical: a pulsing red glow.
+  const heartX = useRef(new Animated.Value(0)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  const addPop = (p: Omit<PopItem, 'id'>) => {
+    const id = popId.current++;
+    setPops(list => [...list, { ...p, id }]);
+    setTimeout(() => setPops(list => list.filter(x => x.id !== id)), 1300);
+  };
+
+  useEffect(() => {
+    const prev = prevHp.current;
+    prevHp.current = hp;
+    if (prev == null || Math.abs(hp - prev) > 25) { trail.setValue(hp); trailVal.current = hp; acc.current = 0; return; }
+    const d = hp - prev;
+    if (d < 0) {
+      if (trailVal.current < prev) trailVal.current = prev;
+      const timer = setTimeout(() => {
+        trailVal.current = hp;
+        Animated.timing(trail, { toValue: hp, duration: reduceMotion ? 0 : 600, useNativeDriver: false }).start();
+      }, 900);
+      acc.current = Math.min(0, acc.current) + d;
+      if (acc.current <= -1 && !reduceMotion) {
+        const n = Math.round(-acc.current); acc.current += n;
+        addPop({ text: `−${n}`, kind: 'dmg', left: Math.max(5, Math.min(95, hp)) });
+        Animated.sequence([-4, 4, -3, 0].map(x => Animated.timing(heartX, { toValue: x, duration: 60, useNativeDriver: true }))).start();
+      }
+      return () => clearTimeout(timer);
+    }
+    if (d > 0) {
+      trail.setValue(hp); trailVal.current = hp;
+      acc.current = Math.max(0, acc.current) + d;
+      if (acc.current >= 1 && !reduceMotion) {
+        const n = Math.round(acc.current); acc.current -= n;
+        addPop({ text: `+${n}`, kind: 'heal', left: Math.max(5, Math.min(95, hp)) });
+      }
+    }
+  }, [hp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Heartbeat while healing.
+  useEffect(() => {
+    if (!healing || reduceMotion) { heartScale.setValue(1); return; }
+    const beat = Animated.loop(Animated.sequence([
+      Animated.timing(heartScale, { toValue: 1.2, duration: 160, useNativeDriver: true }),
+      Animated.timing(heartScale, { toValue: 1.04, duration: 140, useNativeDriver: true }),
+      Animated.timing(heartScale, { toValue: 1.15, duration: 140, useNativeDriver: true }),
+      Animated.timing(heartScale, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(700),
+    ]));
+    beat.start();
+    return () => beat.stop();
+  }, [healing, reduceMotion, heartScale]);
+
+  // Sparkles rising from the edge of the bar while healing.
+  useEffect(() => {
+    if (!healing || reduceMotion) return;
+    const id = setInterval(() => addPop({ text: '', kind: 'spark', left: Math.max(2, Math.min(98, hpFromBac(night.bacNow) + Math.random() * 4 - 1)) }), 900);
+    return () => clearInterval(id);
+  }, [healing, reduceMotion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pulsing while critical.
+  useEffect(() => {
+    if (!critical || reduceMotion) { pulse.setValue(1); return; }
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 0.45, duration: 550, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 1, duration: 550, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [critical, reduceMotion, pulse]);
+
+  const chip = critical ? { text: 'CRITICAL', style: styles.chipCrit } : stabilising ? { text: 'STABILISING', style: styles.chipStab }
+    : taking ? { text: 'TAKING DAMAGE', style: styles.chipDmg } : healing ? { text: 'REGENERATING', style: styles.chipHeal } : null;
+  const gainText = gain >= 1 ? Math.round(gain) : gain.toFixed(1);
 
   return (
     <View>
       <View style={styles.head}>
-        <PixelSprite sprite={HEART} scale={4} />
-        <Text style={[styles.phase, { color: phaseColor }]}>{PHASES[k].name}</Text>
-        {taking || healing ? (
-          <Text style={[styles.chip, taking ? styles.chipDmg : styles.chipHeal]}>{taking ? 'TAKING DAMAGE' : 'REGENERATING'}</Text>
-        ) : null}
+        <Animated.View style={{ transform: [{ translateX: heartX }, { scale: heartScale }] }}>
+          <PixelSprite sprite={HEART} scale={4} dim={critical} />
+        </Animated.View>
+        <Text style={[styles.phase, { color: phaseColor }]}>{critical ? 'Critical' : PHASES[k].name}</Text>
+        {chip ? <Animated.Text style={[styles.chip, chip.style, critical && { opacity: pulse }]}>{chip.text}</Animated.Text> : null}
         <View style={styles.meta}>
           <Text style={styles.hpNum}>HP {Math.round(hp)}</Text>
           <Text style={styles.bac}>Blood alcohol ≈ {night.bacNow.toFixed(3)}%</Text>
@@ -55,26 +168,40 @@ export function HealthBar({ night }: { night: Night }) {
       </View>
 
       <View style={styles.tickRow}>
-        {TICKS.map((t, i) => (
-          <Text key={t} style={[styles.tick, { left: `${((i + 1) * 100) / 6}%` }]}>{t}</Text>
-        ))}
+        {TICKS.map((t, i) => <Text key={t} style={[styles.tick, { left: `${((i + 1) * 100) / 6}%` }]}>{t}</Text>)}
       </View>
 
-      <View style={styles.bar} accessibilityRole="progressbar" accessibilityLabel={`Health ${Math.round(hp)} of 100`}>
-        <View style={[styles.fill, { width: `${hp}%` }]}>
-          <View style={[styles.band, { flex: 22, backgroundColor: colors.hpHi }]} />
-          <View style={[styles.band, { flex: 50, backgroundColor: colors.hp }]} />
-          <View style={[styles.band, { flex: 28, backgroundColor: colors.hpLo }]} />
+      <View>
+        <View style={[styles.bar, critical && styles.barCrit]} accessibilityRole="progressbar" accessibilityLabel={`Health ${Math.round(hp)} of 100${chip ? ', ' + chip.text.toLowerCase() : ''}`}>
+          <Animated.View style={[styles.trail, { width: trail.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'], extrapolate: 'clamp' }) }]} />
+          <View style={[styles.fill, { width: `${hp}%` }]}>
+            <View style={[styles.band, { flex: 22, backgroundColor: colors.hpHi }]} />
+            <View style={[styles.band, { flex: 50, backgroundColor: colors.hp }]} />
+            <View style={[styles.band, { flex: 28, backgroundColor: colors.hpLo }]} />
+          </View>
+          {taking ? <Zone kind="dmg" left={hp - incoming} width={incoming} label={incoming >= 13 ? `−${Math.round(incoming)} HP incoming` : incoming >= 6 ? `−${Math.round(incoming)}` : ''} /> : null}
+          {healing && gain > 0.3 ? <Zone kind="heal" left={hp} width={gain} label={gain >= 13 ? `+${Math.round(gain)} HP next hour` : gain >= 6 ? `+${Math.round(gain)}` : ''} /> : null}
+          {[1, 2, 3, 4, 5].map(i => <View key={i} style={[styles.divider, { left: `${(i * 100) / 6}%` }]} />)}
+          {critical ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.critGlow, { opacity: pulse }]} /> : null}
         </View>
-        {taking ? <Zone kind="dmg" left={hp - incoming} width={incoming} label={incoming >= 13 ? `−${Math.round(incoming)} HP incoming` : incoming >= 6 ? `−${Math.round(incoming)}` : ''} /> : null}
-        {healing && gain > 0.3 ? <Zone kind="heal" left={hp} width={gain} label={gain >= 13 ? `+${Math.round(gain)} HP next hour` : gain >= 6 ? `+${Math.round(gain)}` : ''} /> : null}
-        {[1, 2, 3, 4, 5].map(i => <View key={i} style={[styles.divider, { left: `${(i * 100) / 6}%` }]} />)}
+        <View style={styles.popLayer} pointerEvents="none">
+          {pops.map(p => <Pop key={p.id} {...p} />)}
+        </View>
       </View>
 
-      {taking ? (
-        <Text style={[styles.rate, { color: colors.bad }]}>▼ −{Math.round(incoming)} HP still to land  <Text style={styles.rateSub}>Peak around {clock(night.futurePeakAt)}, even if you stop now.</Text></Text>
+      {critical ? (
+        <Text style={[styles.rate, { color: colors.bad }]}>Health is at 0.  <Text style={styles.rateSub}>Stop drinking and make sure someone sober is with you.</Text></Text>
+      ) : stabilising ? (
+        <Text style={[styles.rate, { color: colors.warn }]}>Stabilising · +{gainText} HP/hr  <Text style={styles.rateSub}>Keep someone with you until you're clear, around {clock(night.soberAt)}.</Text></Text>
+      ) : taking ? (
+        <View style={{ gap: 2 }}>
+          <Text style={[styles.rate, { color: colors.bad }]}>▼ −{Math.max(1, Math.round(loss))} HP next hour  <Text style={styles.rateSub}>Peak around {clock(night.futurePeakAt)}, even if you stop now.</Text></Text>
+          {emptyStomachLoss != null && emptyStomachLoss - loss >= 1 ? (
+            <Text style={styles.rateNote}>Slowed by food: about −{Math.round(emptyStomachLoss)} on an empty stomach.</Text>
+          ) : null}
+        </View>
       ) : healing ? (
-        <Text style={[styles.rate, { color: colors.good }]}>▲ +{gain >= 1 ? Math.round(gain) : gain.toFixed(1)} HP/hr  <Text style={styles.rateSub}>Full health around {clock(night.soberAt)}. Next-day debuffs keep running after that.</Text></Text>
+        <Text style={[styles.rate, { color: colors.good }]}>▲ +{gainText} HP/hr  <Text style={styles.rateSub}>Full health around {clock(night.soberAt)}. Next-day debuffs keep running after that.</Text></Text>
       ) : null}
 
       <View style={styles.segRow}>
@@ -94,12 +221,17 @@ const styles = StyleSheet.create({
   chip: { fontFamily: fonts.bodyBold, fontSize: 10.5, letterSpacing: 0.5, paddingHorizontal: 6, paddingVertical: 3, overflow: 'hidden' },
   chipDmg: { color: '#fff', backgroundColor: colors.hp },
   chipHeal: { color: colors.edge, backgroundColor: colors.good },
+  chipCrit: { color: '#fff', backgroundColor: '#b3132b' },
+  chipStab: { color: colors.edge, backgroundColor: colors.warn },
   meta: { marginLeft: 'auto', alignItems: 'flex-end' },
   hpNum: { fontFamily: fonts.num, fontSize: 26, color: colors.ink, lineHeight: 26 },
   bac: { fontFamily: fonts.body, fontSize: 13, color: colors.inkDim },
   tickRow: { height: 16, marginHorizontal: 3 },
   tick: { position: 'absolute', transform: [{ translateX: -9 }], fontFamily: fonts.bodyBold, fontSize: 11, color: colors.inkFaint },
   bar: { height: 30, marginHorizontal: 3, backgroundColor: colors.hpEmpty, borderWidth: 3, borderColor: colors.edge, overflow: 'hidden' },
+  barCrit: { borderColor: '#b3132b' },
+  critGlow: { backgroundColor: 'rgba(255,60,80,0.25)' },
+  trail: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#ffe08a' },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
   band: { width: '100%' },
   zone: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
@@ -107,8 +239,12 @@ const styles = StyleSheet.create({
   zoneHeal: { borderRightWidth: 2, borderRightColor: colors.good },
   zoneTxt: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
   divider: { position: 'absolute', top: 0, bottom: 0, width: 3, marginLeft: -3, backgroundColor: colors.edge },
+  popLayer: { position: 'absolute', left: 3, right: 3, top: 0, bottom: 0 },
+  pop: { position: 'absolute', top: -6, marginLeft: -14, width: 28, textAlign: 'center', fontFamily: fonts.num, fontSize: 26, textShadowColor: colors.edge, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 0 },
+  spark: { position: 'absolute', top: 10, width: 4, height: 4, marginLeft: -2, backgroundColor: '#7ff0b8' },
   rate: { fontFamily: fonts.bodyBold, fontSize: 14, marginTop: 9, marginHorizontal: 3 },
   rateSub: { fontFamily: fonts.body, fontSize: 13, color: colors.inkDim },
+  rateNote: { fontFamily: fonts.body, fontSize: 13, color: colors.good, marginHorizontal: 3 },
   segRow: { flexDirection: 'row', marginTop: 8, marginHorizontal: 3 },
   seg: { flex: 1, textAlign: 'center', fontFamily: fonts.bodyBold, fontSize: 10, color: colors.inkFaint, paddingVertical: 3 },
   segOn: { color: colors.edge, backgroundColor: colors.gold },

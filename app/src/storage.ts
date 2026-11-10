@@ -13,6 +13,8 @@ export interface SavedNight {
   events: LogEvent[];
   /** When the user tapped End night, if they did. */
   endedAt: number | null;
+  /** When the user last answered "someone sober is with me" on the safety check-in. */
+  safetyAckAt?: number;
 }
 
 export type Units = 'metric' | 'imperial';

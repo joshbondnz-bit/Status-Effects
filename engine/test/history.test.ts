@@ -44,7 +44,7 @@ function fake(dayStr: string, grams: number, startHour = 20, hoursOfDebuff = 12)
   const [y, m, d] = dayStr.split('-').map(Number);
   const start = new Date(y, m - 1, d, startHour).getTime();
   return { day: dayStr, start, debuffEnd: start + hoursOfDebuff * HOUR, drinks: 2, grams, kcal: 200, peak: grams > 50 ? 0.09 : 0.03,
-    bedGrams: 0, sleepHoursAffected: 0, hrvDropPct: null, waters: 0, spanHours: 2, mix: { beer: grams, wine: 0, spirits: 0, mixed: 0 } };
+    bedGrams: 0, sleepHoursAffected: 0, hrvDropPct: null, critical: false, waters: 0, spanHours: 2, mix: { beer: grams, wine: 0, spirits: 0, mixed: 0 } };
 }
 
 test('period totals count dry days and heavy nights', () => {

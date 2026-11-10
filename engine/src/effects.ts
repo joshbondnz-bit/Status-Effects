@@ -5,7 +5,7 @@ import type { Severity } from './types.ts';
 
 export type EffectId =
   | 'judgment' | 'sleep' | 'hrv' | 'dehydration' | 'hangover' | 'hangxiety'
-  | 'recovery' | 'fatpause' | 'munchies'
+  | 'recovery' | 'fatpause' | 'munchies' | 'strain'
   | 'hydrated' | 'lined' | 'pace' | 'called';
 
 export interface Effect {
@@ -27,6 +27,9 @@ export interface EffectOptions {
   /** When the user ended the night, if they did. */
   endedAt?: number | null;
 }
+
+/** How long "Body under strain" lasts after reaching the critical level. */
+export const STRAIN_HOURS = 48;
 
 /** Drop in overnight HRV recovery by intake (Pietilä et al., 2018): low, moderate, high. */
 export const HRV_DROP_PCT = [9, 24, 39] as const;
@@ -80,6 +83,13 @@ export function effects(night: Night, opts: EffectOptions): { debuffs: Effect[];
 
   if (night.firstDrink && night.lastDrink) {
     const first = night.firstDrink.t, last = night.lastDrink.t;
+
+    // Reaching the critical level leaves the body under strain for two days. If the projection
+    // says you're heading there, it shows as incoming: an early warning, not a badge.
+    if (night.criticalAt != null) add(debuffs, {
+      id: 'strain', kind: 'debuff', start: night.criticalAt, end: night.criticalAt + STRAIN_HOURS * HOUR,
+      status: now < night.criticalAt ? 'incoming' : 'active', severity: 2,
+    });
 
     const j = night.span(0.02);
     if (j) add(debuffs, {

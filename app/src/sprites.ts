@@ -42,6 +42,10 @@ export const ICONS: Record<EffectId, SpriteDef> = {
   pace: { palette: { w: '#c08a52', g: '#cfe6ff', a: '#3d4a6b', s: '#f2c14e' }, rows: [E,
     '..wwwwwwwwwwww..', '...gaaaaaaaag...', '...gssssssssg...', '....gssssssg....', '.....gssssg.....', '......gssg......', '.......ss.......',
     '......gssg......', '.....gassag.....', '....gaassaag....', '...gaassssaag...', '...gssssssssg...', '..wwwwwwwwwwww..', E, E] },
+  // A heart with a crack through it.
+  strain: { palette: { r: '#b3132b', h: '#e5484f', R: '#6e0d1c', c: '#100c18' }, rows: [E, E,
+    '...rrr....rrr...', '..rhrrr..rrcrr..', '.rhhrrrrrrrcrrr.', '.rhrrrrrrrcrrrr.', '.rrrrrrrrrcrrrR.', '.rrrrrrrrcrrrrR.',
+    '..rrrrrrrrcrrR..', '...rrrrrrcrRR...', '....rrrrcrRR....', '.....rrrcRR.....', '......rrRR......', '.......RR.......', E, E] },
   called: { palette: { y: '#f2c14e', h: '#fff1b0', Y: '#b8862a' }, rows: [E, E,
     '...yyyyyyyyyy...', '.yyyhyyyyyyyYyy.', '.y.yhyyyyyyyY.y.', '.y.yhyyyyyyyY.y.', '..yyhyyyyyyyYy..', '....yyyyyyyY....', '.....yyyyyY.....',
     '......yyyY......', '.......yY.......', '.......yY.......', '.....yyyyyY.....', '....YYYYYYYY....', E, E] },

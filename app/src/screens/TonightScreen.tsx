@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import {
-  PRESETS, MIN, effects, makeDrink, simulateNight, standardDrinks,
+  PRESETS, MIN, effects, healthState, makeDrink, simulateNight, standardDrinks,
   type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
 import { colors, fonts, panel } from '../theme';
@@ -15,6 +15,8 @@ import { NightLog } from '../components/NightLog';
 import { Rations } from '../components/Rations';
 import { CurveChart } from '../components/CurveChart';
 import { PixelSprite } from '../components/PixelSprite';
+import { SafetyCheck } from '../components/SafetyCheck';
+import { ICONS } from '../sprites';
 import { clock } from '../format';
 import { useApp } from '../AppDataProvider';
 
@@ -43,6 +45,10 @@ export function TonightScreen() {
   const night = useMemo(() => simulateNight({ profile, events, now }), [profile, events, now]);
   const fx = useMemo(() => effects(night, { calories: settings.calories, endedAt }), [night, settings.calories, endedAt]);
   const region = profile.region;
+  // At 0 HP the safety check-in appears, and comes back every 30 minutes while still critical.
+  const critical = healthState(night) === 'critical';
+  const ack = data.tonight.safetyAckAt;
+  const showSafety = critical && (ack == null || now - ack > 30 * MIN);
 
   const log = (e: LogEvent) => {
     update(d => ({ ...d, tonight: { ...d.tonight, events: [...d.tonight.events, e] } }));
@@ -94,19 +100,28 @@ export function TonightScreen() {
         <View style={styles.tally}>
           <View style={styles.glasses}>
             {night.drinks.length
-              ? night.drinks.slice(0, 24).map(d => <PixelSprite key={d.id} sprite={glassSprite(d)} scale={2} />)
+              // Drinks, water and food in the order they were logged, so the water-to-drink ratio is visible at a glance.
+              ? [...events].sort((a, b) => a.t - b.t).slice(0, 30).map(e =>
+                  e.type === 'drink' ? <PixelSprite key={e.id} sprite={glassSprite(e)} scale={2} />
+                  : <PixelSprite key={e.id} sprite={e.type === 'water' ? ICONS.hydrated : ICONS.lined} scale={1.5} />)
               : <Text style={styles.faint}>Your glasses stack up here.</Text>}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={styles.tallyN}>{night.drinks.length} drink{night.drinks.length === 1 ? '' : 's'}</Text>
+            {night.waters.length || night.foods.length ? (
+              <Text style={styles.faint}>{night.waters.length} water · {night.foods.length} food</Text>
+            ) : null}
             <Text style={styles.faint}>{total.toFixed(1)} std drinks</Text>
           </View>
         </View>
 
-        {night.bacNow >= 0.25 ? (
+        {critical ? (
           <View style={styles.danger}>
-            <Text style={styles.dangerTitle}>Time to stop and check in</Text>
-            <Text style={styles.dangerTxt}>Your estimated level is in a range where alcohol poisoning is a real risk. If someone can't stay awake, is breathing slowly, or is vomiting while drowsy, call 911.</Text>
+            <Text style={styles.dangerTitle}>Health is at 0</Text>
+            <Text style={styles.dangerTxt}>Your estimated level is in a range where alcohol poisoning is a real risk. Stop drinking and make sure someone sober is with you.</Text>
+            <Pressable onPress={() => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: undefined } }))} accessibilityRole="button">
+              <Text style={styles.dangerLink}>Open the safety check-in</Text>
+            </Pressable>
           </View>
         ) : night.bacNow >= 0.15 ? (
           <Text style={styles.warn}>Memory gaps and vomiting are likely in this range. Switch to water and stay with people you trust.</Text>
@@ -168,7 +183,9 @@ export function TonightScreen() {
       ) : null}
       {error ? <Text style={styles.warn}>{error}</Text> : null}
 
-      <LogDrinkSheet visible={sheet} region={region} showCalories={settings.calories} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
+      <LogDrinkSheet visible={sheet && !showSafety} region={region} showCalories={settings.calories} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
+      <SafetyCheck visible={showSafety} region={region}
+        onWithSomeone={() => update(d => ({ ...d, tonight: { ...d.tonight, safetyAckAt: Date.now() } }))} />
     </Screen>
   );
 }
@@ -200,6 +217,7 @@ const styles = StyleSheet.create({
   danger: { backgroundColor: '#1e2a33', borderWidth: 2, borderColor: '#3f6275', padding: 14, gap: 6 },
   dangerTitle: { fontFamily: fonts.display, fontSize: 20, color: '#e9f6ff' },
   dangerTxt: { fontFamily: fonts.body, fontSize: 15, color: '#cfe3ef', lineHeight: 21 },
+  dangerLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: '#9fd4f0', textDecorationLine: 'underline', marginTop: 4 },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, textAlign: 'center' },
   link: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana, textAlign: 'center', textDecorationLine: 'underline' },
 });

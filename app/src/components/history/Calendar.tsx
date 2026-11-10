@@ -51,6 +51,10 @@ export function Calendar(p: Props) {
       <LegendItem color={colors.heat2} label={`${std(20)}–${std(45)}`} />
       <LegendItem color={colors.heat3} label={`${std(45)}–${std(75)}`} />
       <LegendItem color={colors.heat4} label={`${std(75)}+ drinks`} />
+      <View style={styles.legendItem}>
+        <View style={[styles.swatch, styles.critSwatch]}><Text style={styles.critMarkSmall}>!</Text></View>
+        <Text style={styles.legendTxt}>Reached critical</Text>
+      </View>
     </View>
   );
 
@@ -74,8 +78,9 @@ export function Calendar(p: Props) {
                   <View style={[styles.miniGrid, { width: cell * 7 }]}>
                     {Array.from({ length: off }, (_, i) => <View key={'p' + i} style={{ width: cell, height: cell }} />)}
                     {Array.from({ length: days }, (_, d) => {
-                      const c = cellOf(new Date(y, m, d + 1).getTime());
-                      return <View key={d} style={[styles.miniCell, { width: cell, height: cell, backgroundColor: c === 'none' || c === 'future' ? colors.panel2 : BG[c] }]} />;
+                      const t = new Date(y, m, d + 1).getTime(), c = cellOf(t);
+                      const crit = p.nights.get(dayKey(t))?.critical;
+                      return <View key={d} style={[styles.miniCell, { width: cell, height: cell, backgroundColor: c === 'none' || c === 'future' ? colors.panel2 : BG[c] }, crit && styles.miniCrit]} />;
                     })}
                   </View>
                 ) : null}
@@ -112,7 +117,7 @@ export function Calendar(p: Props) {
             const key = dayKey(t), c = cellOf(t), inRange = t >= p.range.start && t <= p.range.end;
             const otherMonth = new Date(t).getMonth() !== month, live = c !== 'none' && c !== 'future';
             const n = p.nights.get(key);
-            const label = `${new Date(t).toDateString()}: ${n ? `${n.drinks} drinks` : live ? 'alcohol-free' : 'no data'}`;
+            const label = `${new Date(t).toDateString()}: ${n ? `${n.drinks} drinks${n.critical ? ', reached critical' : ''}` : live ? 'alcohol-free' : 'no data'}`;
             return (
               <Pressable key={key} disabled={!live} onPress={() => p.onSelectDay(key)} accessibilityRole="button" accessibilityLabel={label}
                 style={[styles.cell, { width: daySize, height: daySize, backgroundColor: live ? BG[c] : 'transparent' }, !live && styles.cellEmpty,
@@ -121,6 +126,7 @@ export function Calendar(p: Props) {
                 <Text style={[styles.num, (c === 'l3' || c === 'l4') && { color: colors.heatInk }, otherMonth && { fontFamily: fonts.body }, !live && { color: colors.inkFaint }]}>
                   {new Date(t).getDate()}
                 </Text>
+                {n?.critical ? <Text style={styles.critMark}>!</Text> : null}
               </Pressable>
             );
           })}
@@ -147,6 +153,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: DAY_GAP },
   dow: { flex: 1, textAlign: 'center', fontFamily: fonts.bodyBold, fontSize: 11, color: colors.inkFaint },
   cell: { padding: 3, backgroundColor: colors.sunk },
+  critMark: { position: 'absolute', right: 3, bottom: 1, fontFamily: fonts.bodyBold, fontSize: 13, color: '#ffffff', textShadowColor: colors.edge, textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 0 },
+  critSwatch: { backgroundColor: colors.heat4, alignItems: 'center', justifyContent: 'center' },
+  critMarkSmall: { fontFamily: fonts.bodyBold, fontSize: 9, color: '#ffffff', lineHeight: 11 },
+  miniCrit: { borderColor: '#ffffff' },
   cellEmpty: { borderWidth: 1, borderColor: colors.edgeHi },
   inWeek: { borderBottomWidth: 4, borderBottomColor: colors.gold },
   today: { borderWidth: 2, borderColor: colors.gold },

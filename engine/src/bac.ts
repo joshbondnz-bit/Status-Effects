@@ -23,6 +23,8 @@ export const FED_BIOAVAILABILITY = 0.85;
 export const AFTER_LAST_DRINK = 15 * MIN;
 /** Never treat a night's sleep as shorter than this when bedtime gets pushed late. */
 const MIN_SLEEP = 4 * HOUR;
+/** Blood alcohol at which health hits 0 and the app switches to its safety response. */
+export const CRITICAL_BAC = 0.25;
 /** Blood is about 80.6% water. */
 const BLOOD_WATER_FRACTION = 0.806;
 
@@ -105,6 +107,10 @@ export interface Night {
   /** Highest BAC from now on (equals bacNow when already falling). */
   futurePeak: number;
   futurePeakAt: number;
+  /** Highest BAC up to now (no projection). */
+  peakSoFar: number;
+  /** First time BAC reaches the critical level (0.25%), past or projected; null if it never does. */
+  criticalAt: number | null;
   /** When alcohol is fully cleared (past or projected), or null if none was drunk. */
   clearedAt: number | null;
   /** clearedAt if it's still ahead, otherwise now. */
@@ -174,10 +180,13 @@ export function simulateNight({ profile, events: input, now, maxHorizonHours = 4
   };
   const bacNow = samples[Math.min(nowIdx, samples.length - 1)] ?? 0;
 
-  let peak = 0, peakAt = t0, futurePeak = bacNow, futurePeakAt = now;
+  let peak = 0, peakAt = t0, futurePeak = bacNow, futurePeakAt = now, peakSoFar = 0;
+  let criticalAt: number | null = null;
   samples.forEach((b, k) => {
     if (b > peak) { peak = b; peakAt = timeOf(k); }
     if (k >= nowIdx && b > futurePeak) { futurePeak = b; futurePeakAt = timeOf(k); }
+    if (k <= nowIdx && b > peakSoFar) peakSoFar = b;
+    if (criticalAt == null && b >= CRITICAL_BAC) criticalAt = timeOf(k);
   });
 
   let lastPositive = -1;
@@ -199,7 +208,7 @@ export function simulateNight({ profile, events: input, now, maxHorizonHours = 4
   const bedBac = bacAt(bed);
   return {
     profile, body, now, t0, samples, drinks, foods, waters, bed, wake,
-    bacNow, stomachNow, peak, peakAt, futurePeak, futurePeakAt, clearedAt,
+    bacNow, stomachNow, peak, peakAt, futurePeak, futurePeakAt, peakSoFar, criticalAt, clearedAt,
     soberAt: clearedAt && clearedAt > now ? clearedAt : now,
     bedBac, bedGrams: bedBac * body.volumeDl,
     totalGrams, gramsPerKg: totalGrams / profile.weightKg,
