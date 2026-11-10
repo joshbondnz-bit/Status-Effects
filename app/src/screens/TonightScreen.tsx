@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   PRESETS, MIN, effects, makeDrink, simulateNight, standardDrinks,
-  type DrinkSpec, type LogEvent, type Profile,
+  type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
 import { colors, fonts, panel } from '../theme';
 import { glassSprite } from '../sprites';
 import { HealthBar } from '../components/HealthBar';
 import { EffectCard } from '../components/EffectCard';
 import { LogDrinkSheet } from '../components/LogDrinkSheet';
+import { NightLog } from '../components/NightLog';
 import { PixelSprite } from '../components/PixelSprite';
 import { clock } from '../format';
-
-// Until onboarding and Options exist in the app, use the prototype's default character.
-const PROFILE: Profile = { weightKg: 80, heightCm: 178, age: 32, sex: 'm', region: 'ca', bedtime: '23:30', wakeTime: '07:30' };
+import { useAppData } from '../useAppData';
+import { DEFAULT_PROFILE } from '../storage';
 
 let seq = 0;
 const newId = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
@@ -30,10 +30,11 @@ function Button({ label, onPress, primary, flex = 1 }: { label: string; onPress:
 
 export function TonightScreen() {
   const insets = useSafeAreaInsets();
-  const [events, setEvents] = useState<LogEvent[]>([]);
-  const [endedAt, setEndedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [sheet, setSheet] = useState(false);
+  const [removed, setRemoved] = useState<LogEvent | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { data, ready, error, update } = useAppData(now);
 
   // Re-run the model every 15 seconds so countdowns and the health bar move on their own.
   useEffect(() => {
@@ -41,29 +42,51 @@ export function TonightScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const night = useMemo(() => simulateNight({ profile: PROFILE, events, now }), [events, now]);
+  const profile = data?.profile ?? DEFAULT_PROFILE;
+  const events = data?.tonight.events ?? [];
+  const endedAt = data?.tonight.endedAt ?? null;
+  const night = useMemo(() => simulateNight({ profile, events, now }), [profile, events, now]);
   const fx = useMemo(() => effects(night, { calories: true, endedAt }), [night, endedAt]);
-  const region = PROFILE.region;
+  const region = profile.region;
 
-  const log = (e: LogEvent) => { setEvents(prev => [...prev, e]); setNow(Date.now()); };
+  const log = (e: LogEvent) => {
+    update(d => ({ ...d, tonight: { ...d.tonight, events: [...d.tonight.events, e] } }));
+    setNow(Date.now());
+  };
   const pickDrink = (spec: DrinkSpec) => { log(makeDrink(spec, Date.now(), newId())); setSheet(false); };
+  const setEnded = (t: number | null) => update(d => ({ ...d, tonight: { ...d.tonight, endedAt: t } }));
 
-  // A sample night so there's something to look at on first launch (until real storage exists).
+  const remove = (e: LogEvent) => {
+    update(d => ({ ...d, tonight: { ...d.tonight, events: d.tonight.events.filter(x => x.id !== e.id) } }));
+    setRemoved(e);
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setRemoved(null), 6000);
+  };
+  const undo = () => { if (removed) { log(removed); setRemoved(null); } };
+
+  // A sample night to try things out. Only offered while tonight's log is empty, so it never replaces real entries.
   const loadSample = () => {
     const t = Date.now();
-    setEndedAt(null);
-    setEvents([
+    update(d => ({ ...d, tonight: { ...d.tonight, endedAt: null, events: [
       { type: 'food', id: newId(), t: t - 170 * MIN },
       makeDrink(PRESETS.beer[0], t - 130 * MIN, newId()),
       makeDrink(PRESETS.beer[0], t - 85 * MIN, newId()),
       makeDrink(PRESETS.beer[3], t - 45 * MIN, newId()),
       { type: 'water', id: newId(), t: t - 30 * MIN },
       makeDrink(PRESETS.spirits[1], t - 10 * MIN, newId()),
-    ]);
+    ] } }));
     setNow(t);
   };
 
   const total = standardDrinks(night.totalGrams, region);
+
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+        {error ? <Text style={styles.warn}>{error}</Text> : <ActivityIndicator color={colors.gold} />}
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 32 }]}>
@@ -100,8 +123,14 @@ export function TonightScreen() {
           <Button label="+ Drink" primary flex={2} onPress={() => setSheet(true)} />
           <Button label="Water" onPress={() => log({ type: 'water', id: newId(), t: Date.now() })} />
           <Button label="Food" onPress={() => log({ type: 'food', id: newId(), t: Date.now() })} />
-          <Button label={endedAt ? 'Resume' : 'End night'} flex={1.3} onPress={() => setEndedAt(endedAt ? null : Date.now())} />
+          <Button label={endedAt ? 'Resume' : 'End night'} flex={1.3} onPress={() => setEnded(endedAt ? null : Date.now())} />
         </View>
+        {removed ? (
+          <View style={styles.undo}>
+            <Text style={styles.undoTxt}>Removed {removed.type === 'drink' ? removed.name : removed.type === 'water' ? 'water' : 'food'}.</Text>
+            <Pressable onPress={undo} accessibilityRole="button"><Text style={styles.undoBtn}>Undo</Text></Pressable>
+          </View>
+        ) : null}
       </View>
 
       <View style={[panel, styles.card]}>
@@ -119,8 +148,20 @@ export function TonightScreen() {
         </View>
       </View>
 
-      <Text style={styles.fine}>Estimates only. Not a breathalyser and never a driving clearance.</Text>
-      <Pressable onPress={loadSample} accessibilityRole="button"><Text style={styles.link}>Load a sample night</Text></Pressable>
+      <View style={[panel, styles.card]}>
+        <View style={styles.logHead}>
+          <Text style={styles.h2}>Tonight's log</Text>
+          {night.drinks.length ? <Text style={styles.faint}>{total.toFixed(1)} std drinks</Text> : null}
+        </View>
+        <NightLog events={events} region={region} onRemove={remove} />
+        {data && data.past.length ? <Text style={styles.faint}>{data.past.length} earlier night{data.past.length === 1 ? '' : 's'} saved for History.</Text> : null}
+      </View>
+
+      <Text style={styles.fine}>Estimates only. Not a breathalyser and never a driving clearance. Your log is saved on this device only.</Text>
+      {events.length === 0 ? (
+        <Pressable onPress={loadSample} accessibilityRole="button"><Text style={styles.link}>Load a sample night</Text></Pressable>
+      ) : null}
+      {error ? <Text style={styles.warn}>{error}</Text> : null}
 
       <LogDrinkSheet visible={sheet} region={region} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
     </ScrollView>
@@ -142,6 +183,10 @@ const styles = StyleSheet.create({
   btnPrimary: { backgroundColor: colors.hp, borderColor: colors.hpHi, borderBottomColor: colors.hpLo },
   btnTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, textAlign: 'center' },
   h2: { fontFamily: fonts.display, fontSize: 19, color: colors.ink },
+  logHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  undo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.ink, paddingHorizontal: 12, paddingVertical: 10 },
+  undoTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.bg },
+  undoBtn: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.hpLo, textDecorationLine: 'underline' },
   grid: { gap: 8 },
   empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12, width: '100%' },
   warn: { fontFamily: fonts.body, fontSize: 15, color: colors.alertInk, backgroundColor: colors.alertBg, borderWidth: 2, borderColor: colors.alertEdge, padding: 10 },
