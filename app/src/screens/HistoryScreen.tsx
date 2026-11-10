@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  REGIONS, addDays, byNight, canadaRisk, daysInclusive, dayKey, dryStreaks, keyToTime, periodRange, periodStats,
+  REGIONS, achievements, addDays, byNight, canadaRisk, daysInclusive, dayKey, dryStreaks, keyToTime, periodRange, periodStats,
   startOfDay, startOfWeek, stepPeriod, summarizeNight, weeklyGuidance, type NightSummary, type Period,
 } from '../../../engine/src/index.ts';
+import { AchievementsCard, CaloriesCard, CheckInCard, PatternsCard, SleepCard } from '../components/history/Sections';
 import { useApp } from '../AppDataProvider';
 import { sampleHistory } from '../sampleHistory';
 import { Calendar, MONTHS_LONG } from '../components/history/Calendar';
@@ -25,7 +26,7 @@ function fmtRange(a: number, b: number): string {
 
 export function HistoryScreen() {
   const insets = useSafeAreaInsets();
-  const { data, now } = useApp();
+  const { data, now, update } = useApp();
   const [period, setPeriod] = useState<Period>('week');
   const [cursor, setCursor] = useState(now);
   const [selected, setSelected] = useState<string | null>(null);
@@ -100,6 +101,7 @@ export function HistoryScreen() {
   }
 
   const streaks = dryStreaks(nights, trackingStart, today);
+  const badges = useMemo(() => achievements(nights, trackingStart, today, guide.weeklyGrams), [nights, trackingStart, today, guide.weeklyGrams]);
   const sel = selected ? nights.get(selected) : undefined;
   const hasAny = nights.size > 0;
 
@@ -200,10 +202,17 @@ export function HistoryScreen() {
         <Text style={styles.fine}>{guide.source}{chartNote ? '. ' + chartNote : ''}</Text>
       </View>
 
+      {data.settings.calories ? <CaloriesCard st={st} label={short} units={data.settings.units} compareWith={data.settings.compareWith ?? 'pizza'} /> : null}
+      <SleepCard st={st} label={short} />
+      <PatternsCard st={st} label={short} gramsPerDrink={g} />
+      <AchievementsCard list={badges} />
+      <CheckInCard region={region} sex={data.profile.sex} last={data.audit}
+        onSave={score => update(d => ({ ...d, audit: { score, at: Date.now() } }))} />
+
       {hasAny && !sample ? (
         <Pressable onPress={() => setSample(true)} accessibilityRole="button"><Text style={styles.link}>Preview with sample data</Text></Pressable>
       ) : null}
-      <Text style={styles.fine}>More History is coming: calories, sleep and recovery, patterns, achievements and a check-in.</Text>
+      <Text style={styles.fine}>Coming with the morning-after report: how you feel compared with how much you drank.</Text>
     </ScrollView>
   );
 }

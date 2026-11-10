@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  addDays, byNight, dayKey, daysInclusive, dryStreaks, nightOf, periodRange, periodStats, startOfWeek, stepPeriod,
+  achievements, addDays, byNight, dayKey, daysInclusive, dryStreaks, nightOf, periodRange, periodStats, startOfWeek, stepPeriod,
   summarizeNight, PRESETS, HOUR, type NightSummary,
 } from '../src/index.ts';
 import { REF, drink, water, BOTTLE } from './helpers.ts';
@@ -44,7 +44,7 @@ function fake(dayStr: string, grams: number, startHour = 20, hoursOfDebuff = 12)
   const [y, m, d] = dayStr.split('-').map(Number);
   const start = new Date(y, m - 1, d, startHour).getTime();
   return { day: dayStr, start, debuffEnd: start + hoursOfDebuff * HOUR, drinks: 2, grams, kcal: 200, peak: grams > 50 ? 0.09 : 0.03,
-    bedGrams: 0, sleepHoursAffected: 0, waters: 0, spanHours: 2, mix: { beer: grams, wine: 0, spirits: 0, mixed: 0 } };
+    bedGrams: 0, sleepHoursAffected: 0, hrvDropPct: null, waters: 0, spanHours: 2, mix: { beer: grams, wine: 0, spirits: 0, mixed: 0 } };
 }
 
 test('period totals count dry days and heavy nights', () => {
@@ -80,6 +80,45 @@ test('two logs on the same night are combined', () => {
   const m = byNight([fake('2026-11-06', 20), fake('2026-11-06', 30)]);
   assert.equal(m.get('2026-11-06')!.grams, 50);
   assert.equal(m.get('2026-11-06')!.drinks, 4);
+});
+
+const ach = (list: ReturnType<typeof achievements>, id: string) => list.find(a => a.id === id)!;
+
+test('achievements: dry week and weekend off', () => {
+  // Drinking every Mon and Wed only, Oct 5 – Nov 1: weekends are free, but no 7-day dry run.
+  const ns: NightSummary[] = [];
+  for (let t = day(2026, 10, 5); t <= day(2026, 11, 1); t = addDays(t, 7)) { ns.push(fake(dayKey(t), 20)); ns.push(fake(dayKey(addDays(t, 2)), 20)); }
+  const a = achievements(byNight(ns), day(2026, 10, 5), day(2026, 11, 1), 26.9);
+  assert.equal(ach(a, 'weekendOff').earned, true);
+  assert.equal(ach(a, 'dryWeek').earned, false);
+  assert.equal(ach(a, 'dryWeek').current, 4); // Thu–Sun
+});
+
+test('achievements: four full weeks under the weekly line', () => {
+  // One 20 g night a week (under Canada's ~27 g low-risk line) for four full weeks.
+  const ns = [0, 7, 14, 21].map(d => fake(dayKey(addDays(day(2026, 10, 5), d + 4)), 20));
+  const a = achievements(byNight(ns), day(2026, 10, 5), day(2026, 11, 3), 26.9);
+  assert.equal(ach(a, 'underTheLine').current, 4);
+  assert.equal(ach(a, 'underTheLine').earned, true);
+});
+
+test('achievements: a heavy week resets the under-the-line run', () => {
+  const ns = [fake('2026-10-09', 20), fake('2026-10-16', 80), fake('2026-10-23', 20)];
+  const a = achievements(byNight(ns), day(2026, 10, 5), day(2026, 11, 3), 26.9);
+  assert.equal(ach(a, 'underTheLine').current, 2); // Oct 19–25 and Oct 26–Nov 1
+});
+
+test('achievements: nothing earned for volume, nothing earned with no drinks for water or pace', () => {
+  const a = achievements(new Map(), day(2026, 10, 1), day(2026, 10, 3), 26.9);
+  assert.equal(ach(a, 'hydrated').earned, false);
+  assert.equal(ach(a, 'steadyHand').earned, false);
+});
+
+test('a night that reaches bedtime records its HRV hit; a lunchtime one does not', () => {
+  const evening = summarizeNight(REF, [drink(PRESETS.beer[0], 120), drink(PRESETS.beer[0], 180)])!;
+  const lunch = summarizeNight(REF, [drink(BOTTLE, -7 * 60 + 30)])!;
+  assert.ok(evening.hrvDropPct != null && evening.hrvDropPct >= 9);
+  assert.equal(lunch.hrvDropPct, null);
 });
 
 test('addDays lands on midnight across the November clock change', () => {

@@ -17,11 +17,15 @@ export interface SavedNight {
 
 export type Units = 'metric' | 'imperial';
 
+export type FoodCompare = 'pizza' | 'doughnut' | 'burger';
+
 export interface Settings {
   /** Show calories and the food-related debuffs. */
   calories: boolean;
   /** How weight and height are shown and entered. The engine always works in kg and cm. */
   units: Units;
+  /** What calories are compared with in History. */
+  compareWith?: FoodCompare;
 }
 
 /** First-run setup: not seen yet, finished, or skipped (using the default character). */
@@ -37,6 +41,8 @@ export interface AppData {
   past: SavedNight[];
   /** When this device started tracking, so History can count alcohol-free days from day one. */
   trackingSince: number;
+  /** The most recent AUDIT-C check-in, if any. */
+  audit?: { score: number; at: number };
 }
 
 export const DEFAULT_SETTINGS: Settings = { calories: true, units: 'imperial' };
@@ -80,6 +86,7 @@ function upgrade(raw: any): AppData | null {
     settings: { ...DEFAULT_SETTINGS, ...(raw.settings ?? {}) },
     tonight: { ...raw.tonight, endedAt: raw.tonight.endedAt ?? null },
     past: raw.past.filter(isNight),
+    audit: raw.audit && typeof raw.audit.score === 'number' && typeof raw.audit.at === 'number' ? raw.audit : undefined,
   };
 }
 

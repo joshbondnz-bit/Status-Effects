@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { CharacterFields, RoutineFields } from '../components/ProfileFields';
-import { PixelButton, ToggleRow } from '../components/Form';
+import { Field, PixelButton, Segmented, ToggleRow } from '../components/Form';
+import type { FoodCompare } from '../storage';
 import { colors, fonts, panel } from '../theme';
 
 export function OptionsScreen() {
@@ -42,6 +43,13 @@ export function OptionsScreen() {
         <ToggleRow value={data.settings.calories} onChange={calories => update(d => ({ ...d, settings: { ...d.settings, calories } }))}
           title="Show calories and food-related debuffs"
           body="Some people find calorie tracking unhelpful, so this stays optional." />
+        {data.settings.calories ? (
+          <Field label="Compare calories with">
+            <Segmented<FoodCompare> label="Compare calories with" value={data.settings.compareWith ?? 'pizza'}
+              onChange={compareWith => update(d => ({ ...d, settings: { ...d.settings, compareWith } }))}
+              options={[{ value: 'pizza', label: 'Pizza slices' }, { value: 'doughnut', label: 'Doughnuts' }, { value: 'burger', label: 'Burgers' }]} />
+          </Field>
+        ) : null}
       </View>
 
       <View style={[panel, styles.card]}>
