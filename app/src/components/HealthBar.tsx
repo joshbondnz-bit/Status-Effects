@@ -18,25 +18,37 @@ const NATIVE = Platform.OS !== 'web';
 
 /**
  * A striped section of the bar: incoming damage (red/white) or the next hour's healing (green).
- * The stripes stay still and slowly fade in and out, so the motion stays calm (sliding stripes looked jittery).
+ * The stripes stay still; every few seconds a soft shine slides once across, like light catching glass.
+ * Damage shines right-to-left (the way health is draining), healing left-to-right.
  */
+const SHINE_W = 22;
 function Zone({ left, width, kind, label, still }: { left: number; width: number; kind: 'dmg' | 'heal'; label: string; still: boolean }) {
   const id = 'stripes-' + kind;
   const [a, b] = kind === 'dmg' ? ['rgba(255,240,220,0.75)', 'rgba(140,20,40,0.6)'] : ['rgba(95,211,154,0.65)', 'rgba(95,211,154,0.2)'];
-  const glow = useRef(new Animated.Value(1)).current;
+  const [zoneW, setZoneW] = useState(0);
+  const sweep = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (still) { glow.setValue(1); return; }
-    const ease = Easing.inOut(Easing.sin);
+    if (still || zoneW < 8) return;
+    sweep.setValue(0);
     const loop = Animated.loop(Animated.sequence([
-      Animated.timing(glow, { toValue: 0.45, duration: 1400, easing: ease, useNativeDriver: NATIVE }),
-      Animated.timing(glow, { toValue: 1, duration: 1400, easing: ease, useNativeDriver: NATIVE }),
+      Animated.delay(1800),
+      Animated.timing(sweep, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: NATIVE }),
+      Animated.timing(sweep, { toValue: 0, duration: 0, useNativeDriver: NATIVE }),
     ]));
     loop.start();
     return () => loop.stop();
-  }, [still, glow]);
+  }, [still, zoneW, sweep]);
+  const from = -SHINE_W * 2, to = zoneW + SHINE_W;
+  const translateX = sweep.interpolate({ inputRange: [0, 1], outputRange: kind === 'dmg' ? [to, from] : [from, to] });
   return (
-    <View style={[styles.zone, { left: `${left}%`, width: `${width}%` }, kind === 'dmg' ? styles.zoneDmg : styles.zoneHeal]}>
-      <Animated.View style={[styles.stripeLayer, { opacity: glow }]}>
+    <View onLayout={e => setZoneW(Math.round(e.nativeEvent.layout.width))}
+      style={[styles.zone, { left: `${left}%`, width: `${width}%` }, kind === 'dmg' ? styles.zoneDmg : styles.zoneHeal]}>
+      {!still && zoneW >= 8 ? (
+        <Animated.View pointerEvents="none" style={[styles.shine, { transform: [{ translateX }, { skewX: '-20deg' }] }]}>
+          <View style={styles.shineSoft} /><View style={styles.shineCore} /><View style={styles.shineSoft} />
+        </Animated.View>
+      ) : null}
+      <View style={styles.stripeLayer}>
         <Svg width="100%" height="100%">
           <Defs>
             <Pattern id={id} width={8} height={8} patternUnits="userSpaceOnUse" patternTransform={`rotate(${kind === 'dmg' ? -45 : 45})`}>
@@ -46,7 +58,7 @@ function Zone({ left, width, kind, label, still }: { left: number; width: number
           </Defs>
           <Rect width="100%" height="100%" fill={`url(#${id})`} />
         </Svg>
-      </Animated.View>
+      </View>
       {label ? <Text style={[styles.zoneTxt, { textShadowColor: kind === 'dmg' ? '#3a0a14' : '#0d3a26' }]}>{label}</Text> : null}
     </View>
   );
@@ -297,6 +309,9 @@ const styles = StyleSheet.create({
   zoneDmg: { borderLeftWidth: 2, borderLeftColor: '#fff4e6' },
   zoneHeal: { borderRightWidth: 2, borderRightColor: colors.good },
   stripeLayer: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
+  shine: { position: 'absolute', top: -4, bottom: -4, left: 0, width: SHINE_W, flexDirection: 'row', zIndex: 1 },
+  shineSoft: { flex: 1, backgroundColor: 'rgba(255,255,255,0.18)' },
+  shineCore: { flex: 1, backgroundColor: 'rgba(255,255,255,0.42)' },
   zoneTxt: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#fff', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 1 },
   divider: { position: 'absolute', top: 0, bottom: 0, width: 3, marginLeft: -3, backgroundColor: colors.edge },
   edge: { position: 'absolute', top: 0, bottom: 0, width: 4, marginLeft: -2 },
