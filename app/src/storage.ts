@@ -35,6 +35,8 @@ export interface AppData {
   tonight: SavedNight;
   /** Finished nights, oldest first. History will be built from these. */
   past: SavedNight[];
+  /** When this device started tracking, so History can count alcohol-free days from day one. */
+  trackingSince: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = { calories: true, units: 'imperial' };
@@ -49,7 +51,7 @@ export function newNight(): SavedNight {
 }
 
 export function defaultData(): AppData {
-  return { version: DATA_VERSION, setup: 'pending', profile: DEFAULT_PROFILE, settings: DEFAULT_SETTINGS, tonight: newNight(), past: [] };
+  return { version: DATA_VERSION, setup: 'pending', profile: DEFAULT_PROFILE, settings: DEFAULT_SETTINGS, tonight: newNight(), past: [], trackingSince: Date.now() };
 }
 
 function isNight(x: unknown): x is SavedNight {
@@ -67,7 +69,11 @@ function upgrade(raw: any): AppData | null {
   if (raw.version !== DATA_VERSION) return null;
   if (!isNight(raw.tonight) || !Array.isArray(raw.past)) return null;
   const setup: SetupState = raw.setup === 'done' || raw.setup === 'skipped' ? raw.setup : 'pending';
+  // Added later as an optional field: fall back to the earliest thing ever logged.
+  const allTimes = [raw.tonight, ...raw.past].flatMap((n: SavedNight) => n.events.map(e => e.t)).filter(Number.isFinite);
+  const trackingSince = typeof raw.trackingSince === 'number' ? raw.trackingSince : allTimes.length ? Math.min(...allTimes) : Date.now();
   return {
+    trackingSince,
     version: DATA_VERSION,
     setup,
     profile: { ...DEFAULT_PROFILE, ...(raw.profile ?? {}) },

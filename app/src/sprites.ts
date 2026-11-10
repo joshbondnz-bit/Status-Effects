@@ -60,6 +60,14 @@ export function gearSprite(color: string): SpriteDef {
   };
 }
 
+/** History tab icon: a little calendar page. */
+export function calendarSprite(color: string): SpriteDef {
+  return {
+    palette: { g: color, r: '#e5484f', w: '#2f2945', d: color },
+    rows: ['.g.....g.', 'rrrrrrrrr', 'rrrrrrrrr', 'gwwwwwwwg', 'gwdwdwdwg', 'gwwwwwwwg', 'gwdwdwwwg', 'gwwwwwwwg', 'ggggggggg'],
+  };
+}
+
 // Drink tally glasses. L/H/D are the drink's liquid colour, its highlight and its shade.
 const GLASSES: Record<'pint' | 'bottle' | 'wine' | 'shot' | 'cocktail', string[]> = {
   pint: ['.wwwwwww.', 'wwwwwwwww', 'gLLLLLLLg', 'gLHLLLLLg', 'gLHLLLLLg', 'gLLLLLLDg', '.gLLLLDg.', '.gLLLLDg.', '.gLLLLDg.', '.ggggggg.'],

@@ -6,3 +6,5 @@ export * from './hp.ts';
 export * from './effects.ts';
 export * from './guidelines.ts';
 export * from './nights.ts';
+export * from './calendar.ts';
+export * from './history.ts';

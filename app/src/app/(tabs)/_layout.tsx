@@ -1,7 +1,9 @@
 import { Tabs } from 'expo-router';
 import { PixelSprite } from '../../components/PixelSprite';
-import { HEART, gearSprite } from '../../sprites';
+import { HEART, calendarSprite, gearSprite } from '../../sprites';
 import { colors, fonts } from '../../theme';
+
+const tint = (focused: boolean) => (focused ? colors.gold : colors.inkFaint);
 
 export default function TabsLayout() {
   return (
@@ -15,7 +17,8 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Tonight', tabBarIcon: ({ focused }) => <PixelSprite sprite={HEART} scale={3} dim={!focused} /> }} />
-      <Tabs.Screen name="options" options={{ title: 'Options', tabBarIcon: ({ focused }) => <PixelSprite sprite={gearSprite(focused ? colors.gold : colors.inkFaint)} scale={2} /> }} />
+      <Tabs.Screen name="history" options={{ title: 'History', tabBarIcon: ({ focused }) => <PixelSprite sprite={calendarSprite(tint(focused))} scale={2} /> }} />
+      <Tabs.Screen name="options" options={{ title: 'Options', tabBarIcon: ({ focused }) => <PixelSprite sprite={gearSprite(tint(focused))} scale={2} /> }} />
     </Tabs>
   );
 }
