@@ -3,7 +3,7 @@
 // Everything lives in one JSON record with a version number. If the format changes later,
 // bump DATA_VERSION and add an upgrade step in `upgrade()` so existing users keep their data.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEFAULT_CARBS_PER_100ML, costPerDrink, type DrinkCategory, type DrinkSpec, type LogEvent, type Profile } from '../../engine/src/index.ts';
+import { DEFAULT_CARBS_PER_100ML, costPerDrink, type DrinkCategory, type DrinkSpec, type Feel, type LogEvent, type Profile } from '../../engine/src/index.ts';
 
 const KEY = 'status-effects/data';
 const DATA_VERSION = 2;
@@ -15,6 +15,10 @@ export interface SavedNight {
   endedAt: number | null;
   /** When the user last answered "someone sober is with me" on the safety check-in. */
   safetyAckAt?: number;
+  /** Morning-after check-in: 0 = great … 4 = wrecked. */
+  feel?: Feel;
+  /** The morning report was closed without answering. */
+  reportClosed?: boolean;
 }
 
 export type Units = 'metric' | 'imperial';

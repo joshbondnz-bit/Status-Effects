@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import {
   REGIONS, achievements, addDays, byNight, canadaRisk, daysInclusive, dayKey, dryStreaks, keyToTime, periodRange, periodStats,
-  startOfDay, startOfWeek, stepPeriod, summarizeNight, weeklyGuidance, type NightSummary, type Period,
+  feelVsDrinks, startOfDay, startOfWeek, stepPeriod, summarizeNight, weeklyGuidance, type NightSummary, type Period,
 } from '../../../engine/src/index.ts';
-import { AchievementsCard, CaloriesCard, CheckInCard, PatternsCard, SleepCard } from '../components/history/Sections';
+import { AchievementsCard, CaloriesCard, CheckInCard, MorningsCard, PatternsCard, SleepCard } from '../components/history/Sections';
 import { useApp } from '../AppDataProvider';
 import { sampleHistory } from '../sampleHistory';
 import { Calendar, MONTHS_LONG } from '../components/history/Calendar';
@@ -38,6 +38,10 @@ export function HistoryScreen() {
   // Real nights: everything filed away, plus tonight.
   const real = useMemo(() => [...data.past, data.tonight]
     .map(n => summarizeNight(data.profile, n.events)).filter((s): s is NightSummary => s !== null), [data.past, data.tonight, data.profile]);
+  // Morning check-ins against how much was drunk the night before (all time, real data only).
+  const feelEntries = useMemo(() => [...data.past, data.tonight].filter(n => n.feel != null)
+    .map(n => ({ std: n.events.reduce((t, e) => t + (e.type === 'drink' ? e.grams : 0), 0) / g, feel: n.feel! })), [data.past, data.tonight, g]);
+  const feelBuckets = useMemo(() => feelVsDrinks(feelEntries), [feelEntries]);
   const demo = useMemo(() => (sample ? sampleHistory(data.profile, today) : null), [sample, data.profile, today]);
   const nights = useMemo(() => byNight(demo ? demo.summaries : real), [demo, real]);
   const trackingStart = startOfDay(demo ? demo.trackingStart : Math.min(data.trackingSince, ...real.map(r => r.start)));
@@ -208,6 +212,7 @@ export function HistoryScreen() {
       {data.settings.calories ? <CaloriesCard st={st} label={short} units={data.settings.units} compareWith={data.settings.compareWith ?? 'pizza'} /> : null}
       <SleepCard st={st} label={short} />
       <PatternsCard st={st} label={short} gramsPerDrink={g} />
+      <MorningsCard buckets={feelBuckets} checkIns={feelEntries.length} />
       <AchievementsCard list={badges} />
       <CheckInCard region={region} sex={data.profile.sex} last={data.audit}
         onSave={score => update(d => ({ ...d, audit: { score, at: Date.now() } }))} />

@@ -18,6 +18,8 @@ import { CurveChart } from '../components/CurveChart';
 import { PixelSprite } from '../components/PixelSprite';
 import { SafetyCheck } from '../components/SafetyCheck';
 import { TimeMachine } from '../components/TimeMachine';
+import { MorningReport, findMorningNight } from '../components/MorningReport';
+import type { SavedNight } from '../storage';
 import { ICONS } from '../sprites';
 import { clock, money } from '../format';
 import { useApp } from '../AppDataProvider';
@@ -74,6 +76,16 @@ export function TonightScreen() {
     tick();
   };
 
+  // Morning after: report on tonight's log (once wake-up has passed) or the night just filed into History.
+  const morning = findMorningNight(data, now);
+  const setMorning = (patch: Partial<SavedNight>) => {
+    if (!morning) return;
+    const id = morning.night.id;
+    update(d => morning.where === 'tonight'
+      ? { ...d, tonight: { ...d.tonight, ...patch } }
+      : { ...d, past: d.past.map(n => (n.id === id ? { ...n, ...patch } : n)) });
+  };
+
   const total = standardDrinks(night.totalGrams, region);
   const spent = Math.round(night.drinks.reduce((s, d) => s + (d.cost ?? 0), 0) * 100) / 100;
 
@@ -90,6 +102,11 @@ export function TonightScreen() {
         <Pressable onPress={() => router.navigate('/options')} accessibilityRole="button" style={styles.nudge}>
           <Text style={styles.nudgeTxt}>You're using default stats. Set up your character for accurate numbers ›</Text>
         </Pressable>
+      ) : null}
+
+      {morning ? (
+        <MorningReport night={morning.night} profile={profile} now={now} showCalories={settings.calories}
+          onFeel={f => setMorning({ feel: f })} onClose={() => setMorning({ reportClosed: true })} />
       ) : null}
 
       <View style={[panel, styles.card]}>

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
-  auditCCutoff, auditCScore, type Achievement, type AchievementId, type DrinkCategory, type PeriodStats, type RegionCode, type Sex,
+  auditCCutoff, auditCScore, feelWord, type FeelBucket, type Achievement, type AchievementId, type DrinkCategory, type PeriodStats, type RegionCode, type Sex,
 } from '../../../../engine/src/index.ts';
 import type { FoodCompare, Units } from '../../storage';
 import { FOOD } from '../../food';
@@ -45,6 +45,43 @@ function Expand({ title, children }: { title: string; children: React.ReactNode 
     </View>
   );
 }
+
+// ---------- Mornings (feel vs drinks) ----------
+
+const FEEL_COLORS = [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
+
+export function MorningsCard({ buckets, checkIns }: { buckets: FeelBucket[]; checkIns: number }) {
+  return (
+    <Card title="Mornings" label="All time">
+      {checkIns === 0 ? (
+        <Text style={s.body}>After a night out, the morning report asks how you feel. Your answers build up here, showing how your mornings go after 1–2 drinks compared with 5 or more.</Text>
+      ) : (
+        <View style={{ gap: 8 }}>
+          {buckets.map(b => (
+            <View key={b.label} style={m.row} accessibilityLabel={`${b.label}: ${b.avg == null ? 'no check-ins' : `usually ${feelWord(b.avg)}, ${b.nights} nights`}`}>
+              <Text style={m.label}>{b.label}</Text>
+              <View style={m.track}>
+                {b.avg != null ? <View style={[m.fill, { width: `${((b.avg + 0.6) / 4.6) * 100}%`, backgroundColor: FEEL_COLORS[Math.round(b.avg)] }]} /> : null}
+              </View>
+              <Text style={[m.word, b.avg != null && { color: FEEL_COLORS[Math.round(b.avg)] }]}>{b.avg == null ? '—' : feelWord(b.avg)}</Text>
+              <Text style={m.n}>{b.nights ? `${b.nights}×` : ''}</Text>
+            </View>
+          ))}
+          <Text style={s.tileSub}>The bar gets longer the worse you felt. Based on {checkIns} morning check-in{checkIns === 1 ? '' : 's'}.</Text>
+        </View>
+      )}
+    </Card>
+  );
+}
+
+const m = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  label: { width: 82, fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkDim },
+  track: { flex: 1, height: 12, backgroundColor: colors.sunk },
+  fill: { height: '100%' },
+  word: { width: 64, fontFamily: fonts.bodyBold, fontSize: 13.5, color: colors.inkFaint },
+  n: { width: 28, textAlign: 'right', fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
+});
 
 // ---------- Calories ----------
 
