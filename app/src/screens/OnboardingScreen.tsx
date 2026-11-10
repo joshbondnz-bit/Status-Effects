@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
+import { Screen } from '../components/Screen';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { CharacterFields, RoutineFields, profileComplete } from '../components/ProfileFields';
@@ -12,7 +12,6 @@ import { colors, fonts, panel } from '../theme';
 
 /** Two-step first-run setup: your character, then your routine. Nothing is saved until you finish or skip. */
 export function OnboardingScreen() {
-  const insets = useSafeAreaInsets();
   const { data, update } = useApp();
   const [step, setStep] = useState<1 | 2>(1);
   const [profile, setProfile] = useState<Profile>(data.profile);
@@ -28,8 +27,7 @@ export function OnboardingScreen() {
   const skip = () => update(d => ({ ...d, setup: d.setup === 'done' ? 'done' : 'skipped' }));
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
-      keyboardShouldPersistTaps="handled">
+    <Screen keyboardShouldPersistTaps="handled">
       <View style={[panel, styles.card]}>
         <View style={styles.head}>
           <PixelSprite sprite={HEART} scale={5} />
@@ -67,7 +65,7 @@ export function OnboardingScreen() {
         )}
         <Text style={styles.fine}>For people of legal drinking age. Every number is an estimate and never a driving clearance. You can change all of this later in Options.</Text>
       </View>
-    </ScrollView>
+    </Screen>
   );
 }
 

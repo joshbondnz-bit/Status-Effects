@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Screen } from '../components/Screen';
 import {
   PRESETS, MIN, effects, makeDrink, simulateNight, standardDrinks,
   type DrinkSpec, type LogEvent,
@@ -29,7 +29,6 @@ function Button({ label, onPress, primary, flex = 1 }: { label: string; onPress:
 }
 
 export function TonightScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
   const [removed, setRemoved] = useState<LogEvent | null>(null);
@@ -75,7 +74,7 @@ export function TonightScreen() {
   const total = standardDrinks(night.totalGrams, region);
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 32 }]}>
+    <Screen>
       <View style={styles.topRow}>
         <Text style={styles.clock}>{clock(now)}</Text>
         {night.drinks.length ? <Text style={styles.noDrive}>NO DRIVING TONIGHT</Text> : null}
@@ -156,7 +155,7 @@ export function TonightScreen() {
       {error ? <Text style={styles.warn}>{error}</Text> : null}
 
       <LogDrinkSheet visible={sheet} region={region} showCalories={settings.calories} highRange={night.bacNow >= 0.15} onClose={() => setSheet(false)} onPick={pickDrink} />
-    </ScrollView>
+    </Screen>
   );
 }
 

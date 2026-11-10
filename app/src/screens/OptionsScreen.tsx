@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
+import { Screen } from '../components/Screen';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { CharacterFields, RoutineFields } from '../components/ProfileFields';
@@ -9,7 +9,6 @@ import type { FoodCompare } from '../storage';
 import { colors, fonts, panel } from '../theme';
 
 export function OptionsScreen() {
-  const insets = useSafeAreaInsets();
   const { data, update } = useApp();
   const [confirmReplay, setConfirmReplay] = useState(false);
 
@@ -18,8 +17,7 @@ export function OptionsScreen() {
     update(d => ({ ...d, profile: { ...d.profile, ...patch }, setup: d.setup === 'skipped' ? 'done' : d.setup }));
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}
-      keyboardShouldPersistTaps="handled">
+    <Screen keyboardShouldPersistTaps="handled">
       <Text style={styles.h1}>Options</Text>
 
       {data.setup === 'skipped' ? (
@@ -68,7 +66,7 @@ export function OptionsScreen() {
       </View>
 
       <Text style={styles.fine}>Everything is saved on this device only.</Text>
-    </ScrollView>
+    </Screen>
   );
 }
 

@@ -57,7 +57,7 @@ export function Calendar(p: Props) {
                   {Array.from({ length: off }, (_, i) => <View key={'p' + i} style={styles.miniCell} />)}
                   {Array.from({ length: days }, (_, d) => {
                     const c = cellOf(new Date(y, m, d + 1).getTime());
-                    return <View key={d} style={[styles.miniCell, { backgroundColor: c === 'none' || c === 'future' ? colors.sunk : BG[c] }]} />;
+                    return <View key={d} style={[styles.miniCell, { backgroundColor: c === 'none' || c === 'future' ? colors.panel2 : BG[c] }]} />;
                   })}
                 </View>
               </Pressable>
@@ -137,9 +137,10 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   swatch: { width: 12, height: 12, borderWidth: 1, borderColor: colors.edgeHi },
   legendTxt: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkDim },
-  year: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  mini: { width: '31%', padding: 4 },
-  miniTitle: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.ink, marginBottom: 3 },
+  // Two months per row: big enough to read on a phone.
+  year: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16 },
+  mini: { width: '48%', padding: 6, backgroundColor: colors.sunk },
+  miniTitle: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, marginBottom: 6 },
   miniGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  miniCell: { width: `${100 / 7}%`, aspectRatio: 1, borderWidth: 0.5, borderColor: colors.panel },
+  miniCell: { width: `${100 / 7}%`, aspectRatio: 1, borderWidth: 1.5, borderColor: colors.sunk },
 });

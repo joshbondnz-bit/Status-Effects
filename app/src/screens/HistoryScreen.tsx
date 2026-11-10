@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Screen } from '../components/Screen';
 import {
   REGIONS, achievements, addDays, byNight, canadaRisk, daysInclusive, dayKey, dryStreaks, keyToTime, periodRange, periodStats,
   startOfDay, startOfWeek, stepPeriod, summarizeNight, weeklyGuidance, type NightSummary, type Period,
@@ -25,7 +25,6 @@ function fmtRange(a: number, b: number): string {
 }
 
 export function HistoryScreen() {
-  const insets = useSafeAreaInsets();
   const { data, now, update } = useApp();
   const [period, setPeriod] = useState<Period>('week');
   const [cursor, setCursor] = useState(now);
@@ -108,8 +107,7 @@ export function HistoryScreen() {
   const step = (dir: -1 | 1) => { setCursor(stepPeriod(period, R.start, dir)); setSelected(null); };
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={[styles.page, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}
-      stickyHeaderIndices={[2]}>
+    <Screen stickyHeaderIndices={[2]}>
       <View style={styles.titleRow}>
         <Text style={styles.h1}>History</Text>
         {sample ? (
@@ -213,7 +211,7 @@ export function HistoryScreen() {
         <Pressable onPress={() => setSample(true)} accessibilityRole="button"><Text style={styles.link}>Preview with sample data</Text></Pressable>
       ) : null}
       <Text style={styles.fine}>Coming with the morning-after report: how you feel compared with how much you drank.</Text>
-    </ScrollView>
+    </Screen>
   );
 }
 
