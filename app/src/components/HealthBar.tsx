@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
-import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import {
   FED_WINDOW, PHASES, WARNING_BAC, healthState, hpFromBac, hpGainNextHour, hpLossNextHour, phaseIndex, simulateNight, type Night,
 } from '../../../engine/src/index.ts';
@@ -18,13 +17,14 @@ const NATIVE = Platform.OS !== 'web';
 
 /**
  * A striped section of the bar: incoming damage (red/white) or the next hour's healing (green).
- * The stripes stay still; every few seconds a soft shine slides once across, like light catching glass.
+ * A solid, duller tint; every few seconds a soft shine slides once across, like light catching glass.
  * Damage shines right-to-left (the way health is draining), healing left-to-right.
  */
 const SHINE_W = 22;
+/** Same 22/50/28 band split as the bar itself, in a duller, darker red (damage) or a soft green (healing). */
+const DMG_BANDS: [number, string][] = [[22, '#c9727a'], [50, '#a23446'], [28, '#5e1426']];
+const HEAL_BANDS: [number, string][] = [[22, 'rgba(127,240,184,0.5)'], [50, 'rgba(95,211,154,0.38)'], [28, 'rgba(60,160,112,0.3)']];
 function Zone({ left, width, kind, label, still }: { left: number; width: number; kind: 'dmg' | 'heal'; label: string; still: boolean }) {
-  const id = 'stripes-' + kind;
-  const [a, b] = kind === 'dmg' ? ['rgba(255,240,220,0.75)', 'rgba(140,20,40,0.6)'] : ['rgba(95,211,154,0.65)', 'rgba(95,211,154,0.2)'];
   const [zoneW, setZoneW] = useState(0);
   const sweep = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -48,16 +48,9 @@ function Zone({ left, width, kind, label, still }: { left: number; width: number
           <View style={styles.shineSoft} /><View style={styles.shineCore} /><View style={styles.shineSoft} />
         </Animated.View>
       ) : null}
-      <View style={styles.stripeLayer}>
-        <Svg width="100%" height="100%">
-          <Defs>
-            <Pattern id={id} width={8} height={8} patternUnits="userSpaceOnUse" patternTransform={`rotate(${kind === 'dmg' ? -45 : 45})`}>
-              <Rect width={4} height={8} fill={a} />
-              <Rect x={4} width={4} height={8} fill={b} />
-            </Pattern>
-          </Defs>
-          <Rect width="100%" height="100%" fill={`url(#${id})`} />
-        </Svg>
+      {/* A faded copy of the bar's three bands: the health that's on its way out (or green health on its way back). */}
+      <View style={styles.zoneFill}>
+        {(kind === 'dmg' ? DMG_BANDS : HEAL_BANDS).map(([flex, color]) => <View key={flex} style={{ flex, backgroundColor: color }} />)}
       </View>
       {label ? <Text style={[styles.zoneTxt, { textShadowColor: kind === 'dmg' ? '#3a0a14' : '#0d3a26' }]}>{label}</Text> : null}
     </View>
@@ -308,7 +301,7 @@ const styles = StyleSheet.create({
   zone: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   zoneDmg: { borderLeftWidth: 2, borderLeftColor: '#fff4e6' },
   zoneHeal: { borderRightWidth: 2, borderRightColor: colors.good },
-  stripeLayer: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
+  zoneFill: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
   shine: { position: 'absolute', top: -4, bottom: -4, left: 0, width: SHINE_W, flexDirection: 'row', zIndex: 1 },
   shineSoft: { flex: 1, backgroundColor: 'rgba(255,255,255,0.18)' },
   shineCore: { flex: 1, backgroundColor: 'rgba(255,255,255,0.42)' },
