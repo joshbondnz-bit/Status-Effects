@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { HOUR, MIN, PHASES, THRESHOLDS, makeDrink, simulateNight, type LogEvent, type Night } from '../../../engine/src/index.ts';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { clock } from '../format';
 import { ICONS, glassSprite } from '../sprites';
 import { PixelSprite } from './PixelSprite';
@@ -19,6 +19,8 @@ const ZONE_TINT = ['#5fd39a', '#e8c547', '#ff8a3d', '#ff6a4d', '#ec3a50', '#b313
 const pct = (b: number) => `${b.toFixed(3)}%`;
 
 export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Night; whatIf?: boolean; onWhatIf?: (on: boolean) => void }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const [width, setWidth] = useState(0);
   const [scrubT, setScrubT] = useState<number | null>(null);
   // The what-if can be shared with other cards (Rations) through props, or kept here.
@@ -235,7 +237,7 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12 },
   key: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
   verdict: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20 },
@@ -245,4 +247,4 @@ const styles = StyleSheet.create({
   whatIf: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.mana },
   whatIfOn: { backgroundColor: colors.mana, borderColor: '#a9c0ff' },
   whatIfTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana },
-});
+}));

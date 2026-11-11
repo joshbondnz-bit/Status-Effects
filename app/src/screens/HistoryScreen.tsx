@@ -11,7 +11,7 @@ import { sampleHistory } from '../sampleHistory';
 import { Calendar, MONTHS_LONG } from '../components/history/Calendar';
 import { BarChart, type Bar, type GuideLine } from '../components/history/BarChart';
 import { Segmented } from '../components/Form';
-import { colors, fonts, panel } from '../theme';
+import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -25,6 +25,9 @@ function fmtRange(a: number, b: number): string {
 }
 
 export function HistoryScreen() {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const { panel } = panelStyles(colors);
   const { data, now, update } = useApp();
   const [period, setPeriod] = useState<Period>('week');
   const [cursor, setCursor] = useState(now);
@@ -225,12 +228,12 @@ export function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   page: { paddingHorizontal: 16, gap: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   h1: { fontFamily: fonts.displayBold, fontSize: 44, letterSpacing: 0.4, color: colors.ink },
   h2: { fontFamily: fonts.display, fontSize: 29, letterSpacing: 0.4, color: colors.ink },
-  sampleChip: { borderWidth: 2, borderColor: '#6a5424', paddingHorizontal: 8, paddingVertical: 5 },
+  sampleChip: { borderWidth: 2, borderColor: colors.nudgeEdge, paddingHorizontal: 8, paddingVertical: 5 },
   sampleTxt: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.gold, letterSpacing: 0.5 },
   rangeBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.panel, borderWidth: 2, borderColor: colors.edgeHi, padding: 8 },
   arrow: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi },
@@ -253,4 +256,4 @@ const styles = StyleSheet.create({
   secHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   secLabel: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.5, color: colors.inkDim },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, lineHeight: 18 },
-});
+}));

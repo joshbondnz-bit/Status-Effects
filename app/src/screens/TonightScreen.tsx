@@ -7,7 +7,7 @@ import {
   type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
 import { newId, sampleNightEvents } from '../sampleNight';
-import { colors, fonts, panel } from '../theme';
+import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 import { glassSprite, type SpriteDef } from '../sprites';
 import { HealthBar } from '../components/HealthBar';
 import { StatusTray } from '../components/StatusTray';
@@ -32,16 +32,22 @@ const DRINK_ICON = glassSprite({ type: 'drink', id: 'icon', t: 0, name: 'Lager',
 function Button({ label, onPress, variant = 'plain', icon, big, flex = 1 }: {
   label: string; onPress: () => void; variant?: 'primary' | 'water' | 'plain'; icon?: SpriteDef; big?: boolean; flex?: number;
 }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const { panel } = panelStyles(colors);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
       style={({ pressed }) => [styles.btn, variant === 'primary' && styles.btnPrimary, variant === 'water' && styles.btnWater, big && styles.btnBig, { flex }, pressed && { transform: [{ translateY: 2 }] }]}>
       {icon ? <PixelSprite sprite={icon} scale={big ? 2 : 1.5} /> : null}
-      <Text style={[styles.btnTxt, big && styles.btnTxtBig, variant === 'primary' && { color: '#fff8ee' }]}>{label}</Text>
+      <Text style={[styles.btnTxt, big && styles.btnTxtBig, variant === 'primary' && { color: '#fff8ee' }, variant === 'water' && { color: colors.waterInk }]}>{label}</Text>
     </Pressable>
   );
 }
 
 export function TonightScreen() {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const { panel } = panelStyles(colors);
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
@@ -230,7 +236,7 @@ export function TonightScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   page: { paddingHorizontal: 16, gap: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   clock: { fontFamily: fonts.num, fontSize: 28, color: colors.ink },
@@ -244,7 +250,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8 },
   btn: { flexDirection: 'row', gap: 6, paddingVertical: 11, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edgeHi, borderBottomWidth: 5, borderBottomColor: colors.edge },
   btnPrimary: { backgroundColor: colors.hp, borderColor: colors.hpHi, borderBottomColor: colors.hpLo },
-  btnWater: { backgroundColor: '#22385a', borderColor: '#4a78b8', borderBottomColor: '#14213a' },
+  btnWater: { backgroundColor: colors.waterBg, borderColor: colors.waterEdge, borderBottomColor: colors.waterEdgeLo },
   btnBig: { paddingVertical: 14, gap: 10 },
   btnTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, textAlign: 'center' },
   btnTxtBig: { fontSize: 18 },
@@ -253,7 +259,7 @@ const styles = StyleSheet.create({
   confirmTxt: { fontFamily: fonts.body, fontSize: 14, color: colors.inkDim, lineHeight: 20 },
   h2: { fontFamily: fonts.display, fontSize: 30, letterSpacing: 0.4, color: colors.ink },
   logHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  nudge: { backgroundColor: '#3a3220', borderWidth: 2, borderColor: '#6a5424', padding: 12 },
+  nudge: { backgroundColor: colors.nudgeBg, borderWidth: 2, borderColor: colors.nudgeEdge, padding: 12 },
   nudgeTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, lineHeight: 20 },
   undo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.ink, paddingHorizontal: 12, paddingVertical: 10 },
   undoTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.bg },
@@ -265,4 +271,4 @@ const styles = StyleSheet.create({
   dangerLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: '#9fd4f0', textDecorationLine: 'underline', marginTop: 4 },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, textAlign: 'center' },
   link: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana, textAlign: 'center', textDecorationLine: 'underline' },
-});
+}));

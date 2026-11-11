@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { REGIONS, alcoholGrams, costPerDrink, makeDrink, type DrinkCategory, type DrinkPreview, type DrinkSpec, type RegionCode } from '../../../engine/src/index.ts';
 import { savedToSpec, type Price, type SavedDrink } from '../storage';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { money } from '../format';
 import { Field, PixelButton, Segmented, ToggleRow } from './Form';
 import { PreviewLine } from './PreviewLine';
@@ -16,6 +16,8 @@ const CATEGORIES: { value: DrinkCategory; label: string }[] = [
 
 /** A blank-able text box for numbers (empty is allowed, unlike NumberInput). */
 function NumText({ value, onChange, label, suffix, prefix, placeholder }: { value: string; onChange: (s: string) => void; label: string; suffix?: string; prefix?: string; placeholder?: string }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   return (
     <View style={styles.inputRow}>
       {prefix ? <Text style={styles.affix}>{prefix}</Text> : null}
@@ -44,6 +46,8 @@ interface Props {
 }
 
 export function DrinkForm({ initial, mode, region, showCalories, preview, onLog, onSave, onDelete, onBack }: Props) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const [name, setName] = useState(initial.name ?? '');
   const [size, setSize] = useState(initial.size ?? '');
   const [volUnit, setVolUnit] = useState<'ml' | 'oz'>('ml');
@@ -163,7 +167,7 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   wrap: { gap: 12 },
   back: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana },
   title: { fontFamily: fonts.display, fontSize: 31, letterSpacing: 0.4, color: colors.ink },
@@ -175,4 +179,4 @@ const styles = StyleSheet.create({
   err: { fontFamily: fonts.body, fontSize: 13.5, color: colors.warn },
   previewBox: { backgroundColor: colors.sunk, padding: 12, gap: 4, borderLeftWidth: 4, borderLeftColor: colors.hp },
   previewHead: { fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 0.6, color: colors.inkDim, textTransform: 'uppercase' },
-});
+}));

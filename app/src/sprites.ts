@@ -85,14 +85,16 @@ export function calendarSprite(color: string): SpriteDef {
 }
 
 // Drink tally glasses. L/H/D are the drink's liquid colour, its highlight and its shade.
-const GLASSES: Record<'pint' | 'bottle' | 'wine' | 'shot' | 'cocktail', string[]> = {
+const GLASSES: Record<'pint' | 'bottle' | 'can' | 'wine' | 'shot' | 'cocktail', string[]> = {
+  // A can: silver rims, the drink's colour as the label, with a white stripe.
+  can: ['.kkkkk.', 'kKKKKKk', 'LHLLLLD', 'LHLLLLD', 'LHwwwLD', 'LHwwwLD', 'LHLLLLD', 'LHLLLLD', 'LHLLLLD', 'kKKKKKk', '.kkkkk.'],
   pint: ['.wwwwwww.', 'wwwwwwwww', 'gLLLLLLLg', 'gLHLLLLLg', 'gLHLLLLLg', 'gLLLLLLDg', '.gLLLLDg.', '.gLLLLDg.', '.gLLLLDg.', '.ggggggg.'],
   bottle: ['..kk..', '..bb..', '..bb..', '.bbbb.', 'bhbbbB', 'bhbbbB', 'llllll', 'llllll', 'bhbbbB', 'bhbbbB', 'BBBBBB'],
   wine: ['aeeeeeeea', 'aLLLLLLLa', 'aLHLLLLDa', '.aLLLLDa.', '..aLLDa..', '...aaa...', '....a....', '....a....', '..aaaaa..'],
   shot: ['aeeeeea', 'aLLLLLa', 'aHLLLDa', 'aLLLLDa', '.aaaaa.'],
   cocktail: ['aaaaaaaaa', 'aLLLLLLLa', '.aLHLLDa.', '..aLLDa..', '...aLa...', '....a....', '....a....', '..aaaaa..'],
 };
-const GLASS_PALETTE = { a: '#aab4d6', g: '#aab4d6', e: '#3a3a5a', w: '#fff3dc', k: '#c9ced8', b: '#7a4a22', h: '#b07a44', B: '#4a2a12', l: '#f0e5cd' };
+const GLASS_PALETTE = { a: '#aab4d6', g: '#aab4d6', e: '#3a3a5a', w: '#fff3dc', k: '#c9ced8', K: '#8a90a0', b: '#7a4a22', h: '#b07a44', B: '#4a2a12', l: '#f0e5cd' };
 
 export function mixHex(c: string, to: string, f: number): string {
   const p = (h: string) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -112,7 +114,16 @@ function liquidFor(d: DrinkEvent): string {
 
 export function glassSprite(d: DrinkEvent): SpriteDef {
   const cat = d.category ?? guessCategory(d.name);
-  const kind = cat === 'wine' ? 'wine' : cat === 'spirits' ? 'shot' : cat === 'mixed' ? 'cocktail' : d.ml >= 500 ? 'pint' : 'bottle';
+  const canned = /can|tallboy/i.test(d.size ?? '');
+  const kind = cat === 'wine' ? 'wine' : cat === 'spirits' ? 'shot' : cat === 'mixed' ? 'cocktail' : canned ? 'can' : d.ml >= 500 ? 'pint' : 'bottle';
   const L = liquidFor(d);
   return { rows: GLASSES[kind], palette: { ...GLASS_PALETTE, L, H: mixHex(L, '#ffffff', 0.45), D: mixHex(L, '#000000', 0.3) } };
+}
+
+/** Science tab icon: a potion flask. The glass takes the tab's tint; the potion stays green. */
+export function flaskSprite(color: string): SpriteDef {
+  return {
+    palette: { g: color, L: '#5fd39a', H: '#bff5d8' },
+    rows: ['..ggggg..', '...g.g...', '...g.g...', '..g...g..', '.g.....g.', 'gLLLLLLLg', 'gLHLLLLLg', 'gLLLLLLLg', '.ggggggg.'],
+  };
 }

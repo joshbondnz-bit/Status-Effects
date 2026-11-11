@@ -8,10 +8,13 @@ import { PixelButton, ToggleRow } from '../components/Form';
 import { PixelSprite } from '../components/PixelSprite';
 import { HEART } from '../sprites';
 import type { Settings } from '../storage';
-import { colors, fonts, panel } from '../theme';
+import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
 /** Two-step first-run setup: your character, then your routine. Nothing is saved until you finish or skip. */
 export function OnboardingScreen() {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const { panel } = panelStyles(colors);
   const { data, update } = useApp();
   const [step, setStep] = useState<1 | 2>(1);
   const [profile, setProfile] = useState<Profile>(data.profile);
@@ -69,7 +72,7 @@ export function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   page: { paddingHorizontal: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
   card: { padding: 16, gap: 16 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -82,4 +85,4 @@ const styles = StyleSheet.create({
   error: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.bad },
   row: { flexDirection: 'row', gap: 8 },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, lineHeight: 18 },
-});
+}));

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
-import { colors, fonts } from '../../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../../theme';
 
 export interface Bar { value: number; label?: string; valueLabel?: string; faint?: boolean; detail: string; }
 export interface GuideLine { value: number; label: string; }
@@ -20,6 +20,8 @@ function barPath(x: number, base: number, w: number, h: number, r = 4) {
 export function BarChart({ bars, lines = [], height = 160, minMax = 0, accessibilityLabel }: {
   bars: Bar[]; lines?: GuideLine[]; height?: number; minMax?: number; accessibilityLabel: string;
 }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const [picked, setPicked] = useState<number | null>(null);
   const max = Math.max(minMax, ...bars.map(b => b.value), 0.001) * 1.12;
   const base = height - PAD_B;
@@ -69,7 +71,7 @@ export function BarChart({ bars, lines = [], height = 160, minMax = 0, accessibi
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   hits: { flex: 1, flexDirection: 'row' },
   detail: { fontFamily: fonts.body, fontSize: 13, color: colors.inkDim, marginTop: 4, minHeight: 18 },
-});
+}));

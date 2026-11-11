@@ -1,10 +1,12 @@
 // Small pixel-styled form controls shared by first-run setup and Options.
 import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 
 /** A labelled form field. `stack` is for fields in a vertical list (so they don't stretch or squash like row items). */
 export function Field({ label, children, hint, minWidth = 140, stack }: { label: string; children: ReactNode; hint?: string; minWidth?: number; stack?: boolean }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   return (
     <View style={stack ? styles.fieldStack : [styles.field, { minWidth }]}>
       <Text style={styles.label}>{label}</Text>
@@ -21,6 +23,8 @@ export function Field({ label, children, hint, minWidth = 140, stack }: { label:
 export function NumberInput({ value, onChange, min, max, suffix, label, decimals = 0 }: {
   value: number; onChange: (n: number) => void; min: number; max: number; suffix?: string; label: string; decimals?: number;
 }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const fmt = (n: number) => (decimals ? n.toFixed(decimals) : String(Math.round(n)));
   const [text, setText] = useState(fmt(value));
   const [focused, setFocused] = useState(false);
@@ -51,6 +55,8 @@ export function NumberInput({ value, onChange, min, max, suffix, label, decimals
 export function Segmented<T extends string>({ value, options, onChange, label }: {
   value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string;
 }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   return (
     <View style={styles.seg} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map(o => {
@@ -68,6 +74,8 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
 
 /** "−  23:30  +" in 15-minute steps. */
 export function TimeStepper({ value, onChange, label, step = 15 }: { value: string; onChange: (v: string) => void; label: string; step?: number }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const shift = (m: number) => {
     const [h, mm] = value.split(':').map(Number);
     const t = (((h * 60 + mm + m) % 1440) + 1440) % 1440;
@@ -87,6 +95,8 @@ export function TimeStepper({ value, onChange, label, step = 15 }: { value: stri
 }
 
 export function ToggleRow({ value, onChange, title, body }: { value: boolean; onChange: (v: boolean) => void; title: string; body: string }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   return (
     <Pressable onPress={() => onChange(!value)} style={styles.toggle} accessibilityRole="switch" accessibilityState={{ checked: value }}>
       <View style={{ flex: 1, gap: 2 }}>
@@ -99,6 +109,8 @@ export function ToggleRow({ value, onChange, title, body }: { value: boolean; on
 }
 
 export function PixelButton({ label, onPress, primary, flex, disabled }: { label: string; onPress: () => void; primary?: boolean; flex?: number; disabled?: boolean }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [styles.btn, primary && styles.btnPrimary, flex != null && { flex }, disabled && { opacity: 0.45 }, pressed && { transform: [{ translateY: 2 }] }]}>
@@ -107,7 +119,7 @@ export function PixelButton({ label, onPress, primary, flex, disabled }: { label
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   field: { gap: 6, flex: 1, minWidth: 140 },
   fieldStack: { gap: 6 },
   label: { fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 0.6, color: colors.inkDim, textTransform: 'uppercase' },
@@ -129,4 +141,4 @@ const styles = StyleSheet.create({
   btn: { paddingVertical: 12, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edgeHi, borderBottomWidth: 5, borderBottomColor: colors.edge },
   btnPrimary: { backgroundColor: colors.hp, borderColor: colors.hpHi, borderBottomColor: colors.hpLo },
   btnTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, textAlign: 'center' },
-});
+}));

@@ -25,6 +25,8 @@ export type Units = 'metric' | 'imperial';
 
 export type FoodCompare = 'pizza' | 'doughnut' | 'burger';
 
+export type ThemeChoice = 'system' | 'light' | 'dark';
+
 export interface Settings {
   /** Show calories and the food-related debuffs. */
   calories: boolean;
@@ -32,6 +34,8 @@ export interface Settings {
   units: Units;
   /** What calories are compared with in History. */
   compareWith?: FoodCompare;
+  /** Colour theme: follow the phone's light/dark setting (the default), or always light or dark. */
+  theme?: ThemeChoice;
 }
 
 /** First-run setup: not seen yet, finished, or skipped (using the default character). */

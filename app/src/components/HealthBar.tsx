@@ -6,7 +6,7 @@ import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import {
   FED_WINDOW, PHASES, WARNING_BAC, healthState, hpFromBac, hpGainNextHour, hpLossNextHour, phaseIndex, simulateNight, type Night,
 } from '../../../engine/src/index.ts';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { HEART } from '../sprites';
 import { PixelSprite } from './PixelSprite';
 import { clock } from '../format';
@@ -20,8 +20,6 @@ const C = 120, R = 92;
 const VIEW = '-10 -10 260 260';
 /** Light top, main and dark bottom bands, like the old bar's bevel, as three concentric rings. */
 const BANDS = [{ r: 99, w: 5 }, { r: 93, w: 8 }, { r: 86, w: 6 }];
-const FILL = [colors.hpHi, colors.hp, colors.hpLo];
-const TRACK = ['#4a2030', '#3a1824', '#2c1220'];
 const DMG = ['#9c4652', '#76182e', '#460a1b'];
 const HEAL = ['rgba(127,240,184,0.55)', 'rgba(95,211,154,0.42)', 'rgba(60,160,112,0.34)'];
 /** Blood alcohol at each zone boundary, going clockwise from the top. */
@@ -40,6 +38,8 @@ function arc(r: number, a: number, b: number): string {
   return `M ${x1} ${y1} A ${r} ${r} 0 ${b - a > 0.5 ? 1 : 0} 1 ${x2} ${y2}`;
 }
 function Arcs({ a, b, palette }: { a: number; b: number; palette: string[] }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   if (b - a <= 0.0005) return null;
   return <>{BANDS.map((band, i) => <Path key={i} d={arc(band.r, a, b)} stroke={palette[i]} strokeWidth={band.w} fill="none" />)}</>;
 }
@@ -49,6 +49,8 @@ type PopItem = { id: number; text: string; kind: PopKind; x: number; y: number }
 
 /** Floating numbers drift up; sparkles rise; embers fall. Each fades out. */
 function Pop({ text, kind, x, y }: Omit<PopItem, 'id'>) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => { Animated.timing(v, { toValue: 1, duration: kind === 'ember' ? 900 : 1200, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE }).start(); }, [v, kind]);
   const travel = kind === 'ember' ? 24 : kind === 'spark' ? -28 : -34;
@@ -63,6 +65,11 @@ function Pop({ text, kind, x, y }: Omit<PopItem, 'id'>) {
 }
 
 export function HealthBar({ night }: { night: Night }) {
+  const colors = useColors();
+  // The fill and the empty track follow the palette.
+  const FILL = [colors.hpHi, colors.hp, colors.hpLo];
+  const TRACK = [colors.track1, colors.track2, colors.track3];
+  const styles = useStyles(colors);
   const reduceMotion = useReduceMotion();
   const { width } = useWindowDimensions();
   const size = Math.min(260, width - 72);
@@ -306,7 +313,7 @@ export function HealthBar({ night }: { night: Night }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   ringBox: { alignSelf: 'center' },
   center: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 2 },
   hpNum: { fontFamily: fonts.display, color: colors.ink, includeFontPadding: false },
@@ -325,4 +332,4 @@ const styles = StyleSheet.create({
   rateSub: { fontFamily: fonts.body, fontSize: 13.5, color: colors.inkDim, lineHeight: 19 },
   rateNote: { fontFamily: fonts.body, fontSize: 13, color: colors.good },
   motionNote: { fontFamily: fonts.body, fontSize: 12, color: colors.inkFaint },
-});
+}));

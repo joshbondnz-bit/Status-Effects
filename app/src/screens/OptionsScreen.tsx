@@ -5,10 +5,13 @@ import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { CharacterFields, RoutineFields } from '../components/ProfileFields';
 import { Field, PixelButton, Segmented, ToggleRow } from '../components/Form';
-import type { FoodCompare } from '../storage';
-import { colors, fonts, panel } from '../theme';
+import type { FoodCompare, ThemeChoice } from '../storage';
+import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
 export function OptionsScreen() {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const { panel } = panelStyles(colors);
   const { data, update } = useApp();
   const [confirmReplay, setConfirmReplay] = useState(false);
 
@@ -34,6 +37,15 @@ export function OptionsScreen() {
       <View style={[panel, styles.card]}>
         <Text style={styles.h2}>Routine and guidelines</Text>
         <RoutineFields profile={data.profile} onChange={setProfile} />
+      </View>
+
+      <View style={[panel, styles.card]}>
+        <Text style={styles.h2}>Appearance</Text>
+        <Field label="Theme" hint="Match phone follows your phone's light or dark mode, so it switches at night if your phone does.">
+          <Segmented<ThemeChoice> label="Theme" value={data.settings.theme ?? 'system'}
+            onChange={theme => update(d => ({ ...d, settings: { ...d.settings, theme } }))}
+            options={[{ value: 'system', label: 'Match phone' }, { value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]} />
+        </Field>
       </View>
 
       <View style={[panel, styles.card]}>
@@ -70,13 +82,13 @@ export function OptionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   page: { paddingHorizontal: 16, gap: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
   h1: { fontFamily: fonts.displayBold, fontSize: 44, letterSpacing: 0.4, color: colors.ink },
   h2: { fontFamily: fonts.display, fontSize: 30, letterSpacing: 0.4, color: colors.ink },
   card: { padding: 14, gap: 14 },
   lead: { fontFamily: fonts.body, fontSize: 14, color: colors.inkDim, lineHeight: 20 },
-  nudge: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, backgroundColor: '#3a3220', borderWidth: 2, borderColor: '#6a5424', padding: 12, lineHeight: 20 },
+  nudge: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, backgroundColor: colors.nudgeBg, borderWidth: 2, borderColor: colors.nudgeEdge, padding: 12, lineHeight: 20 },
   row: { flexDirection: 'row', gap: 8 },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, textAlign: 'center' },
-});
+}));

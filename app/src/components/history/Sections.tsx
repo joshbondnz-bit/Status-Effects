@@ -10,11 +10,15 @@ import { ICONS } from '../../sprites';
 import { PixelSprite } from '../PixelSprite';
 import { BarChart } from './BarChart';
 import { PixelButton } from '../Form';
-import { colors, fonts, panel } from '../../theme';
+import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../../theme';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function Card({ title, label, children }: { title: string; label?: string; children: React.ReactNode }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   return (
     <View style={[panel, s.card]}>
       <View style={s.head}><Text style={s.h2}>{title}</Text>{label ? <Text style={s.label}>{label}</Text> : null}</View>
@@ -24,6 +28,10 @@ function Card({ title, label, children }: { title: string; label?: string; child
 }
 
 function Tile({ label, value, small, sub, children }: { label: string; value: string; small?: string; sub?: string; children?: React.ReactNode }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   return (
     <View style={s.tile}>
       <Text style={s.tileLabel}>{label}</Text>
@@ -35,6 +43,10 @@ function Tile({ label, value, small, sub, children }: { label: string; value: st
 }
 
 function Expand({ title, children }: { title: string; children: React.ReactNode }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   const [open, setOpen] = useState(false);
   return (
     <View>
@@ -48,9 +60,13 @@ function Expand({ title, children }: { title: string; children: React.ReactNode 
 
 // ---------- Mornings (feel vs drinks) ----------
 
-const FEEL_COLORS = [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
+const feelColors = (colors: Palette) => [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
 
 export function MorningsCard({ buckets, checkIns }: { buckets: FeelBucket[]; checkIns: number }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   return (
     <Card title="Mornings" label="All time">
       {checkIns === 0 ? (
@@ -61,9 +77,9 @@ export function MorningsCard({ buckets, checkIns }: { buckets: FeelBucket[]; che
             <View key={b.label} style={m.row} accessibilityLabel={`${b.label}: ${b.avg == null ? 'no check-ins' : `usually ${feelWord(b.avg)}, ${b.nights} nights`}`}>
               <Text style={m.label}>{b.label}</Text>
               <View style={m.track}>
-                {b.avg != null ? <View style={[m.fill, { width: `${((b.avg + 0.6) / 4.6) * 100}%`, backgroundColor: FEEL_COLORS[Math.round(b.avg)] }]} /> : null}
+                {b.avg != null ? <View style={[m.fill, { width: `${((b.avg + 0.6) / 4.6) * 100}%`, backgroundColor: feelColors(colors)[Math.round(b.avg)] }]} /> : null}
               </View>
-              <Text style={[m.word, b.avg != null && { color: FEEL_COLORS[Math.round(b.avg)] }]}>{b.avg == null ? '—' : feelWord(b.avg)}</Text>
+              <Text style={[m.word, b.avg != null && { color: feelColors(colors)[Math.round(b.avg)] }]}>{b.avg == null ? '—' : feelWord(b.avg)}</Text>
               <Text style={m.n}>{b.nights ? `${b.nights}×` : ''}</Text>
             </View>
           ))}
@@ -74,18 +90,22 @@ export function MorningsCard({ buckets, checkIns }: { buckets: FeelBucket[]; che
   );
 }
 
-const m = StyleSheet.create({
+const useM = makeStyles((colors: Palette) => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   label: { width: 82, fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkDim },
   track: { flex: 1, height: 12, backgroundColor: colors.sunk },
   fill: { height: '100%' },
   word: { width: 64, fontFamily: fonts.bodyBold, fontSize: 13.5, color: colors.inkFaint },
   n: { width: 28, textAlign: 'right', fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
-});
+}));
 
 // ---------- Calories ----------
 
 export function CaloriesCard({ st, label, units, compareWith }: { st: PeriodStats; label: string; units: Units; compareWith: FoodCompare }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   const f = FOOD[compareWith], n = st.kcal / f.kcal;
   const energy = units === 'imperial' ? `${(st.kcal / 3500).toFixed(1)} lb` : `${(st.kcal / 7700).toFixed(1)} kg`;
   return (
@@ -105,6 +125,10 @@ export function CaloriesCard({ st, label, units, compareWith }: { st: PeriodStat
 // ---------- Sleep & recovery ----------
 
 export function SleepCard({ st, label }: { st: PeriodStats; label: string }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   const withHrv = st.nights.filter(n => n.hrvDropPct != null);
   const avg = withHrv.length ? withHrv.reduce((a, n) => a + (n.hrvDropPct ?? 0), 0) / withHrv.length : 0;
   return (
@@ -136,6 +160,10 @@ const MIX: { key: DrinkCategory; label: string; color: string }[] = [
 ];
 
 export function PatternsCard({ st, label, gramsPerDrink }: { st: PeriodStats; label: string; gramsPerDrink: number }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   const total = st.gramsByWeekday.reduce((a, b) => a + b, 0);
   const share = st.gramsByWeekday.map(g => (total ? (g / total) * 100 : 0));
   const top = [...share.keys()].sort((a, b) => share[b] - share[a]).slice(0, 2);
@@ -186,6 +214,10 @@ const ACH: Record<AchievementId, { name: string; icon: keyof typeof ICONS; done:
 };
 
 export function AchievementsCard({ list }: { list: Achievement[] }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   return (
     <Card title="Achievements" label={`${list.filter(a => a.earned).length} of ${list.length}`}>
       <View style={s.badges}>
@@ -224,6 +256,10 @@ const HELP: Record<RegionCode, string> = {
 };
 
 export function CheckInCard({ region, sex, last, onSave }: { region: RegionCode; sex: Sex; last?: { score: number; at: number }; onSave: (score: number) => void }) {
+  const colors = useColors();
+  const m = useM(colors);
+  const s = useS(colors);
+  const { panel } = panelStyles(colors);
   const [answers, setAnswers] = useState<(number | null)[] | null>(null);
   const qs = QUESTIONS(region === 'uk');
   if (answers) {
@@ -274,7 +310,7 @@ export function CheckInCard({ region, sex, last, onSave }: { region: RegionCode;
   );
 }
 
-const s = StyleSheet.create({
+const useS = makeStyles((colors: Palette) => ({
   card: { padding: 14, gap: 14 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 },
   h2: { fontFamily: fonts.display, fontSize: 29, letterSpacing: 0.4, color: colors.ink },
@@ -307,4 +343,4 @@ const s = StyleSheet.create({
   optTxt: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkDim },
   row: { flexDirection: 'row', gap: 8 },
   resultTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, lineHeight: 21 },
-});
+}));

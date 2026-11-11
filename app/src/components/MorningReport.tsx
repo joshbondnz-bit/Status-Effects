@@ -5,7 +5,7 @@ import {
 } from '../../../engine/src/index.ts';
 import type { AppData, SavedNight } from '../storage';
 import { EFFECT_NAMES } from '../copy';
-import { colors, fonts, panel } from '../theme';
+import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 import { duration, money } from '../format';
 
 /** How long after wake-up the report stays up. */
@@ -26,12 +26,15 @@ export function findMorningNight(data: AppData, now: number): { night: SavedNigh
   return null;
 }
 
-const FEEL_COLORS = [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
+const feelColors = (colors: Palette) => [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
 
 export function MorningReport({ night, profile, now, showCalories, onFeel, onClose }: {
   night: SavedNight; profile: Profile; now: number; showCalories: boolean;
   onFeel: (f: Feel) => void; onClose: () => void;
 }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const { panel } = panelStyles(colors);
   const s = summarizeNight(profile, night.events);
   if (!s) return null;
   const sim = simulateNight({ profile, events: night.events, now });
@@ -81,7 +84,7 @@ export function MorningReport({ night, profile, now, showCalories, onFeel, onClo
           <Text style={styles.q}>How do you feel?</Text>
           <View style={styles.feels} accessibilityRole="radiogroup" accessibilityLabel="How do you feel">
             {FEELS.map((f, i) => (
-              <Pressable key={f} onPress={() => onFeel(i as Feel)} style={[styles.feel, { borderBottomColor: FEEL_COLORS[i] }]} accessibilityRole="radio">
+              <Pressable key={f} onPress={() => onFeel(i as Feel)} style={[styles.feel, { borderBottomColor: feelColors(colors)[i] }]} accessibilityRole="radio">
                 <Text style={styles.feelTxt}>{f}</Text>
               </Pressable>
             ))}
@@ -90,14 +93,14 @@ export function MorningReport({ night, profile, now, showCalories, onFeel, onClo
         </>
       ) : (
         <Text style={styles.body}>
-          You said <Text style={[styles.bold, { color: FEEL_COLORS[night.feel] }]}>{FEELS[night.feel]}</Text>. Thanks, it's in History.
+          You said <Text style={[styles.bold, { color: feelColors(colors)[night.feel] }]}>{FEELS[night.feel]}</Text>. Thanks, it's in History.
         </Text>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   card: { padding: 14, gap: 10, borderColor: colors.gold },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontFamily: fonts.display, fontSize: 32, letterSpacing: 0.4, color: colors.gold },
@@ -115,4 +118,4 @@ const styles = StyleSheet.create({
   feel: { flexGrow: 1, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edgeHi, borderBottomWidth: 5 },
   feelTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink },
   hint: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
-});
+}));

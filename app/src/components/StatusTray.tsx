@@ -6,7 +6,7 @@ import { Animated, Easing, Modal, Platform, Pressable, ScrollView, StyleSheet, T
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import type { Effect, Night, RegionCode } from '../../../engine/src/index.ts';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { ICONS } from '../sprites';
 import { PixelSprite } from './PixelSprite';
 import { EFFECT_NAMES, describe, severityLabel } from '../copy';
@@ -16,7 +16,7 @@ import { useReduceMotion } from '../useReduceMotion';
 const NATIVE = Platform.OS !== 'web';
 const SLOT = 50;
 
-function frameColor(e: Effect): string {
+function frameColor(e: Effect, colors: Palette): string {
   if (e.kind === 'buff') return colors.buff;
   return e.severity == null ? colors.sevUnrated : [colors.sevMinor, colors.sevModerate, colors.sevSevere][e.severity];
 }
@@ -41,6 +41,8 @@ function endsAt(t: number, now: number): string {
 
 /** The time already used, as a shaded pie wedge from 12 o'clock, clockwise. */
 function Wedge({ used }: { used: number }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   if (used <= 0.01) return null;
   const c = SLOT / 2, r = SLOT;
   let d: string;
@@ -51,12 +53,14 @@ function Wedge({ used }: { used: number }) {
   }
   return (
     <Svg width={SLOT - 6} height={SLOT - 6} viewBox={`3 3 ${SLOT - 6} ${SLOT - 6}`} style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Path d={d} fill="rgba(11,8,16,0.62)" />
+      <Path d={d} fill={colors.wedge} />
     </Svg>
   );
 }
 
 function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean; onPress: () => void }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const reduceMotion = useReduceMotion();
   const pop = useRef(new Animated.Value(land && !reduceMotion ? 0 : 1)).current;
   useEffect(() => {
@@ -67,7 +71,7 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
   const incoming = e.status === 'incoming', ongoing = e.status === 'ongoing' || !isFinite(e.end);
   const left = e.end - now;
   const used = incoming || ongoing ? 0 : Math.min(1, Math.max(0, (now - e.start) / Math.max(1, e.end - e.start)));
-  const color = frameColor(e);
+  const color = frameColor(e, colors);
   const time = incoming ? `in ${short(e.start - now)}` : ongoing ? 'on' : short(left);
   const name = EFFECT_NAMES[e.id];
   const label = `${name}, ${incoming ? 'starts in ' + duration(e.start - now) : ongoing ? 'active' : duration(left) + ' left'}, ${severityLabel(e).toLowerCase()}. Show details`;
@@ -98,6 +102,8 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
 export interface ZoneInfo { name: string; text: string; color: string }
 
 export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: Effect[]; buffs: Effect[]; night: Night; region: RegionCode; zone?: ZoneInfo }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const now = night.now;
   const list = [...order(debuffs, now), ...order(buffs, now)];
   const [openId, setOpenId] = useState<string | null>(null);
@@ -136,12 +142,12 @@ export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: E
           <View style={[styles.sheet, { paddingBottom: 16 + insets.bottom }]}>
             <ScrollView contentContainerStyle={{ gap: 10 }}>
               <View style={styles.sheetTop}>
-                <View style={[styles.bigIcon, { borderColor: frameColor(open) }]}>
+                <View style={[styles.bigIcon, { borderColor: frameColor(open, colors) }]}>
                   <PixelSprite sprite={ICONS[open.id]} scale={3} dim={open.status === 'incoming'} />
                 </View>
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text style={styles.sheetName}>{EFFECT_NAMES[open.id]}</Text>
-                  <Text style={[styles.sev, { color: frameColor(open) }]}>{severityLabel(open)}</Text>
+                  <Text style={[styles.sev, { color: frameColor(open, colors) }]}>{severityLabel(open)}</Text>
                 </View>
                 <Pressable onPress={() => setOpenId(null)} style={styles.x} accessibilityRole="button" accessibilityLabel="Close details">
                   <Text style={styles.xTxt}>×</Text>
@@ -154,7 +160,7 @@ export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: E
               </Text>
               <View style={styles.bar}>
                 <View style={[styles.barFill, {
-                  backgroundColor: frameColor(open),
+                  backgroundColor: frameColor(open, colors),
                   width: open.status !== 'active' || !isFinite(open.end) ? '100%' : `${Math.max(3, ((open.end - now) / Math.max(1, open.end - open.start)) * 100)}%`,
                 }]} />
               </View>
@@ -173,7 +179,7 @@ export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: E
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   wrap: { gap: 8 },
   title: { fontFamily: fonts.display, fontSize: 30, letterSpacing: 0.4, color: colors.ink },
   zoneText: { fontFamily: fonts.body, fontSize: 15, color: colors.ink, lineHeight: 21, marginBottom: 2 },
@@ -211,4 +217,4 @@ const styles = StyleSheet.create({
   nav: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 4 },
   navBtn: { paddingVertical: 10, paddingHorizontal: 14, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi },
   navTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink },
-});
+}));

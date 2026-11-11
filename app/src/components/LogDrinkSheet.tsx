@@ -8,7 +8,7 @@ import {
   type DrinkCategory, type DrinkPreview, type DrinkSpec, type LogEvent, type Profile, type RegionCode,
 } from '../../../engine/src/index.ts';
 import { savedToSpec, type SavedDrink } from '../storage';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { money } from '../format';
 import { DrinkForm } from './DrinkForm';
 import { hpText, zoneWarning } from './PreviewLine';
@@ -42,6 +42,8 @@ interface Props {
 type Form = { mode: 'new' | 'edit'; initial: Partial<SavedDrink> } | null;
 
 export function LogDrinkSheet(props: Props) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const { visible, region, highRange, showCalories, profile, events, now, myDrinks, onClose, onPick, onSaveDrink, onDeleteDrink } = props;
   const [tab, setTab] = useState<Tab>(myDrinks.length ? 'mine' : 'beer');
   const [form, setForm] = useState<Form>(null);
@@ -135,6 +137,8 @@ export function LogDrinkSheet(props: Props) {
 }
 
 function TabBtn({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   return (
     <Pressable onPress={onPress} style={[styles.tab, on && styles.tabOn]} accessibilityRole="tab" accessibilityState={{ selected: on }}>
       <Text style={[styles.tabTxt, on && styles.tabTxtOn]}>{label}</Text>
@@ -145,7 +149,9 @@ function TabBtn({ label, on, onPress }: { label: string; on: boolean; onPress: (
 function DrinkRow({ spec, p, std, showCalories, left, onPress, onEdit, editLabel }: {
   spec: DrinkSpec; p?: DrinkPreview; std: number; showCalories: boolean; left?: number; onPress: () => void; onEdit: () => void; editLabel: string;
 }) {
-  const warn = p ? zoneWarning(p) : null;
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const warn = p ? zoneWarning(p, colors) : null;
   const kcal = showCalories ? makeDrink(spec, 0, 'x').kcal : null;
   const details = [`${std.toFixed(1)} std`, kcal != null ? `${kcal} kcal` : null, spec.cost != null ? money(spec.cost) : null].filter(Boolean).join(' · ');
   return (
@@ -172,7 +178,7 @@ function DrinkRow({ spec, p, std, showCalories, left, onPress, onEdit, editLabel
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   backdrop: { flex: 1, backgroundColor: 'rgba(9,7,14,0.78)' },
   sheet: { backgroundColor: colors.panel, borderTopWidth: 3, borderColor: colors.edgeHi, padding: 16, gap: 10 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -202,4 +208,4 @@ const styles = StyleSheet.create({
   restock: { gap: 10, paddingVertical: 4 },
   restockTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink },
   back: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana, textAlign: 'center', paddingVertical: 6 },
-});
+}));

@@ -6,13 +6,13 @@ import { FOOD, FOOD_SPRITES } from '../food';
 import type { FoodCompare } from '../storage';
 import { ICONS, glassSprite } from '../sprites';
 import { PixelSprite } from './PixelSprite';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { duration } from '../format';
 
 const SEGMENTS = 24;          // the meter is one whole day of calories
 const FOOD_SCALE = 3;
 const MAX_FOOD = 12;
-const GOLD = colors.gold, GOLD_HI = '#ffe39a', GOLD_LO = '#b8862a';
+const GOLD_HI = '#ffe39a', GOLD_LO = '#b8862a';
 
 interface Group { key: string; d: DrinkEvent; n: number; kcal: number; alc: number }
 
@@ -31,6 +31,8 @@ function groupDrinks(drinks: DrinkEvent[]): Group[] {
 export function Rations({ night, compareWith, fatPauseMs, whatIf }: {
   night: Night; compareWith: FoodCompare; fatPauseMs?: number; whatIf: boolean;
 }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const kcal = night.kcal;
   if (!kcal) return <Text style={styles.empty}>No calories logged yet.</Text>;
 
@@ -65,7 +67,7 @@ export function Rations({ night, compareWith, fatPauseMs, whatIf }: {
         <View style={styles.meter} accessible accessibilityLabel={`${Math.round(share * 100)} percent of a day's calories`}>
           {Array.from({ length: SEGMENTS }, (_, i) => (
             <View key={i} style={[styles.seg, i < on ? styles.segOn : i < ghostTo ? styles.segGhost : null]}>
-              {i < on ? <><View style={[styles.band, { backgroundColor: GOLD_HI }]} /><View style={[styles.band, { flex: 2, backgroundColor: GOLD }]} /><View style={[styles.band, { backgroundColor: GOLD_LO }]} /></> : null}
+              {i < on ? <><View style={[styles.band, { backgroundColor: GOLD_HI }]} /><View style={[styles.band, { flex: 2, backgroundColor: colors.gold }]} /><View style={[styles.band, { backgroundColor: GOLD_LO }]} /></> : null}
             </View>
           ))}
         </View>
@@ -105,11 +107,11 @@ export function Rations({ night, compareWith, fatPauseMs, whatIf }: {
       <View style={{ gap: 6 }}>
         <Text style={styles.label}>What the calories are</Text>
         <View style={styles.split}>
-          <View style={{ flex: alc, backgroundColor: GOLD }} />
+          <View style={{ flex: alc, backgroundColor: colors.gold }} />
           {carbs > 0 ? <View style={{ flex: carbs, backgroundColor: colors.mana }} /> : null}
         </View>
         <View style={styles.legend}>
-          <Text style={styles.legendTxt}><Text style={[styles.swatch, { color: GOLD }]}>■ </Text><Text style={styles.bold}>{alc}</Text> from alcohol: no nutrients</Text>
+          <Text style={styles.legendTxt}><Text style={[styles.swatch, { color: colors.gold }]}>■ </Text><Text style={styles.bold}>{alc}</Text> from alcohol: no nutrients</Text>
           <Text style={styles.legendTxt}><Text style={[styles.swatch, { color: colors.mana }]}>■ </Text><Text style={styles.bold}>{carbs}</Text> from sugars and carbs</Text>
         </View>
         {fatPauseMs && fatPauseMs > 60_000 ? (
@@ -124,6 +126,8 @@ export function Rations({ night, compareWith, fatPauseMs, whatIf }: {
 }
 
 function Item({ d, n, kcal, alc, max, ghost }: { d: DrinkEvent; n: number; kcal: number; alc: number; max: number; ghost?: boolean }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const carbs = Math.max(0, kcal - alc);
   return (
     <View style={[styles.item, ghost && styles.itemGhost]}>
@@ -134,7 +138,7 @@ function Item({ d, n, kcal, alc, max, ghost }: { d: DrinkEvent; n: number; kcal:
           {d.size ? <Text style={styles.itemSize}> · {d.size}</Text> : null}
         </Text>
         <View style={styles.itemBar}>
-          <View style={{ width: `${(alc / max) * 100}%`, backgroundColor: ghost ? colors.mana : GOLD }} />
+          <View style={{ width: `${(alc / max) * 100}%`, backgroundColor: ghost ? colors.mana : colors.gold }} />
           <View style={{ width: `${(carbs / max) * 100}%`, backgroundColor: colors.mana, opacity: ghost ? 0.5 : 1 }} />
         </View>
       </View>
@@ -146,17 +150,17 @@ function Item({ d, n, kcal, alc, max, ghost }: { d: DrinkEvent; n: number; kcal:
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12 },
   totalRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   total: { fontFamily: fonts.display, fontSize: 52, lineHeight: 52, color: colors.ink },
   unit: { fontFamily: fonts.display, fontSize: 26, color: colors.inkDim },
   sentence: { fontFamily: fonts.body, fontSize: 15, color: colors.ink, lineHeight: 21, marginTop: 2 },
-  gold: { fontFamily: fonts.bodyBold, color: GOLD },
+  gold: { fontFamily: fonts.bodyBold, color: colors.gold },
   bold: { fontFamily: fonts.bodyBold, color: colors.ink },
   meter: { flexDirection: 'row', gap: 2, padding: 3, backgroundColor: colors.edge, marginTop: 10 },
-  seg: { flex: 1, height: 16, backgroundColor: '#2a2440' },
-  segOn: { backgroundColor: GOLD },
+  seg: { flex: 1, height: 16, backgroundColor: colors.meterEmpty },
+  segOn: { backgroundColor: colors.gold },
   segGhost: { backgroundColor: colors.mana, opacity: 0.55 },
   band: { flex: 1 },
   ticks: { height: 16, marginTop: 3, marginHorizontal: 3 },
@@ -184,4 +188,4 @@ const styles = StyleSheet.create({
   legendTxt: { fontFamily: fonts.body, fontSize: 13, color: colors.inkDim },
   link: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.sevUnrated, padding: 10, marginTop: 4 },
   linkTxt: { flex: 1, fontFamily: fonts.body, fontSize: 13.5, color: colors.inkDim, lineHeight: 19 },
-});
+}));

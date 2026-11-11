@@ -5,11 +5,13 @@ import { simulateNight } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { newNight } from '../storage';
 import { sampleNightEvents } from '../sampleNight';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 
 const MIN = 60_000;
 
 function Btn({ label, onPress, on }: { label: string; onPress: () => void; on?: boolean }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   return (
     <Pressable onPress={onPress} style={[styles.btn, on && styles.on]} accessibilityRole="button" accessibilityState={on != null ? { selected: on } : undefined}>
       <Text style={[styles.txt, on && styles.txtOn]}>{label}</Text>
@@ -18,6 +20,8 @@ function Btn({ label, onPress, on }: { label: string; onPress: () => void; on?: 
 }
 
 export function TimeMachine() {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const { timeMachine: tm, now, data, update, currentTime, tick } = useApp();
   if (!__DEV__) return null;
   const ahead = Math.round(tm.offset / MIN);
@@ -67,8 +71,8 @@ export function TimeMachine() {
   );
 }
 
-const styles = StyleSheet.create({
-  box: { borderWidth: 2, borderColor: '#6a5424', borderStyle: 'dashed', padding: 10, gap: 8 },
+const useStyles = makeStyles((colors: Palette) => ({
+  box: { borderWidth: 2, borderColor: colors.nudgeEdge, borderStyle: 'dashed', padding: 10, gap: 8 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 },
   title: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.5, color: colors.gold },
   state: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.inkDim },
@@ -78,4 +82,4 @@ const styles = StyleSheet.create({
   txt: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkDim },
   txtOn: { color: colors.edge },
   note: { fontFamily: fonts.body, fontSize: 12, color: colors.inkFaint, lineHeight: 17 },
-});
+}));

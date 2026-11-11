@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View, type ScrollViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../theme';
+import { useColors, makeStyles, type Palette } from '../theme';
 
 /**
  * A scrolling screen that starts below the phone's status bar (clock, signal, notch),
@@ -12,6 +12,8 @@ export function Screen({ children, stickyHeaderIndices, keyboardShouldPersistTap
   stickyHeaderIndices?: number[];
   keyboardShouldPersistTaps?: ScrollViewProps['keyboardShouldPersistTaps'];
 }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -27,8 +29,8 @@ export function Screen({ children, stickyHeaderIndices, keyboardShouldPersistTap
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   root: { flex: 1, backgroundColor: colors.bg },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 12, gap: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
-});
+}));

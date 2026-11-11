@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { addDays, dayKey, startOfWeek, type NightSummary, type Period } from '../../../../engine/src/index.ts';
-import { colors, fonts } from '../../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../../theme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -17,7 +17,7 @@ const MAX_CONTENT = 520;
 
 type Cell = 'dry' | 'l1' | 'l2' | 'l3' | 'l4' | 'none' | 'future';
 const level = (g: number): Cell => (g < 20 ? 'l1' : g < 45 ? 'l2' : g < 75 ? 'l3' : 'l4');
-const BG: Record<Cell, string> = { dry: colors.dry, l1: colors.heat1, l2: colors.heat2, l3: colors.heat3, l4: colors.heat4, none: 'transparent', future: 'transparent' };
+const bgOf = (colors: Palette): Record<Cell, string> => ({ dry: colors.dry, l1: colors.heat1, l2: colors.heat2, l3: colors.heat3, l4: colors.heat4, none: 'transparent', future: 'transparent' });
 
 interface Props {
   period: Period;
@@ -32,6 +32,9 @@ interface Props {
 }
 
 export function Calendar(p: Props) {
+  const colors = useColors();
+  const BG = bgOf(colors);
+  const styles = useStyles(colors);
   // Give every day square an exact pixel size, worked out from the screen width.
   // (Percentage widths plus aspectRatio collapse to thin lines on iPhone.)
   const { width: screenWidth } = useWindowDimensions();
@@ -138,6 +141,9 @@ export function Calendar(p: Props) {
 }
 
 function LegendItem({ color, label }: { color: string; label: string }) {
+  const colors = useColors();
+  const BG = bgOf(colors);
+  const styles = useStyles(colors);
   return (
     <View style={styles.legendItem}>
       <View style={[styles.swatch, { backgroundColor: color }]} />
@@ -146,7 +152,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 },
   monthTitle: { fontFamily: fonts.display, fontSize: 29, letterSpacing: 0.4, color: colors.ink },
   hint: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
@@ -173,4 +179,4 @@ const styles = StyleSheet.create({
   miniTitle: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, marginBottom: 6 },
   miniGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   miniCell: { borderWidth: 1.5, borderColor: colors.sunk },
-});
+}));

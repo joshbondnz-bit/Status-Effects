@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { standardDrinks, type LogEvent, type RegionCode } from '../../../engine/src/index.ts';
-import { colors, fonts } from '../theme';
+import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { clock, money } from '../format';
 
 interface Props {
@@ -11,6 +11,8 @@ interface Props {
 
 /** Tonight's entries, newest first, each with a remove button. */
 export function NightLog({ events, region, onRemove }: Props) {
+  const colors = useColors();
+  const styles = useStyles(colors);
   const items = [...events].sort((a, b) => b.t - a.t);
   if (!items.length) return <Text style={styles.empty}>Nothing logged yet.</Text>;
   return (
@@ -37,7 +39,7 @@ export function NightLog({ events, region, onRemove }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors: Palette) => ({
   empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.sunk, paddingVertical: 8, paddingHorizontal: 10 },
   time: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.inkDim, width: 44 },
@@ -46,4 +48,4 @@ const styles = StyleSheet.create({
   qty: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink },
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   delTxt: { fontSize: 20, color: colors.inkFaint },
-});
+}));
