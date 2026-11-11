@@ -152,12 +152,13 @@ function RecapBody({ night, profile, now, showCalories, compareWith }: {
 function Ring({ hp, zone, critical }: { hp: number; zone: string; critical: boolean }) {
   const colors = useColors();
   const styles = useStyles(colors);
+  // Drains clockwise from the top like the main HP ring: the filled arc ends at 12 o'clock.
   const R = 46, C = 2 * Math.PI * R;
   return (
     <View style={styles.ring} accessible accessibilityLabel={`Lowest HP ${hp} of 100, ${zone}`}>
       <Svg width={112} height={112} style={{ position: 'absolute' }}>
         <Circle cx={56} cy={56} r={R} fill="none" stroke={colors.track2} strokeWidth={10} />
-        {hp > 0 ? <Circle cx={56} cy={56} r={R} fill="none" stroke={colors.hp} strokeWidth={10} strokeDasharray={`${C * hp / 100} ${C}`} rotation={-90} origin="56,56" /> : null}
+        {hp > 0 ? <Circle cx={56} cy={56} r={R} fill="none" stroke={colors.hp} strokeWidth={10} strokeDasharray={`${C * hp / 100} ${C}`} rotation={-90 + 360 * (1 - hp / 100)} origin="56,56" /> : null}
         <Circle cx={56} cy={56} r={R + 6} fill="none" stroke={colors.edge} strokeWidth={2} />
         <Circle cx={56} cy={56} r={R - 6} fill="none" stroke={colors.edge} strokeWidth={2} />
       </Svg>
