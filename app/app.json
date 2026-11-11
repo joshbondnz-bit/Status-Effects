@@ -9,9 +9,11 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#17131f",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.joshbond.statuseffects"
     },
     "android": {
+      "package": "com.joshbond.statuseffects",
       "adaptiveIcon": {
         "backgroundColor": "#17131f",
         "foregroundImage": "./assets/android-icon-foreground.png",
