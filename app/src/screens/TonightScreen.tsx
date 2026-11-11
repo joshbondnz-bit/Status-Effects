@@ -45,6 +45,8 @@ export function TonightScreen() {
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  // "What if one more?" is shared by the Sleep forecast and Rations.
+  const [whatIf, setWhatIf] = useState(false);
   const [removed, setRemoved] = useState<LogEvent | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { data, error, update, now, tick, currentTime } = useApp();
@@ -192,13 +194,13 @@ export function TonightScreen() {
 
       <View style={[panel, styles.card]}>
         <View style={styles.logHead}><Text style={styles.h2}>Sleep forecast</Text><Text style={styles.faint}>Blood alcohol vs bedtime</Text></View>
-        <CurveChart night={night} />
+        <CurveChart night={night} whatIf={whatIf} onWhatIf={setWhatIf} />
       </View>
 
       {settings.calories ? (
         <View style={[panel, styles.card]}>
           <View style={styles.logHead}><Text style={styles.h2}>Rations</Text><Text style={styles.faint}>Tonight's calories</Text></View>
-          <Rations night={night} compareWith={settings.compareWith ?? 'pizza'} />
+          <Rations night={night} compareWith={settings.compareWith ?? 'pizza'} whatIf={whatIf} fatPauseMs={fx.debuffs.find(e => e.id === 'fatpause')?.data?.pausedMs} />
         </View>
       ) : null}
 

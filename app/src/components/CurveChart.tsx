@@ -18,10 +18,13 @@ const ZONE_TINT = ['#5fd39a', '#e8c547', '#ff8a3d', '#ff6a4d', '#ec3a50', '#b313
 
 const pct = (b: number) => `${b.toFixed(3)}%`;
 
-export function CurveChart({ night }: { night: Night }) {
+export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Night; whatIf?: boolean; onWhatIf?: (on: boolean) => void }) {
   const [width, setWidth] = useState(0);
   const [scrubT, setScrubT] = useState<number | null>(null);
-  const [whatIf, setWhatIf] = useState(false);
+  // The what-if can be shared with other cards (Rations) through props, or kept here.
+  const [whatIfLocal, setWhatIfLocal] = useState(false);
+  const whatIf = whatIfProp ?? whatIfLocal;
+  const setWhatIf = onWhatIf ?? setWhatIfLocal;
 
   const last = night.drinks[night.drinks.length - 1];
   // The ghost: tonight plus one more of your last drink, right now.
@@ -222,7 +225,7 @@ export function CurveChart({ night }: { night: Night }) {
       </View>
 
       <View style={styles.footer}>
-        <Pressable onPress={() => setWhatIf(w => !w)} accessibilityRole="switch" accessibilityState={{ checked: whatIf }}
+        <Pressable onPress={() => setWhatIf(!whatIf)} accessibilityRole="switch" accessibilityState={{ checked: whatIf }}
           style={[styles.whatIf, whatIf && styles.whatIfOn]}>
           <Text style={[styles.whatIfTxt, whatIf && { color: colors.edge }]}>{whatIf ? '✓ ' : '+ '}What if one more {last.name.toLowerCase()}?</Text>
         </Pressable>
