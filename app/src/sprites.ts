@@ -38,8 +38,11 @@ export const ICONS: Record<EffectId, SpriteDef> = {
   fatpause: { palette: { f: '#ff7a2e', y: '#ffd166', P: '#5a1f0c' }, rows: [E,
     '......f.........', '......ff........', '.....fff........', '.....ffff..f....', '....fffff.ff....', '...ffffffffff...', '...ffyyyyyyff...',
     '..ffyyyyyyyyff..', '..ffyyPyyPyyff..', '..ffyyPyyPyyff..', '..ffyyPyyPyyff..', '...ffyyyyyyff...', '....ffffffff....', E, E] },
-  munchies: { palette: { o: '#4a2410', B: '#d8913f', w: '#fbe7bf', g: '#5cae3a', M: '#6b3a22', y: '#f6c64a', b: '#c47c33' }, rows: [E, E, E,
-    E, '.....oooooo.....', '...ooBBBBBBoo...', '..oBBwBBBwBBBo..', '..oBBBBBBBBBBo..', '..gggggggggggg..', '..MMMMMMMMMMMM..', '..yyyyyyyyyyy...', '..obbbbbbbbbbo..', '...oooooooooo...', E, E, E] },
+  // Munchies: an open fridge, lit up in the dark.
+  munchies: { palette: { w: '#e8e4f0', W: '#a8a2bc', d: '#8a83a0', l: '#fff3b0', L: '#f2d27a', s: '#c9c2b4', g: '#5cae3a', r: '#e5484f', b: '#6f93ff' }, rows: [
+    '................', '..wwwwwwwww.....', '..wlllllllwd....', '..wlglllllwdW...', '..wlgllrrlwdWW..', '..wssssssswdWW..', '..wlllllllwdWl..',
+    '..wlbblllLwdWW..', '..wlbbllrLwdWW..', '..wssssssswdWl..', '..wlllllllwdWW..', '..wLlllllLwdWW..', '..wLlrrrlLwdW...', '..wLLLLLLLwd....',
+    '..WWWWWWWWW.....', '..W.......W.....'] },
   hydrated: { palette: { g: '#cfe6ff', a: '#3d4a6b', w: '#bfe3ff', b: '#4aa3f0', h: '#a8d8ff' }, rows: [E, E,
     '...gaaaaaaaag...', '...gaaaaaaaag...', '...gwwwwwwwwg...', '...gbbbbbbbbg...', '....gbbbbbbg....', '....gbbbbbbg....', '....gbhbbbbg....',
     '....gbbbbbbg....', '....gbbbbbbg....', '.....gbbbbg.....', '.....gggggg.....', E, E, E] },

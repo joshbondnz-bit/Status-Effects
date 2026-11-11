@@ -111,7 +111,6 @@ export function TonightScreen() {
 
       <View style={[panel, styles.card]}>
         <HealthBar night={night} />
-        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} night={night} region={region} />
 
         <View style={styles.tally}>
           <View style={styles.glasses}>
@@ -158,6 +157,9 @@ export function TonightScreen() {
             <Pressable onPress={undo} accessibilityRole="button"><Text style={styles.undoBtn}>Undo</Text></Pressable>
           </View>
         ) : null}
+
+        {/* Cause, then effect: what you've had (and the buttons to log more) sits above what it's doing to you. */}
+        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} night={night} region={region} />
       </View>
 
 
