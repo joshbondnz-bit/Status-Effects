@@ -35,7 +35,7 @@ export interface EffectOptions {
 /** How long "Body under strain" lasts after reaching the critical level. */
 export const STRAIN_HOURS = 48;
 
-/** Drop in overnight HRV recovery by intake (Pietilä et al., 2018): low, moderate, high. */
+/** Drop in the HRV-based recovery score for early sleep, in percentage points, by intake (Pietilä et al., 2018): low, moderate, high. */
 export const HRV_DROP_PCT = [9, 24, 39] as const;
 
 export function hrvSeverity(gramsPerKg: number): Severity {

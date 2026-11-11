@@ -53,7 +53,7 @@ const methodFor = (region: RegionCode): [string, string][] => [
   ['Grams, not drinks', 'Each drink becomes grams of alcohol: ml × ABV × 0.789. Standard drinks are shown for your region.'],
   ['Absorption', 'On an empty stomach a drink peaks in about 30–45 minutes. Food in the last 3 hours slows that to 60–90 minutes and cuts how much reaches your blood by about 15%.'],
   ['Your body', 'Your weight, height, age and sex estimate your body water, which sets how far each drink is diluted.'],
-  ['Fixed recovery', 'Blood alcohol falls about 0.015% an hour. Water, coffee, food and sleep don’t speed that up; only time does.'],
+  ['Fixed recovery', 'Blood alcohol falls about 0.015% an hour on average (most people between 0.010 and 0.025%). Water, coffee and sleep don’t speed that up; only time does. A meal may speed it slightly, but the app doesn’t count on that, so its estimates stay on the cautious side.'],
   ['The HP ring', 'Six equal segments between 0.02, 0.05, 0.08, 0.11, 0.15 and 0.25%, so early drinks are visible. 0 HP is 0.25%, where the risk of alcohol poisoning becomes serious. The drain rate is what you’ll lose over the next hour, heaviest while drinks absorb.'],
   ['Next-day debuffs', 'Worked out from your total grams per kg of body weight, your peak, and how much alcohol is still in your system at bedtime.'],
   ['Calories', '7 kcal per gram of alcohol plus 4 per gram of sugars and carbs. Your daily needs are estimated from your character sheet at a light activity level.'],
@@ -64,19 +64,20 @@ const REFS: Ref[] = [
   // Its source is your region's driving law (LOCAL[region].law), filled in below.
   { icon: 'judgment', name: 'Impaired judgment', text: 'Reaction time, coordination and risk judgment worsen from low levels, well before the legal limits.', source: '' },
   { icon: 'sleep', name: 'Impaired sleep', text: 'Alcohol still in your system at bedtime suppresses REM sleep and breaks up the second half of the night, more so at higher doses.', source: 'Ebrahim et al., 2013, Alcoholism: Clinical and Experimental Research' },
-  { icon: 'hrv', name: 'HRV drain', text: 'Heart-rate variability is the small variation between heartbeats; higher overnight means better recovery. It fell about 9%, 24% and 39% at low, moderate and high intake per kg of body weight.', source: 'Pietilä et al., 2018, JMIR Mental Health' },
-  { icon: 'hangover', name: 'Hangover', text: 'Hangovers peak as blood alcohol returns to zero and become much more common after a peak above about 0.11%.', source: 'Verster and colleagues, Alcohol Hangover Research Group' },
-  { icon: 'dehydration', name: 'Dehydration', text: 'Alcohol suppresses vasopressin, the hormone that helps your kidneys hold onto water.', source: 'Hobson and Maughan, 2010, Alcohol and Alcoholism' },
-  { icon: 'hangxiety', name: 'Hangxiety', text: 'Next-day anxiety and low mood as the brain rebounds from alcohol’s calming effect.', source: 'Marsh et al., 2019, Personality and Individual Differences' },
-  { icon: 'recovery', name: 'Slow recovery', text: 'Heavy drinking after exercise cut muscle protein synthesis by roughly a quarter to a third.', source: 'Parr et al., 2014, PLoS One' },
-  { icon: 'fatpause', name: 'Fat burning paused', text: 'The body clears alcohol first; whole-body fat burning dropped sharply after a moderate dose.', source: 'Siler et al., 1999, American Journal of Clinical Nutrition' },
+  { icon: 'hrv', name: 'HRV drain', text: 'Heart-rate variability is the small variation between heartbeats; higher overnight means better recovery. In over 4,000 people, an HRV-based recovery score for the first hours of sleep fell by about 9, 24 and 39 percentage points after low, moderate and high intake.', source: 'Pietilä et al., 2018, JMIR Mental Health' },
+  { icon: 'hangover', name: 'Hangover', text: 'Hangovers peak as blood alcohol returns to zero. Researchers once used a 0.11% peak as the line for a hangover, but about 1 in 5 students who reported one had stayed well below it, so there’s no safe threshold.', source: 'Verster et al., 2020, Journal of Clinical Medicine (reconsidering the 0.11% threshold)' },
+  { icon: 'dehydration', name: 'Dehydration', text: 'Alcohol suppresses vasopressin, the hormone that helps your kidneys hold onto water, so you pass more urine. In one study the effect was smaller when people were already short of fluid.', source: 'Hobson and Maughan, 2010, Alcohol and Alcoholism' },
+  { icon: 'hangxiety', name: 'Hangxiety', text: 'Next-day anxiety as the brain rebounds from alcohol’s calming effect. In one study of social drinkers it showed up most strongly in shy people.', source: 'Marsh et al., 2019, Personality and Individual Differences' },
+  { icon: 'recovery', name: 'Slow recovery', text: 'Heavy drinking after exercise cut muscle protein synthesis by 24 to 37% compared with protein alone, in a small study of 8 active men.', source: 'Parr et al., 2014, PLoS One' },
+  { icon: 'fatpause', name: 'Fat burning paused', text: 'The body clears alcohol first; whole-body fat burning fell by about 73% after 24 g of alcohol, roughly two drinks.', source: 'Siler et al., 1999, American Journal of Clinical Nutrition' },
   { icon: 'munchies', name: 'Munchies', text: 'Alcohol increases appetite and how much you eat at the next meal, often called the apéritif effect.', source: 'Yeomans, 2010, Physiology and Behavior' },
-  { icon: 'strain', name: 'Body under strain', text: 'Around 0.25% and above, the risk of alcohol poisoning rises steeply: vomiting while drowsy, choking, slowed breathing.', source: 'US National Institute on Alcohol Abuse and Alcoholism, Understanding the Dangers of Alcohol Overdose' },
-  { icon: 'lined', name: 'Well fed', text: 'Food in your stomach slows absorption, giving a lower, later peak. It doesn’t speed up how fast alcohol clears.', source: 'Jones and Jönsson, 1994, Journal of Forensic Sciences' },
-  { icon: 'hydrated', name: 'Hydrated', text: 'Water offsets fluid loss and spaces out your drinks. It doesn’t lower blood alcohol.', source: 'Hobson and Maughan, 2010, Alcohol and Alcoholism' },
+  { icon: 'strain', name: 'Body under strain', text: 'The NIAAA rates impairment as severe from about 0.16% and life-threatening from about 0.31%, with vomiting while drowsy, choking and slowed breathing among the dangers. This app treats 0.25% as critical to leave a margin, and the two-day recovery is a cautious estimate.', source: 'US National Institute on Alcohol Abuse and Alcoholism, alcohol overdose and blood alcohol level fact sheets' },
+  { icon: 'lined', name: 'Well fed', text: 'Food in your stomach slows absorption, giving a lower, later peak. The same study found alcohol also cleared a little faster right after a meal; the app only counts the lower peak.', source: 'Jones and Jönsson, 1994, Journal of Forensic Sciences' },
+  { icon: 'hydrated', name: 'Hydrated', text: 'Water offsets the fluid alcohol makes you lose and spaces out your drinks. It doesn’t lower blood alcohol.', source: 'Hobson and Maughan, 2010, Alcohol and Alcoholism' },
 ];
 
-const MODEL_SOURCES = 'Watson et al., 1980, American Journal of Clinical Nutrition (body water) · Jones, 2010, Forensic Science International (elimination) · Jones and Jönsson, 1994, Journal of Forensic Sciences (food) · Mifflin et al., 1990, American Journal of Clinical Nutrition (daily calories)';
+// Each checked against the paper in November 2026.
+const MODEL_SOURCES = 'Watson, Watson and Batt, 1980, American Journal of Clinical Nutrition (body water) · Jones, 2010, Forensic Science International (elimination) · Jones and Jönsson, 1994, Journal of Forensic Sciences (food) · Mifflin et al., 1990, American Journal of Clinical Nutrition (daily calories)';
 
 export function ScienceScreen() {
   const colors = useColors();
