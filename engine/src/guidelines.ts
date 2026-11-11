@@ -1,5 +1,5 @@
 // Drinking guidance by region, Canada's risk continuum, and AUDIT-C scoring.
-// All figures need checking against the official sources before launch.
+// Checked against the official sources in November 2026 (see the Science tab for each region's source).
 
 import { REGIONS } from './drinks.ts';
 import type { RegionCode, Sex } from './types.ts';
@@ -19,12 +19,14 @@ export function weeklyGuidance(region: RegionCode, sex: Sex): WeeklyGuidance {
   switch (region) {
     case 'ca': return { weeklyGrams: 2 * g, upperWeeklyGrams: 6 * g, perOccasionDrinks: 2, source: "Canada's Guidance on Alcohol and Health (CCSA, 2023)" };
     case 'uk': return { weeklyGrams: 14 * g, source: 'UK Chief Medical Officers (2016)' };
-    case 'us': return { weeklyGrams: (sex === 'f' ? 7 : 14) * g, source: 'Dietary Guidelines for Americans' };
-    case 'au': return { weeklyGrams: 10 * g, source: 'NHMRC Australian guidelines (2020)' };
+    // The 2025–2030 Dietary Guidelines dropped numeric limits ("drink less"); this keeps the previous ones
+    // (1 a day for women, 2 for men) as the weekly line, just under NIAAA's heavy-drinking level (8+ / 15+).
+    case 'us': return { weeklyGrams: (sex === 'f' ? 7 : 14) * g, source: 'Previous Dietary Guidelines for Americans limits (the 2025–2030 edition has no number)' };
+    case 'au': return { weeklyGrams: 10 * g, perOccasionDrinks: 4, source: 'NHMRC Australian guidelines (2020)' };
     // Health NZ low-risk advice: 10 a week and 2 a day for women, 15 and 3 for men, no more than 4 or 5 on any one
     // occasion, and 2 alcohol-free days a week. Dates from 2011; Health NZ has been reviewing it since 2024.
     case 'nz': return { weeklyGrams: (sex === 'f' ? 10 : 15) * g, perOccasionDrinks: sex === 'f' ? 4 : 5, source: "Health NZ low-risk drinking advice (under review since 2024)" };
-    case 'eu': return { weeklyGrams: 10 * g, source: 'Varies by country' };
+    case 'eu': return { weeklyGrams: 10 * g, source: 'Varies by country; WHO Europe says no level is safe' };
   }
 }
 
