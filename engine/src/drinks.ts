@@ -96,6 +96,66 @@ export const PRESETS: Record<DrinkCategory, DrinkSpec[]> = {
     { name: 'Espresso martini', size: 'Coupe', ml: 125, abv: 19, carbs: 18 },
   ],
 };
+/** A kind of drink without a size (Lager 5%); the size is picked separately from SERVING_SIZES. */
+export type DrinkType = Omit<DrinkSpec, 'ml' | 'size'>;
+
+/** Drink types for the drink sheet. Mixed drinks keep their fixed PRESETS sizes instead. */
+export const DRINK_TYPES: Record<'beer' | 'wine' | 'spirits', DrinkType[]> = {
+  beer: [
+    { name: 'Lager', abv: 5, carbPer100ml: 3.0 },
+    { name: 'Light beer', abv: 4, carbPer100ml: 2.0 },
+    { name: 'IPA', abv: 6.5, carbPer100ml: 4.0 },
+    { name: 'Double IPA', abv: 8.5, carbPer100ml: 5.5 },
+    { name: 'Stout', abv: 4.2, carbPer100ml: 3.5 },
+    { name: 'Cider', abv: 4.5, carbPer100ml: 5.0 },
+    { name: 'Hard seltzer', abv: 5, carbPer100ml: 0.5 },
+  ],
+  wine: [
+    { name: 'Red wine', abv: 13.5, carbPer100ml: 0.8 },
+    { name: 'White wine', abv: 12, carbPer100ml: 1.2 },
+    { name: 'Rosé', abv: 12, carbPer100ml: 1.5 },
+    { name: 'Prosecco', abv: 11, carbPer100ml: 1.5 },
+  ],
+  spirits: [
+    { name: 'Vodka or gin', abv: 40, carbPer100ml: 0 },
+    { name: 'Whisky', abv: 40, carbPer100ml: 0 },
+    { name: 'Rum', abv: 40, carbPer100ml: 0 },
+    { name: 'Tequila', abv: 38, carbPer100ml: 0 },
+  ],
+};
+for (const [category, list] of Object.entries(DRINK_TYPES) as [DrinkCategory, DrinkType[]][]) {
+  for (const t of list) t.category = category;
+}
+
+export interface ServingSize { label: string; ml: number }
+
+const OZ_WINE: ServingSize[] = [{ label: 'Standard pour, 5 oz', ml: 148 }, { label: 'Large pour, 9 oz', ml: 266 }, { label: 'Small pour, 3 oz', ml: 89 }, { label: 'Bottle', ml: 750 }];
+const ML_WINE: ServingSize[] = [{ label: 'Medium glass', ml: 175 }, { label: 'Large glass', ml: 250 }, { label: 'Small glass', ml: 125 }, { label: 'Bottle', ml: 750 }];
+
+/** The usual serving sizes in each region, most common first. */
+export const SERVING_SIZES: Record<'beer' | 'wine' | 'spirits', Record<RegionCode, ServingSize[]>> = {
+  beer: {
+    ca: [{ label: 'Bottle', ml: 341 }, { label: 'Can', ml: 355 }, { label: 'Tallboy', ml: 473 }, { label: 'Pint, 20 oz', ml: 568 }, { label: 'Sleeve, 14 oz', ml: 414 }],
+    us: [{ label: 'Can, 12 oz', ml: 355 }, { label: 'Bottle, 12 oz', ml: 355 }, { label: 'Pint, 16 oz', ml: 473 }, { label: 'Tallboy, 16 oz', ml: 473 }, { label: 'Large draft, 20 oz', ml: 591 }],
+    uk: [{ label: 'Pint', ml: 568 }, { label: 'Half pint', ml: 284 }, { label: 'Bottle', ml: 330 }, { label: 'Can', ml: 440 }, { label: 'Small can', ml: 330 }],
+    au: [{ label: 'Schooner', ml: 425 }, { label: 'Pint', ml: 570 }, { label: 'Middy or pot', ml: 285 }, { label: 'Stubby', ml: 375 }, { label: 'Can', ml: 375 }],
+    nz: [{ label: 'Handle', ml: 425 }, { label: 'Pint', ml: 568 }, { label: 'Bottle', ml: 330 }, { label: 'Can', ml: 330 }, { label: 'Can', ml: 440 }, { label: 'Half pint', ml: 284 }],
+    eu: [{ label: 'Large, 0.5 L', ml: 500 }, { label: 'Bottle, 0.33 L', ml: 330 }, { label: 'Medium, 0.4 L', ml: 400 }, { label: 'Small, 0.25 L', ml: 250 }],
+  },
+  wine: { ca: OZ_WINE, us: OZ_WINE, uk: ML_WINE, au: [{ label: 'Glass', ml: 150 }, ...ML_WINE.slice(1)], nz: [{ label: 'Glass', ml: 150 }, ...ML_WINE.slice(1)], eu: ML_WINE },
+  spirits: {
+    ca: [{ label: 'Shot, 1.5 oz', ml: 43 }, { label: 'Double, 3 oz', ml: 85 }, { label: 'Single, 1 oz', ml: 28 }],
+    us: [{ label: 'Shot, 1.5 oz', ml: 44 }, { label: 'Double, 3 oz', ml: 89 }, { label: 'Single, 1 oz', ml: 30 }],
+    uk: [{ label: 'Single', ml: 25 }, { label: 'Double', ml: 50 }, { label: 'Large single', ml: 35 }],
+    au: [{ label: 'Nip', ml: 30 }, { label: 'Double', ml: 60 }],
+    nz: [{ label: 'Nip', ml: 30 }, { label: 'Double', ml: 60 }],
+    eu: [{ label: 'Single, 4 cl', ml: 40 }, { label: 'Small, 2 cl', ml: 20 }, { label: 'Double, 8 cl', ml: 80 }],
+  },
+};
+
+/** A drink type in a given serving size, ready to log. */
+export const withSize = (t: DrinkType, s: ServingSize): DrinkSpec => ({ ...t, size: s.label, ml: s.ml });
+
 for (const [category, list] of Object.entries(PRESETS) as [DrinkCategory, DrinkSpec[]][]) {
   for (const spec of list) spec.category = category;
 }

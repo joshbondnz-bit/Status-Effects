@@ -1,10 +1,11 @@
 // The "+ Drink" sheet: presets and My drinks, each showing the HP it would cost before you log it,
-// plus a form for custom drinks (with prices and packs).
+// plus a form for custom drinks (with prices and packs). Beer, wine and spirits are picked in two taps:
+// the type (Lager 5%), then the size (Pint, 568 ml), using the usual sizes for your region.
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  PRESETS, REGIONS, alcoholGrams, makeDrink, previewDrink,
+  DRINK_TYPES, PRESETS, REGIONS, SERVING_SIZES, alcoholGrams, makeDrink, previewDrink, withSize, type DrinkType,
   type DrinkCategory, type DrinkPreview, type DrinkSpec, type LogEvent, type Profile, type RegionCode,
 } from '../../../engine/src/index.ts';
 import { savedToSpec, type SavedDrink } from '../storage';
@@ -49,6 +50,8 @@ export function LogDrinkSheet(props: Props) {
   // If My drinks has been emptied, show the first preset tab instead.
   const tab: Tab = tabChoice === 'mine' && !myDrinks.length ? 'beer' : tabChoice;
   const [form, setForm] = useState<Form>(null);
+  // The drink type whose sizes are showing (beer, wine and spirits tabs).
+  const [openType, setOpenType] = useState<string | null>(null);
   // Packs with "count what's left": each log uses one; at 0, ask whether another pack was bought.
   const [restock, setRestock] = useState<SavedDrink | null>(null);
   const insets = useSafeAreaInsets();
@@ -59,17 +62,22 @@ export function LogDrinkSheet(props: Props) {
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
     setWasVisible(visible);
-    if (visible) { setForm(null); setRestock(null); setTab(myDrinks.length ? 'mine' : 'beer'); }
+    if (visible) { setForm(null); setRestock(null); setOpenType(null); setTab(myDrinks.length ? 'mine' : 'beer'); }
   }
 
+  const types = tab === 'beer' || tab === 'wine' || tab === 'spirits' ? DRINK_TYPES[tab] : null;
+  const sizes = types ? SERVING_SIZES[tab as 'beer' | 'wine' | 'spirits'][region] : [];
   const rows: { key: string; spec: DrinkSpec; saved?: SavedDrink }[] = tab === 'mine'
     ? myDrinks.map(d => ({ key: d.id, spec: savedToSpec(d), saved: d }))
-    : PRESETS[tab].map((p, i) => ({ key: tab + i, spec: p }));
+    : types ? [] : PRESETS[tab].map((p, i) => ({ key: tab + i, spec: p }));
+  const openSpec = types?.find(t => t.name === openType);
 
   const preview = (spec: DrinkSpec) => previewDrink(profile, events, now, spec);
   const minute = Math.floor(now / 60_000); // previews refresh once a minute, not on every tick
   const previews = useMemo(() => (visible && !form ? rows.map(r => preview(r.spec)) : []),
     [visible, form, tab, myDrinks, events, profile, minute]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sizePreviews = useMemo(() => (visible && !form && openSpec ? sizes.map(sz => preview(withSize(openSpec, sz))) : []),
+    [visible, form, openSpec, sizes, events, profile, minute]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const close = () => { setForm(null); setRestock(null); onClose(); };
 
@@ -117,10 +125,16 @@ export function LogDrinkSheet(props: Props) {
             <>
               <View style={styles.tabs}>
                 {myDrinks.length ? <TabBtn label="My drinks" on={tab === 'mine'} onPress={() => setTab('mine')} /> : null}
-                {TABS.map(t => <TabBtn key={t.key} label={t.label} on={tab === t.key} onPress={() => setTab(t.key)} />)}
+                {TABS.map(t => <TabBtn key={t.key} label={t.label} on={tab === t.key} onPress={() => { setTab(t.key); setOpenType(null); }} />)}
               </View>
               <Text style={styles.note}>Red numbers are the HP each drink would take once it's absorbed.</Text>
               <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 6 }}>
+                {types?.map(t => (
+                  <TypeRow key={t.name} t={t} open={openType === t.name} sizes={sizes} previews={openType === t.name ? sizePreviews : []} g={g}
+                    showCalories={showCalories} onToggle={() => setOpenType(openType === t.name ? null : t.name)}
+                    onPick={sz => onPick(withSize(t, sz))}
+                    onEdit={() => setForm({ mode: 'new', initial: { name: t.name, size: sizes[0]?.label, ml: sizes[0]?.ml, abv: t.abv, category: t.category } })} />
+                ))}
                 {rows.map((r, i) => (
                   <DrinkRow key={r.key} spec={r.spec} p={previews[i]} std={alcoholGrams(r.spec.ml, r.spec.abv) / g} showCalories={showCalories}
                     left={r.saved?.left} onPress={() => pickRow(r.spec, r.saved)}
@@ -133,7 +147,7 @@ export function LogDrinkSheet(props: Props) {
               <Pressable onPress={() => setForm({ mode: 'new', initial: { category: tab === 'mine' ? 'beer' : tab } })} style={styles.custom} accessibilityRole="button">
                 <Text style={styles.customTxt}>+ Custom drink</Text>
               </Pressable>
-              <Text style={styles.hint}>Tap a drink to log it. Use ✎ to save your own version with a price.</Text>
+              <Text style={styles.hint}>{types ? 'Tap a drink, then its size to log it.' : 'Tap a drink to log it.'} Use ✎ to save your own version with a price.</Text>
             </>
           )}
         </View>
@@ -149,6 +163,50 @@ function TabBtn({ label, on, onPress }: { label: string; on: boolean; onPress: (
     <Pressable onPress={onPress} style={[styles.tab, on && styles.tabOn]} accessibilityRole="tab" accessibilityState={{ selected: on }}>
       <Text style={[styles.tabTxt, on && styles.tabTxtOn]}>{label}</Text>
     </Pressable>
+  );
+}
+
+/** A drink type (Lager 5%). Tapping it shows its sizes, each with the HP it would cost; tapping a size logs it. */
+function TypeRow({ t, open, sizes, previews, g, showCalories, onToggle, onPick, onEdit }: {
+  t: DrinkType; open: boolean; sizes: { label: string; ml: number }[]; previews: DrinkPreview[]; g: number;
+  showCalories: boolean; onToggle: () => void; onPick: (s: { label: string; ml: number }) => void; onEdit: () => void;
+}) {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  return (
+    <View style={[styles.preset, { flexDirection: 'column' }, open && styles.typeOpen]}>
+      <View style={{ flexDirection: 'row' }}>
+        <Pressable onPress={onToggle} style={({ pressed }) => [styles.presetMain, pressed && { opacity: 0.7 }]} accessibilityRole="button"
+          accessibilityState={{ expanded: open }} accessibilityLabel={`${t.name}, ${t.abv}%. ${open ? 'Hide' : 'Show'} sizes`}>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={styles.pName}>{t.name}</Text>
+            <Text style={styles.pSub}>{t.abv}%</Text>
+          </View>
+          <Text style={styles.chev}>{open ? '▴' : 'Pick size ▾'}</Text>
+        </Pressable>
+        <Pressable onPress={onEdit} style={styles.edit} accessibilityRole="button" accessibilityLabel={`Customise ${t.name}`} hitSlop={6}>
+          <Text style={styles.editTxt}>✎</Text>
+        </Pressable>
+      </View>
+      {open ? (
+        <View style={styles.sizes}>
+          {sizes.map((sz, i) => {
+            const p = previews[i];
+            const warn = p ? zoneWarning(p, colors) : null;
+            const spec = { ...t, size: sz.label, ml: sz.ml };
+            const kcal = showCalories ? makeDrink(spec, 0, 'x').kcal : null;
+            return (
+              <Pressable key={sz.label + sz.ml} onPress={() => onPick(sz)} style={({ pressed }) => [styles.size, warn?.color === colors.bad && styles.presetBad, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button" accessibilityLabel={`Log ${t.name}, ${sz.label}, ${sz.ml} ml${p ? `, about ${Math.round(p.hpLoss)} HP` : ''}${warn ? ', ' + warn.text : ''}`}>
+                <Text style={styles.sizeName}>{sz.label}</Text>
+                <Text style={styles.pSub}>{sz.ml} ml · {(alcoholGrams(sz.ml, t.abv) / g).toFixed(1)} std{kcal != null ? ` · ${kcal} kcal` : ''}</Text>
+                {p ? <Text style={styles.sizeHp}>{hpText(p)}</Text> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -207,6 +265,12 @@ const useStyles = makeStyles((colors: Palette) => ({
   pHp: { fontFamily: fonts.num, fontSize: 22, color: '#ff6a6f', lineHeight: 22 },
   edit: { width: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 2, borderLeftColor: colors.edge },
   editTxt: { fontSize: 17, color: colors.inkDim },
+  typeOpen: { borderColor: colors.gold },
+  chev: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkFaint },
+  sizes: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 8, paddingTop: 0 },
+  size: { flexBasis: '47%', flexGrow: 1, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, padding: 8, gap: 1 },
+  sizeName: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: colors.ink },
+  sizeHp: { fontFamily: fonts.num, fontSize: 20, color: '#ff6a6f', lineHeight: 20 },
   custom: { paddingVertical: 11, alignItems: 'center', backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, borderStyle: 'dashed' },
   customTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
   hint: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
