@@ -135,16 +135,17 @@ const ML_WINE: ServingSize[] = [{ label: 'Medium glass', ml: 175 }, { label: 'La
 /** The usual serving sizes in each region, most common first. */
 export const SERVING_SIZES: Record<'beer' | 'wine' | 'spirits', Record<RegionCode, ServingSize[]>> = {
   beer: {
-    ca: [{ label: 'Bottle', ml: 341 }, { label: 'Can', ml: 355 }, { label: 'Tallboy', ml: 473 }, { label: 'Pint, 20 oz', ml: 568 }, { label: 'Sleeve, 14 oz', ml: 414 }],
+    // Canada: plain names, no ounces (the ml shows on every size tile).
+    ca: [{ label: 'Bottle', ml: 341 }, { label: 'Can', ml: 355 }, { label: 'Tallboy', ml: 473 }, { label: 'Pint', ml: 568 }, { label: 'Small glass', ml: 355 }],
     us: [{ label: 'Can, 12 oz', ml: 355 }, { label: 'Bottle, 12 oz', ml: 355 }, { label: 'Pint, 16 oz', ml: 473 }, { label: 'Tallboy, 16 oz', ml: 473 }, { label: 'Large draft, 20 oz', ml: 591 }],
     uk: [{ label: 'Pint', ml: 568 }, { label: 'Half pint', ml: 284 }, { label: 'Bottle', ml: 330 }, { label: 'Can', ml: 440 }, { label: 'Small can', ml: 330 }],
     au: [{ label: 'Schooner', ml: 425 }, { label: 'Pint', ml: 570 }, { label: 'Middy or pot', ml: 285 }, { label: 'Stubby', ml: 375 }, { label: 'Can', ml: 375 }],
     nz: [{ label: 'Handle', ml: 425 }, { label: 'Pint', ml: 568 }, { label: 'Bottle', ml: 330 }, { label: 'Can', ml: 330 }, { label: 'Can', ml: 440 }, { label: 'Half pint', ml: 284 }],
     eu: [{ label: 'Large, 0.5 L', ml: 500 }, { label: 'Bottle, 0.33 L', ml: 330 }, { label: 'Medium, 0.4 L', ml: 400 }, { label: 'Small, 0.25 L', ml: 250 }],
   },
-  wine: { ca: OZ_WINE, us: OZ_WINE, uk: ML_WINE, au: [{ label: 'Glass', ml: 150 }, ...ML_WINE.slice(1)], nz: [{ label: 'Glass', ml: 150 }, ...ML_WINE.slice(1)], eu: ML_WINE },
+  wine: { ca: [{ label: 'Standard glass', ml: 148 }, { label: 'Large glass', ml: 266 }, { label: 'Small glass', ml: 89 }, { label: 'Bottle', ml: 750 }], us: OZ_WINE, uk: ML_WINE, au: [{ label: 'Glass', ml: 150 }, ...ML_WINE.slice(1)], nz: [{ label: 'Glass', ml: 150 }, ...ML_WINE.slice(1)], eu: ML_WINE },
   spirits: {
-    ca: [{ label: 'Shot, 1.5 oz', ml: 43 }, { label: 'Double, 3 oz', ml: 85 }, { label: 'Single, 1 oz', ml: 28 }],
+    ca: [{ label: 'Shot', ml: 43 }, { label: 'Double', ml: 85 }, { label: 'Small shot', ml: 28 }],
     us: [{ label: 'Shot, 1.5 oz', ml: 44 }, { label: 'Double, 3 oz', ml: 89 }, { label: 'Single, 1 oz', ml: 30 }],
     uk: [{ label: 'Single', ml: 25 }, { label: 'Double', ml: 50 }, { label: 'Large single', ml: 35 }],
     au: [{ label: 'Nip', ml: 30 }, { label: 'Double', ml: 60 }],
