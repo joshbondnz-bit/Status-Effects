@@ -1,6 +1,6 @@
 // Developer-only: speed up, pause or skip time, and load test nights, to watch the health bar, debuffs and animations change.
 // Only shown in development (Expo Go); __DEV__ is false in App Store builds, so this never ships.
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { simulateNight } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { newNight } from '../storage';

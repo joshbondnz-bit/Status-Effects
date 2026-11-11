@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { addDays, dayKey, startOfWeek, type NightSummary, type Period } from '../../../../engine/src/index.ts';
 import { useColors, makeStyles, type Palette, fonts } from '../../theme';
 
@@ -142,7 +142,6 @@ export function Calendar(p: Props) {
 
 function LegendItem({ color, label }: { color: string; label: string }) {
   const colors = useColors();
-  const BG = bgOf(colors);
   const styles = useStyles(colors);
   return (
     <View style={styles.legendItem}>

@@ -1,6 +1,6 @@
 // Small pixel-styled form controls shared by first-run setup and Options.
-import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, Switch, Text, TextInput, View } from 'react-native';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
 
 /** A labelled form field. `stack` is for fields in a vertical list (so they don't stretch or squash like row items). */
@@ -28,7 +28,8 @@ export function NumberInput({ value, onChange, min, max, suffix, label, decimals
   const fmt = (n: number) => (decimals ? n.toFixed(decimals) : String(Math.round(n)));
   const [text, setText] = useState(fmt(value));
   const [focused, setFocused] = useState(false);
-  useEffect(() => { if (!focused) setText(fmt(value)); }, [value, focused]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [shownValue, setShownValue] = useState(value);
+  if (!focused && value !== shownValue) { setShownValue(value); setText(fmt(value)); }
   return (
     <View style={styles.inputRow}>
       <TextInput

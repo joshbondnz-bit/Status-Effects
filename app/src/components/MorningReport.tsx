@@ -1,5 +1,5 @@
 // The morning-after report: how last night went, what's still running, and "how do you feel?".
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import {
   FEELS, HOUR, effects, hpFromBac, simulateNight, standardDrinks, summarizeNight, type Feel, type Profile,
 } from '../../../engine/src/index.ts';

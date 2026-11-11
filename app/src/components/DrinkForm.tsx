@@ -1,6 +1,6 @@
 // Add or edit a custom drink: name, size, strength, calories and price (per drink or as a pack).
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { REGIONS, alcoholGrams, costPerDrink, makeDrink, type DrinkCategory, type DrinkPreview, type DrinkSpec, type RegionCode } from '../../../engine/src/index.ts';
 import { savedToSpec, type Price, type SavedDrink } from '../storage';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
@@ -59,6 +59,8 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
   const [price, setPrice] = useState(initial.price ? trimNum(initial.price.amount) : '');
   const [count, setCount] = useState(initial.price?.per === 'pack' ? String(initial.price.count) : '6');
   const [save, setSave] = useState(true);
+  // A new drink's ID, made once when the form opens.
+  const [newId] = useState(() => `my-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`);
   const [trackLeft, setTrackLeft] = useState(initial.left != null);
   const [left, setLeft] = useState(initial.left != null ? String(initial.left) : '');
 
@@ -85,7 +87,7 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
   const valid = errors.length === 0;
 
   const draft: SavedDrink | null = valid ? {
-    id: initial.id ?? `my-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    id: initial.id ?? newId,
     name: name.trim(), size: size.trim() || undefined, ml: Math.round(ml), abv: Math.round(abvN * 10) / 10, category,
     kcal: kcal.trim() ? Math.round(kcalN) : undefined,
     price: priceMode === 'drink' ? { per: 'drink', amount: priceN } : priceMode === 'pack' ? { per: 'pack', amount: priceN, count: countN } as Price : undefined,

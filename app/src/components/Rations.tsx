@@ -1,6 +1,6 @@
 // Rations: tonight's calories as a share of what you need in a day, in food terms, drink by drink,
 // and what alcohol calories are. Matter-of-fact: no exercise, no "burn it off", no colour judgement.
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { dailyCalories, type DrinkEvent, type Night } from '../../../engine/src/index.ts';
 import { FOOD, FOOD_SPRITES } from '../food';
 import type { FoodCompare } from '../storage';

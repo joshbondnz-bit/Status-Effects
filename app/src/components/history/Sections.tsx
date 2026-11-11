@@ -1,6 +1,6 @@
 // History part 2: calories, sleep & recovery, patterns, achievements and the AUDIT-C check-in.
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import {
   auditCCutoff, auditCScore, feelWord, type FeelBucket, type Achievement, type AchievementId, type DrinkCategory, type PeriodStats, type RegionCode, type Sex,
 } from '../../../../engine/src/index.ts';
@@ -16,7 +16,6 @@ const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function Card({ title, label, children }: { title: string; label?: string; children: React.ReactNode }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
   const { panel } = panelStyles(colors);
   return (
@@ -29,9 +28,7 @@ function Card({ title, label, children }: { title: string; label?: string; child
 
 function Tile({ label, value, small, sub, children }: { label: string; value: string; small?: string; sub?: string; children?: React.ReactNode }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   return (
     <View style={s.tile}>
       <Text style={s.tileLabel}>{label}</Text>
@@ -44,9 +41,7 @@ function Tile({ label, value, small, sub, children }: { label: string; value: st
 
 function Expand({ title, children }: { title: string; children: React.ReactNode }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   const [open, setOpen] = useState(false);
   return (
     <View>
@@ -66,7 +61,6 @@ export function MorningsCard({ buckets, checkIns }: { buckets: FeelBucket[]; che
   const colors = useColors();
   const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   return (
     <Card title="Mornings" label="All time">
       {checkIns === 0 ? (
@@ -103,9 +97,7 @@ const useM = makeStyles((colors: Palette) => ({
 
 export function CaloriesCard({ st, label, units, compareWith }: { st: PeriodStats; label: string; units: Units; compareWith: FoodCompare }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   const f = FOOD[compareWith], n = st.kcal / f.kcal;
   const energy = units === 'imperial' ? `${(st.kcal / 3500).toFixed(1)} lb` : `${(st.kcal / 7700).toFixed(1)} kg`;
   return (
@@ -126,9 +118,7 @@ export function CaloriesCard({ st, label, units, compareWith }: { st: PeriodStat
 
 export function SleepCard({ st, label }: { st: PeriodStats; label: string }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   const withHrv = st.nights.filter(n => n.hrvDropPct != null);
   const avg = withHrv.length ? withHrv.reduce((a, n) => a + (n.hrvDropPct ?? 0), 0) / withHrv.length : 0;
   return (
@@ -161,9 +151,7 @@ const MIX: { key: DrinkCategory; label: string; color: string }[] = [
 
 export function PatternsCard({ st, label, gramsPerDrink }: { st: PeriodStats; label: string; gramsPerDrink: number }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   const total = st.gramsByWeekday.reduce((a, b) => a + b, 0);
   const share = st.gramsByWeekday.map(g => (total ? (g / total) * 100 : 0));
   const top = [...share.keys()].sort((a, b) => share[b] - share[a]).slice(0, 2);
@@ -215,9 +203,7 @@ const ACH: Record<AchievementId, { name: string; icon: keyof typeof ICONS; done:
 
 export function AchievementsCard({ list }: { list: Achievement[] }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   return (
     <Card title="Achievements" label={`${list.filter(a => a.earned).length} of ${list.length}`}>
       <View style={s.badges}>
@@ -257,9 +243,7 @@ const HELP: Record<RegionCode, string> = {
 
 export function CheckInCard({ region, sex, last, onSave }: { region: RegionCode; sex: Sex; last?: { score: number; at: number }; onSave: (score: number) => void }) {
   const colors = useColors();
-  const m = useM(colors);
   const s = useS(colors);
-  const { panel } = panelStyles(colors);
   const [answers, setAnswers] = useState<(number | null)[] | null>(null);
   const qs = QUESTIONS(region === 'uk');
   if (answers) {

@@ -1,7 +1,7 @@
 // The Sleep forecast: blood alcohol over the night. Solid so far, dotted for the projection, with zone bands,
 // the peak and "clear" moments labelled, what you had along the bottom, drag-to-read, and a "what if one more?" ghost.
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Svg, { Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { HOUR, MIN, PHASES, THRESHOLDS, makeDrink, simulateNight, type LogEvent, type Night } from '../../../engine/src/index.ts';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';

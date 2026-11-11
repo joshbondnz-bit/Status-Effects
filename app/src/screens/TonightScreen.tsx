@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import {
@@ -34,7 +34,6 @@ function Button({ label, onPress, variant = 'plain', icon, big, flex = 1 }: {
 }) {
   const colors = useColors();
   const styles = useStyles(colors);
-  const { panel } = panelStyles(colors);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
       style={({ pressed }) => [styles.btn, variant === 'primary' && styles.btnPrimary, variant === 'water' && styles.btnWater, big && styles.btnBig, { flex }, pressed && { transform: [{ translateY: 2 }] }]}>

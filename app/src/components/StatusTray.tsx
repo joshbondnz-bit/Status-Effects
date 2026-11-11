@@ -1,8 +1,9 @@
 // The status tray: buffs and debuffs as a row of RPG-style icons under the HP ring.
 // Frame colour = severity (yellow, orange, red; purple when unrated; green for buffs), pips repeat it,
 // a shaded wedge shows time already used (sweeping clockwise like the ring), and tapping opens the details.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useAnimatedValue } from '../useAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import type { Effect, Night, RegionCode } from '../../../engine/src/index.ts';
@@ -42,7 +43,6 @@ function endsAt(t: number, now: number): string {
 /** The time already used, as a shaded pie wedge from 12 o'clock, clockwise. */
 function Wedge({ used }: { used: number }) {
   const colors = useColors();
-  const styles = useStyles(colors);
   if (used <= 0.01) return null;
   const c = SLOT / 2, r = SLOT;
   let d: string;
@@ -62,7 +62,7 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
   const colors = useColors();
   const styles = useStyles(colors);
   const reduceMotion = useReduceMotion();
-  const pop = useRef(new Animated.Value(land && !reduceMotion ? 0 : 1)).current;
+  const pop = useAnimatedValue(land && !reduceMotion ? 0 : 1);
   useEffect(() => {
     if (!land || reduceMotion) return;
     Animated.timing(pop, { toValue: 1, duration: 650, easing: Easing.out(Easing.back(2.2)), useNativeDriver: NATIVE }).start();
@@ -109,11 +109,10 @@ export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: E
   const [openId, setOpenId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
-  // Effects that appear after the first render land with a pop.
-  const seen = useRef<Set<string> | null>(null);
-  const firstRender = seen.current == null;
-  const fresh = new Set(firstRender ? [] : list.map(e => e.id).filter(id => !seen.current!.has(id)));
-  useEffect(() => { seen.current = new Set(list.map(e => e.id)); });
+  // Effects that start after the tray first appeared (and have started) land with a pop;
+  // the ones already there when you open the app don't.
+  const [shownSince] = useState(now);
+  const fresh = new Set(list.filter(e => e.start > shownSince && e.start <= now).map(e => e.id));
 
   const openIdx = list.findIndex(e => e.id === openId);
   const open = openIdx >= 0 ? list[openIdx] : null;

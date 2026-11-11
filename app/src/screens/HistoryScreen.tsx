@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import {
   REGIONS, achievements, addDays, byNight, canadaRisk, daysInclusive, dayKey, dryStreaks, keyToTime, periodRange, periodStats,
@@ -107,7 +107,7 @@ export function HistoryScreen() {
   }
 
   const streaks = dryStreaks(nights, trackingStart, today);
-  const badges = useMemo(() => achievements(nights, trackingStart, today, guide.weeklyGrams), [nights, trackingStart, today, guide.weeklyGrams]);
+  const badges = achievements(nights, trackingStart, today, guide.weeklyGrams);
   const sel = selected ? nights.get(selected) : undefined;
   const hasAny = nights.size > 0;
 

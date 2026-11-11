@@ -2,6 +2,7 @@
 // Six segments, one per zone. Incoming damage is a darker arc ahead of the drain, healing a green arc behind it.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useAnimatedValue } from '../useAnimatedValue';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import {
   FED_WINDOW, PHASES, WARNING_BAC, healthState, hpFromBac, hpGainNextHour, hpLossNextHour, phaseIndex, simulateNight, type Night,
@@ -38,8 +39,6 @@ function arc(r: number, a: number, b: number): string {
   return `M ${x1} ${y1} A ${r} ${r} 0 ${b - a > 0.5 ? 1 : 0} 1 ${x2} ${y2}`;
 }
 function Arcs({ a, b, palette }: { a: number; b: number; palette: string[] }) {
-  const colors = useColors();
-  const styles = useStyles(colors);
   if (b - a <= 0.0005) return null;
   return <>{BANDS.map((band, i) => <Path key={i} d={arc(band.r, a, b)} stroke={palette[i]} strokeWidth={band.w} fill="none" />)}</>;
 }
@@ -51,7 +50,7 @@ type PopItem = { id: number; text: string; kind: PopKind; x: number; y: number }
 function Pop({ text, kind, x, y }: Omit<PopItem, 'id'>) {
   const colors = useColors();
   const styles = useStyles(colors);
-  const v = useRef(new Animated.Value(0)).current;
+  const v = useAnimatedValue(0);
   useEffect(() => { Animated.timing(v, { toValue: 1, duration: kind === 'ember' ? 900 : 1200, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE }).start(); }, [v, kind]);
   const travel = kind === 'ember' ? 24 : kind === 'spark' ? -28 : -34;
   const style = {
@@ -109,13 +108,14 @@ export function HealthBar({ night }: { night: Night }) {
   // ----- Animations -----
   const [pops, setPops] = useState<PopItem[]>([]);
   const popId = useRef(0), prevHp = useRef<number | null>(null), acc = useRef(0);
-  const heartX = useRef(new Animated.Value(0)).current;
-  const heartScale = useRef(new Animated.Value(1)).current;
-  const pulse = useRef(new Animated.Value(1)).current;
-  const edgeGlow = useRef(new Animated.Value(0.4)).current;
-  const sweep = useRef(new Animated.Value(0)).current;
+  const heartX = useAnimatedValue(0);
+  const heartScale = useAnimatedValue(1);
+  const pulse = useAnimatedValue(1);
+  const edgeGlow = useAnimatedValue(0.4);
+  const sweep = useAnimatedValue(0);
+  // Where the tip is, for the particle timers. Kept in sync after each render (not during it).
   const tipRef = useRef(tipDeg);
-  tipRef.current = tipDeg;
+  useEffect(() => { tipRef.current = tipDeg; }, [tipDeg]);
 
   const addPop = (p: Omit<PopItem, 'id'>) => {
     const id = popId.current++;

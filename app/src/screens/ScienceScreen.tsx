@@ -1,5 +1,5 @@
 // The Science tab: how the numbers are worked out, where each effect comes from, and what the app isn't.
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { PixelSprite } from '../components/PixelSprite';
 import { ICONS, type SpriteDef } from '../sprites';

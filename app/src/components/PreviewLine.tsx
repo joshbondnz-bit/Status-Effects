@@ -1,5 +1,5 @@
 // "−12 HP · Into Drunk" — what a drink would do, shown before it's logged.
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { PHASES, type DrinkPreview } from '../../../engine/src/index.ts';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { duration } from '../format';

@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { PixelSprite } from '../../components/PixelSprite';
 import { HEART, calendarSprite, flaskSprite, gearSprite } from '../../sprites';
-import { useColors, makeStyles, type Palette, fonts } from '../../theme';
+import { useColors, type Palette, fonts } from '../../theme';
 
 const tint = (colors: Palette, focused: boolean) => (focused ? colors.gold : colors.inkFaint);
 

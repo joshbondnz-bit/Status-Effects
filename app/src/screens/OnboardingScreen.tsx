@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';

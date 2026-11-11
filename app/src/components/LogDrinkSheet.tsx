@@ -1,7 +1,7 @@
 // The "+ Drink" sheet: presets and My drinks, each showing the HP it would cost before you log it,
 // plus a form for custom drinks (with prices and packs).
-import { useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   PRESETS, REGIONS, alcoholGrams, makeDrink, previewDrink,
@@ -45,28 +45,34 @@ export function LogDrinkSheet(props: Props) {
   const colors = useColors();
   const styles = useStyles(colors);
   const { visible, region, highRange, showCalories, profile, events, now, myDrinks, onClose, onPick, onSaveDrink, onDeleteDrink } = props;
-  const [tab, setTab] = useState<Tab>(myDrinks.length ? 'mine' : 'beer');
+  const [tabChoice, setTab] = useState<Tab>(myDrinks.length ? 'mine' : 'beer');
+  // If My drinks has been emptied, show the first preset tab instead.
+  const tab: Tab = tabChoice === 'mine' && !myDrinks.length ? 'beer' : tabChoice;
   const [form, setForm] = useState<Form>(null);
+  // Packs with "count what's left": each log uses one; at 0, ask whether another pack was bought.
+  const [restock, setRestock] = useState<SavedDrink | null>(null);
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const g = REGIONS[region].gramsPerStandardDrink;
 
   // Each time the sheet opens, start on the list (My drinks first if there are any).
-  useEffect(() => { if (visible) { setForm(null); setRestock(null); setTab(myDrinks.length ? 'mine' : 'beer'); } }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (tab === 'mine' && !myDrinks.length) setTab('beer'); }, [tab, myDrinks.length]);
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) { setForm(null); setRestock(null); setTab(myDrinks.length ? 'mine' : 'beer'); }
+  }
 
   const rows: { key: string; spec: DrinkSpec; saved?: SavedDrink }[] = tab === 'mine'
     ? myDrinks.map(d => ({ key: d.id, spec: savedToSpec(d), saved: d }))
     : PRESETS[tab].map((p, i) => ({ key: tab + i, spec: p }));
 
   const preview = (spec: DrinkSpec) => previewDrink(profile, events, now, spec);
+  const minute = Math.floor(now / 60_000); // previews refresh once a minute, not on every tick
   const previews = useMemo(() => (visible && !form ? rows.map(r => preview(r.spec)) : []),
-    [visible, form, tab, myDrinks, events, profile, Math.floor(now / 60_000)]); // eslint-disable-line react-hooks/exhaustive-deps
+    [visible, form, tab, myDrinks, events, profile, minute]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const close = () => { setForm(null); setRestock(null); onClose(); };
 
-  // Packs with "count what's left": each log uses one; at 0, ask whether another pack was bought.
-  const [restock, setRestock] = useState<SavedDrink | null>(null);
   const pickRow = (spec: DrinkSpec, saved?: SavedDrink) => {
     if (saved?.left == null) return onPick(spec);
     if (saved.left > 0) { onSaveDrink({ ...saved, left: saved.left - 1 }); return onPick(spec); }
