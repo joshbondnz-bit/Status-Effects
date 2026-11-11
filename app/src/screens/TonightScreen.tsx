@@ -173,15 +173,15 @@ export function TonightScreen() {
           <View style={styles.actions}>
             <Button label="Water" variant="water" icon={ICONS.hydrated} onPress={() => log({ type: 'water', id: newId(), t: currentTime() })} />
             <Button label="Food" icon={ICONS.lined} onPress={() => log({ type: 'food', id: newId(), t: currentTime() })} />
-            <Button label={endedAt ? 'Resume' : 'End night'} flex={1.15} onPress={() => (endedAt ? setEnded(null) : setConfirmEnd(true))} />
+            <Button label={endedAt ? 'Resume' : 'Call it'} icon={endedAt ? undefined : ICONS.called} flex={1.15} onPress={() => (endedAt ? setEnded(null) : setConfirmEnd(true))} />
           </View>
         </View>
         {confirmEnd ? (
           <View style={styles.confirm} accessibilityLiveRegion="polite">
-            <Text style={styles.confirmTitle}>End the night here?</Text>
-            <Text style={styles.confirmTxt}>Tonight's log is kept and your debuffs keep counting down. You can tap Resume if you change your mind.</Text>
+            <Text style={styles.confirmTitle}>Call it for tonight?</Text>
+            <Text style={styles.confirmTxt}>Stopping before bedtime earns the Called it buff: less alcohol in your system at bedtime means better sleep. Tonight's log is kept, and you can tap Resume if you change your mind.</Text>
             <View style={styles.actions}>
-              <Button label="Yes, end night" variant="primary" onPress={() => { setEnded(currentTime()); setConfirmEnd(false); }} />
+              <Button label="Yes, call it" variant="primary" onPress={() => { setEnded(currentTime()); setConfirmEnd(false); }} />
               <Button label="Not yet" onPress={() => setConfirmEnd(false)} />
             </View>
           </View>

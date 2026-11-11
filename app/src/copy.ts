@@ -46,6 +46,6 @@ export function describe(e: Effect, n: Night, region: RegionCode): string {
       : 'Your blood alcohol reached a dangerous level. Your heart, liver and brain take two days or more to recover from a night like this. Rest, eat and hydrate, and avoid alcohol until this clears.';
     case 'lined': return 'Food slows absorption, so you get a lower, later peak.';
     case 'pace': return `Your liver clears about ${Math.round(e.data?.gramsClearedPerHour ?? 0)} g of alcohol an hour, so gaps let it catch up.`;
-    case 'called': return 'You ended the night before bedtime. Less alcohol in your system at bedtime means better sleep.';
+    case 'called': return 'You called it before bedtime. Less alcohol in your system at bedtime means better sleep.';
   }
 }

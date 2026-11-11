@@ -72,7 +72,7 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
   const left = e.end - now;
   const used = incoming || ongoing ? 0 : Math.min(1, Math.max(0, (now - e.start) / Math.max(1, e.end - e.start)));
   const color = frameColor(e, colors);
-  const time = incoming ? `in ${short(e.start - now)}` : ongoing ? 'on' : short(left);
+  const time = incoming ? `in ${short(e.start - now)}` : ongoing ? 'Active' : short(left);
   const name = EFFECT_NAMES[e.id];
   const label = `${name}, ${incoming ? 'starts in ' + duration(e.start - now) : ongoing ? 'active' : duration(left) + ' left'}, ${severityLabel(e).toLowerCase()}. Show details`;
 

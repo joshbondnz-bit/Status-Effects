@@ -11,7 +11,7 @@ const DATA_VERSION = 2;
 export interface SavedNight {
   id: string;
   events: LogEvent[];
-  /** When the user tapped End night, if they did. */
+  /** When the user tapped Call it (stopped drinking for the night), if they did. */
   endedAt: number | null;
   /** When the user last answered "someone sober is with me" on the safety check-in. */
   safetyAckAt?: number;
