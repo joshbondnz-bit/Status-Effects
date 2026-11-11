@@ -12,6 +12,7 @@ import { savedToSpec, type SavedDrink } from '../storage';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { money } from '../format';
 import { DrinkForm } from './DrinkForm';
+import { MixBuilder } from './MixBuilder';
 import { hpText, zoneWarning } from './PreviewLine';
 import { PixelButton } from './Form';
 
@@ -52,6 +53,8 @@ export function LogDrinkSheet(props: Props) {
   const [form, setForm] = useState<Form>(null);
   // The drink type whose sizes are showing (beer, wine and spirits tabs).
   const [openType, setOpenType] = useState<string | null>(null);
+  // Building a mixed drink from spirits and a mixer (Mixed tab).
+  const [building, setBuilding] = useState(false);
   // Packs with "count what's left": each log uses one; at 0, ask whether another pack was bought.
   const [restock, setRestock] = useState<SavedDrink | null>(null);
   const insets = useSafeAreaInsets();
@@ -62,7 +65,7 @@ export function LogDrinkSheet(props: Props) {
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
     setWasVisible(visible);
-    if (visible) { setForm(null); setRestock(null); setOpenType(null); setTab(myDrinks.length ? 'mine' : 'beer'); }
+    if (visible) { setForm(null); setRestock(null); setOpenType(null); setBuilding(false); setTab(myDrinks.length ? 'mine' : 'beer'); }
   }
 
   const types = tab === 'beer' || tab === 'wine' || tab === 'spirits' ? DRINK_TYPES[tab] : null;
@@ -79,7 +82,7 @@ export function LogDrinkSheet(props: Props) {
   const sizePreviews = useMemo(() => (visible && !form && openSpec ? sizes.map(sz => preview(withSize(openSpec, sz))) : []),
     [visible, form, openSpec, sizes, events, profile, minute]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const close = () => { setForm(null); setRestock(null); onClose(); };
+  const close = () => { setForm(null); setRestock(null); setBuilding(false); onClose(); };
 
   const pickRow = (spec: DrinkSpec, saved?: SavedDrink) => {
     if (saved?.left == null) return onPick(spec);
@@ -113,6 +116,12 @@ export function LogDrinkSheet(props: Props) {
               <PixelButton label="Log it without counting" onPress={() => { const spec = savedToSpec(restock); setRestock(null); onPick(spec); }} />
               <Pressable onPress={() => setRestock(null)} accessibilityRole="button"><Text style={styles.back}>‹ Back to drinks</Text></Pressable>
             </View>
+          ) : building && !form ? (
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
+              <MixBuilder region={region} showCalories={showCalories} preview={preview} onBack={() => setBuilding(false)}
+                onLog={spec => { setBuilding(false); onPick(spec); }}
+                onSaveAndLog={(saved, spec) => { onSaveDrink(saved); setBuilding(false); onPick(spec); }} />
+            </ScrollView>
           ) : form ? (
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
               <DrinkForm key={form.initial.id ?? form.initial.name ?? 'new'} mode={form.mode} initial={form.initial} region={region} showCalories={showCalories}
@@ -129,6 +138,12 @@ export function LogDrinkSheet(props: Props) {
               </View>
               <Text style={styles.note}>Red numbers are the HP each drink would take once it's absorbed.</Text>
               <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 6 }}>
+                {tab === 'mixed' ? (
+                  <Pressable onPress={() => setBuilding(true)} style={styles.build} accessibilityRole="button">
+                    <Text style={styles.buildTxt}>+ Build your own</Text>
+                    <Text style={styles.hint}>Pick the spirit, single or double, and a mixer</Text>
+                  </Pressable>
+                ) : null}
                 {types?.map(t => (
                   <TypeRow key={t.name} t={t} open={openType === t.name} sizes={sizes} previews={openType === t.name ? sizePreviews : []} g={g}
                     showCalories={showCalories} onToggle={() => setOpenType(openType === t.name ? null : t.name)}
@@ -266,6 +281,8 @@ const useStyles = makeStyles((colors: Palette) => ({
   edit: { width: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 2, borderLeftColor: colors.edge },
   editTxt: { fontSize: 17, color: colors.inkDim },
   typeOpen: { borderColor: colors.gold },
+  build: { padding: 12, gap: 2, alignItems: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.gold },
+  buildTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
   chev: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkFaint },
   sizes: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 8, paddingTop: 0 },
   size: { flexBasis: '47%', flexGrow: 1, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, padding: 8, gap: 1 },

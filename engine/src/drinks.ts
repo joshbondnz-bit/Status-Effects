@@ -157,6 +157,41 @@ export const SERVING_SIZES: Record<'beer' | 'wine' | 'spirits', Record<RegionCod
 /** A drink type in a given serving size, ready to log. */
 export const withSize = (t: DrinkType, s: ServingSize): DrinkSpec => ({ ...t, size: s.label, ml: s.ml });
 
+/** Spirits for the build-your-own mixed drink. */
+export const MIX_SPIRITS = [
+  { name: 'Vodka', abv: 40 }, { name: 'Gin', abv: 40 }, { name: 'Rum', abv: 40 },
+  { name: 'Whisky', abv: 40 }, { name: 'Tequila', abv: 38 }, { name: 'Liqueur', abv: 20 },
+] as const;
+
+/** Common mixers, with typical sugar per 100 ml (estimates; it only affects calories). */
+export const MIXERS = [
+  { name: 'Cola', carbPer100ml: 10.6 }, { name: 'Diet cola', carbPer100ml: 0 }, { name: 'Lemonade', carbPer100ml: 10 },
+  { name: 'Tonic', carbPer100ml: 8.8 }, { name: 'Soda water', carbPer100ml: 0 }, { name: 'Ginger beer', carbPer100ml: 10 },
+  { name: 'Orange juice', carbPer100ml: 8.8 },
+] as const;
+
+/** How much mixer goes in a mixed drink. */
+export const MIXER_ML = 150;
+
+/** One measure of spirits in your region (a single shot); a double is twice this. */
+export const shotMl = (region: RegionCode): number => SERVING_SIZES.spirits[region][0].ml;
+
+/**
+ * A mixed drink from its spirits and an optional mixer: total volume, ABV and the mixer's sugar.
+ * The alcohol is what matters for blood alcohol; the mixer only adds volume and calories.
+ */
+export function mixDrink(name: string, size: string, spirits: { abv: number; ml: number }[], mixer: { carbPer100ml: number } | null): DrinkSpec {
+  const mixerMl = mixer ? MIXER_ML : 0;
+  const spiritMl = spirits.reduce((t, s) => t + s.ml, 0);
+  const alcoholMl = spirits.reduce((t, s) => t + (s.ml * s.abv) / 100, 0);
+  const ml = spiritMl + mixerMl;
+  return {
+    name, size, ml, category: 'mixed',
+    abv: Math.round((alcoholMl / ml) * 1000) / 10,
+    carbs: mixer ? (mixerMl * mixer.carbPer100ml) / 100 : 0,
+  };
+}
+
 for (const [category, list] of Object.entries(PRESETS) as [DrinkCategory, DrinkSpec[]][]) {
   for (const spec of list) spec.category = category;
 }

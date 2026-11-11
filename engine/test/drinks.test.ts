@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { alcoholGrams, standardDrinks, makeDrink, guessCategory, PRESETS } from '../src/index.ts';
+import { alcoholGrams, standardDrinks, makeDrink, mixDrink, guessCategory, PRESETS } from '../src/index.ts';
 
 test('a 341 ml bottle of 5% beer is one Canadian standard drink (13.45 g)', () => {
   const g = alcoholGrams(341, 5);
@@ -34,4 +34,14 @@ test('category guessing for drinks logged without one', () => {
   assert.equal(guessCategory('Gin and tonic'), 'mixed');
   assert.equal(guessCategory('Whisky'), 'spirits');
   assert.equal(guessCategory('Hazy pale ale'), 'beer');
+});
+
+test('a mixed drink keeps all the alcohol from its spirits', () => {
+  const d = mixDrink('Double rum and cola', 'Double + 150 ml cola', [{ abv: 40, ml: 60 }], { carbPer100ml: 10 });
+  assert.equal(d.ml, 210);
+  assert.ok(Math.abs(alcoholGrams(d.ml, d.abv) - alcoholGrams(60, 40)) < 0.2);
+  assert.equal(d.carbs, 15);
+  const straight = mixDrink('Whisky', 'Single', [{ abv: 40, ml: 30 }], null);
+  assert.equal(straight.abv, 40);
+  assert.equal(straight.carbs, 0);
 });
