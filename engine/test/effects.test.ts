@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { simulateNight, effects, PRESETS, HOUR, type Effect } from '../src/index.ts';
+import { simulateNight, effects, hangoverSeverity, PRESETS, HOUR, type Effect } from '../src/index.ts';
 import { REF, at, drink, food, water, BOTTLE } from './helpers.ts';
 
 const ids = (list: Effect[]) => list.map(e => e.id);
@@ -34,9 +34,18 @@ test('a heavy night queues a hangover that starts once alcohol clears', () => {
   assert.ok(h.severity! >= 1);
 });
 
-test('no hangover debuff below a 0.08% peak', () => {
+test('no hangover debuff for a single drink', () => {
   const n = simulateNight({ profile: REF, events: [drink(BOTTLE, 0)], now: at(10) });
+  assert.ok(n.peak < 0.05, `peak ${n.peak}`);
   assert.equal(find(effects(n, { calories: false }).debuffs, 'hangover'), undefined);
+});
+
+test('hangover is possible from a 0.05% peak, likely from 0.11%, severe from 0.15%', () => {
+  assert.equal(hangoverSeverity(0.049), null);
+  assert.equal(hangoverSeverity(0.05), 0);
+  assert.equal(hangoverSeverity(0.079), 0);
+  assert.equal(hangoverSeverity(0.11), 1);
+  assert.equal(hangoverSeverity(0.15), 2);
 });
 
 test('water clears the dehydration deficit and earns the Hydrated buff', () => {
@@ -68,4 +77,15 @@ test('active debuffs come before incoming ones', () => {
   const d = effects(simulateNight({ profile: REF, events: evs, now: at(240) }), { calories: false }).debuffs;
   const firstIncoming = d.findIndex(e => e.status === 'incoming');
   assert.ok(firstIncoming > 0 && d.slice(firstIncoming).every(e => e.status === 'incoming'));
+});
+
+test('a light night (0.05–0.08% peak) gets a short, possible hangover', () => {
+  const evs = Array.from({ length: 4 }, (_, i) => drink(BOTTLE, i * 20));
+  const n = simulateNight({ profile: REF, events: evs, now: at(0) });
+  assert.ok(n.peak >= 0.05 && n.peak < 0.08, `peak ${n.peak}`);
+  const fx = effects(n, { calories: false }).debuffs;
+  const h = find(fx, 'hangover')!, a = find(fx, 'hangxiety')!;
+  assert.equal(h.severity, 0);
+  assert.equal(h.end - h.start, 6 * HOUR);
+  assert.equal(a.end - a.start, 8 * HOUR);
 });

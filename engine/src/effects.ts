@@ -74,8 +74,12 @@ export function overnightHrvSeverity(night: Night): Severity | null {
   return drankWithin(night, HRV_WINDOW) ? (Math.max(0, sev - 1) as Severity) : null;
 }
 
+/**
+ * Hangover likelihood from the night's peak: possible from 0.05%, likely from 0.11%, severe from 0.15%.
+ * Hangovers happen well below the old 0.11% research threshold (Verster et al., 2020), so "possible" starts low.
+ */
 export function hangoverSeverity(peak: number): Severity | null {
-  if (peak < 0.08) return null;
+  if (peak < 0.05) return null;
   return peak < 0.11 ? 0 : peak < 0.15 ? 1 : 2;
 }
 
@@ -129,12 +133,14 @@ export function effects(night: Night, opts: EffectOptions): { debuffs: Effect[];
     const hang = hangoverSeverity(night.peak);
     if (hang != null) {
       const s = cleared;
+      // A light night (peak under 0.08%) gets a shorter, milder version of both.
+      const mild = night.peak < 0.08;
       add(debuffs, {
-        id: 'hangover', kind: 'debuff', start: s, end: s + [10, 16, 24][hang] * HOUR,
+        id: 'hangover', kind: 'debuff', start: s, end: s + (mild ? 6 : [10, 16, 24][hang]) * HOUR,
         status: now < s ? 'incoming' : 'active', severity: hang, data: { peak: night.peak },
       });
       add(debuffs, {
-        id: 'hangxiety', kind: 'debuff', start: s, end: s + 18 * HOUR,
+        id: 'hangxiety', kind: 'debuff', start: s, end: s + (mild ? 8 : 18) * HOUR,
         status: now < s ? 'incoming' : 'active', severity: night.peak >= 0.11 ? 1 : 0,
       });
     }
