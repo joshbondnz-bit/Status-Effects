@@ -153,10 +153,10 @@ export function CurveChart({ night }: { night: Night }) {
               {marker(night.now, colors.gold, 'NOW')}
               {inPlot(X(night.now)) ? <Rect x={X(night.now) - 3} y={Y(night.bacNow) - 3} width={6} height={6} fill={colors.gold} /> : null}
 
-              {/* Peak and clear */}
+              {/* Peak and clear. With the what-if on, tonight's peak label moves under its marker so the blue one fits above. */}
               {inPlot(peakX) ? [
                 <Rect key="pk" x={peakX - 3.5} y={peakY - 3.5} width={7} height={7} fill={colors.hpHi} stroke={colors.edge} strokeWidth={1} transform={`rotate(45 ${peakX} ${peakY})`} />,
-                <SvgText key="pkt" x={Math.max(PAD_L + 40, Math.min(W - PAD_R - 40, peakX))} y={Math.max(PAD_T + 10, peakY - 9)} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.ink} textAnchor="middle">
+                <SvgText key="pkt" x={Math.max(PAD_L + 40, Math.min(W - PAD_R - 40, peakX))} y={ghost ? Math.min(BASE - 22, peakY + 17) : Math.max(PAD_T + 10, peakY - 9)} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.ink} textAnchor="middle">
                   {`Peak ${pct(night.peak)}${peakFuture ? ` · ${clock(night.peakAt)}` : ''}`}
                 </SvgText>,
               ] : null}
@@ -164,6 +164,19 @@ export function CurveChart({ night }: { night: Night }) {
                 <Rect key="cl" x={clearX - 3} y={BASE - 3} width={6} height={6} fill={colors.good} />,
                 <SvgText key="clt" x={Math.min(clearX, W - PAD_R)} y={BASE - 8} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.good} textAnchor={clearX > W - PAD_R - 30 ? 'end' : 'middle'}>
                   {`Clear ~${clock(night.soberAt)}`}
+                </SvgText>,
+              ] : null}
+              {/* The what-if's own peak and clear, in blue */}
+              {ghost && inPlot(X(ghost.peakAt)) ? [
+                <Rect key="gpk" x={X(ghost.peakAt) - 3.5} y={Y(ghost.peak) - 3.5} width={7} height={7} fill={colors.mana} stroke={colors.edge} strokeWidth={1} transform={`rotate(45 ${X(ghost.peakAt)} ${Y(ghost.peak)})`} />,
+                <SvgText key="gpkt" x={Math.max(PAD_L + 40, Math.min(W - PAD_R - 40, X(ghost.peakAt)))} y={Math.max(PAD_T + 10, Y(ghost.peak) - 9)} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.mana} textAnchor="middle">
+                  {`Peak ${pct(ghost.peak)} · ${clock(ghost.peakAt)}`}
+                </SvgText>,
+              ] : null}
+              {ghost && inPlot(X(ghost.soberAt)) ? [
+                <Rect key="gcl" x={X(ghost.soberAt) - 3} y={BASE - 3} width={6} height={6} fill={colors.mana} />,
+                <SvgText key="gclt" x={Math.min(X(ghost.soberAt), W - PAD_R)} y={BASE - 21} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.mana} textAnchor={X(ghost.soberAt) > W - PAD_R - 30 ? 'end' : 'middle'}>
+                  {`Clear ~${clock(ghost.soberAt)}`}
                 </SvgText>,
               ] : null}
 
