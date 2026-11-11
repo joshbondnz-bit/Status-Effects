@@ -66,7 +66,7 @@ export function TimeMachine() {
         <Btn label="Start an empty night" onPress={emptyNight} />
         <Btn label="Replay first-run setup" onPress={replaySetup} />
       </View>
-      <Text style={styles.note}>60× = a minute per second. Skipping 4+ hours past wake-up files tonight into History, just like real life. Loading a sample or empty night replaces tonight's log.</Text>
+      <Text style={styles.note}>60× = a minute per second. Once wake-up passes and the alcohol has cleared, tonight is filed into History, just like real life. Loading a sample or empty night replaces tonight's log.</Text>
     </View>
   );
 }
