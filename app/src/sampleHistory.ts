@@ -6,11 +6,12 @@ function rng(seed: number) {
   return () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
 }
 
-export function sampleHistory(profile: Profile, today: number): { summaries: NightSummary[]; trackingStart: number } {
+export function sampleHistory(profile: Profile, today: number): { summaries: NightSummary[]; logs: Map<string, LogEvent[]>; trackingStart: number } {
   const R = rng(20261110);
   const pick = <T,>(a: T[]) => a[Math.floor(R() * a.length)];
   const day0 = startOfDay(today);
   const out: NightSummary[] = [];
+  const logs = new Map<string, LogEvent[]>(); // each night's log, for the recap
   let id = 0;
   for (let i = 365; i >= 1; i--) {
     const day = addDays(day0, -i);
@@ -34,7 +35,7 @@ export function sampleHistory(profile: Profile, today: number): { summaries: Nig
       t += ((weekend ? 38 : 55) + Math.floor(R() * 35)) * MIN;
     }
     const s = summarizeNight(profile, events);
-    if (s) out.push(s);
+    if (s) { out.push(s); logs.set(s.day, events); }
   }
-  return { summaries: out, trackingStart: addDays(day0, -365) };
+  return { summaries: out, logs, trackingStart: addDays(day0, -365) };
 }

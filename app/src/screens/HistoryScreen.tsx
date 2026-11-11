@@ -11,6 +11,7 @@ import { sampleHistory } from '../sampleHistory';
 import { Calendar, MONTHS_LONG } from '../components/history/Calendar';
 import { BarChart, type Bar, type GuideLine } from '../components/history/BarChart';
 import { Segmented } from '../components/Form';
+import { NightRecap, type RecapNight } from '../components/history/NightRecap';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -47,6 +48,17 @@ export function HistoryScreen() {
   const feelBuckets = useMemo(() => feelVsDrinks(feelEntries), [feelEntries]);
   const demo = useMemo(() => (sample ? sampleHistory(data.profile, today) : null), [sample, data.profile, today]);
   const nights = useMemo(() => byNight(demo ? demo.summaries : real), [demo, real]);
+  // Each night's full log (and morning check-in) by day, for the recap sheet.
+  const recapNights = useMemo(() => {
+    const m = new Map<string, RecapNight>();
+    if (demo) { for (const [k, events] of demo.logs) m.set(k, { events }); return m; }
+    for (const n of [...data.past, data.tonight]) {
+      const s = summarizeNight(data.profile, n.events);
+      if (s) m.set(s.day, { events: n.events, feel: n.feel, endedAt: n.endedAt });
+    }
+    return m;
+  }, [demo, data.past, data.tonight, data.profile]);
+  const recapKeys = useMemo(() => [...recapNights.keys()].sort(), [recapNights]);
   const trackingStart = startOfDay(demo ? demo.trackingStart : Math.min(data.trackingSince, ...real.map(r => r.start)));
 
   // Keep the selection inside the tracked range.
@@ -110,6 +122,8 @@ export function HistoryScreen() {
   const badges = achievements(nights, trackingStart, today, guide.weeklyGrams);
   const sel = selected ? nights.get(selected) : undefined;
   const hasAny = nights.size > 0;
+  const recapAt = selected ? recapKeys.indexOf(selected) : -1;
+  const openNight = (k: string) => { setSelected(k); setCursor(keyToTime(k)); };
 
   const step = (dir: -1 | 1) => { setCursor(stepPeriod(period, R.start, dir)); setSelected(null); };
 
@@ -197,11 +211,11 @@ export function HistoryScreen() {
         <Calendar period={period} range={R} nights={nights} today={today} trackingStart={trackingStart} selected={selected} gramsPerDrink={g}
           onSelectDay={k => { setSelected(selected === k ? null : k); if (selected !== k) setCursor(keyToTime(k)); }}
           onOpenMonth={t => { setPeriod('month'); setCursor(t); setSelected(null); }} />
-        {selected ? (
+        {/* A night out opens the recap sheet; an alcohol-free day just gets a line here. */}
+        {selected && !sel ? (
           <View style={styles.dayDetail}>
             <Text style={styles.dayTitle}>{new Date(keyToTime(selected)).toDateString()}</Text>
-            <Text style={styles.lead}>{sel ? `${sel.drinks} drinks · ${std(sel.grams)} standard drinks · peak ${sel.peak.toFixed(2)}%` : 'Alcohol-free day.'}</Text>
-            {sel?.critical ? <Text style={[styles.lead, { color: colors.bad }]}>Blood alcohol reached the critical range this night.</Text> : null}
+            <Text style={styles.lead}>Alcohol-free day.</Text>
           </View>
         ) : null}
       </View>
@@ -224,6 +238,11 @@ export function HistoryScreen() {
         <Pressable onPress={() => setSample(true)} accessibilityRole="button"><Text style={styles.link}>Preview with sample data</Text></Pressable>
       ) : null}
       <Text style={styles.fine}>Coming with the morning-after report: how you feel compared with how much you drank.</Text>
+
+      <NightRecap dayKey={recapAt >= 0 ? selected : null} night={selected ? recapNights.get(selected) : undefined}
+        profile={data.profile} now={now} showCalories={data.settings.calories} compareWith={data.settings.compareWith ?? 'pizza'}
+        prevKey={recapAt > 0 ? recapKeys[recapAt - 1] : null} nextKey={recapAt >= 0 && recapAt < recapKeys.length - 1 ? recapKeys[recapAt + 1] : null}
+        onStep={openNight} onClose={() => setSelected(null)} />
     </Screen>
   );
 }

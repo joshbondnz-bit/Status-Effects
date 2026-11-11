@@ -4,11 +4,12 @@
 // A few stars twinkle slowly in the night sky, unless the phone's Reduce Motion setting is on.
 // The images are drawn by scripts/make-sky.mjs.
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, Platform, StyleSheet, View, type ImageSourcePropType } from 'react-native';
+import { Animated, Easing, Image, Platform, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 import { useApp } from '../AppDataProvider';
 import { SKY_ART, SKY_STARS } from '../skyStars';
 import { isDark, useColors } from '../theme';
 import { useAnimatedValue } from '../useAnimatedValue';
+import { useReduceMotion } from '../useReduceMotion';
 
 type SkyName = keyof typeof SKY_STARS;
 const IMAGES: Record<SkyName, ImageSourcePropType> = {
@@ -62,18 +63,6 @@ function Twinkle({ left, top, size, delay }: { left: number; top: number; size: 
     return () => loop.stop();
   }, [glow, delay]);
   return <Animated.View style={{ position: 'absolute', left, top, width: size, height: size, backgroundColor: STAR, opacity: glow }} />;
-}
-
-/** True while the phone's Reduce Motion accessibility setting is on. */
-function useReduceMotion() {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    let live = true;
-    AccessibilityInfo.isReduceMotionEnabled().then(v => { if (live) setReduce(v); }).catch(() => {});
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
-    return () => { live = false; sub.remove(); };
-  }, []);
-  return reduce;
 }
 
 const styles = StyleSheet.create({

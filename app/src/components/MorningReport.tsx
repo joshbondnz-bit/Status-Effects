@@ -26,7 +26,7 @@ export function findMorningNight(data: AppData, now: number): { night: SavedNigh
   return null;
 }
 
-const feelColors = (colors: Palette) => [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
+export const feelColors = (colors: Palette) => [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
 
 export function MorningReport({ night, profile, now, showCalories, onFeel, onClose }: {
   night: SavedNight; profile: Profile; now: number; showCalories: boolean;
