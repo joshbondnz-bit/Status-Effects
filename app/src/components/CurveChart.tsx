@@ -83,7 +83,6 @@ export function CurveChart({ night }: { night: Night }) {
   const H = hourY + 6;
 
   // ----- Labels -----
-  const peakFuture = night.peakAt > night.now;
   const peakX = X(night.peakAt), peakY = Y(night.peak);
   const clearX = X(night.soberAt);
   const marker = (t: number, color: string, label: string) => {
@@ -92,6 +91,16 @@ export function CurveChart({ night }: { night: Night }) {
     return [
       <Line key={label + 'l'} x1={x} x2={x} y1={PAD_T - 6} y2={BASE} stroke={color} strokeWidth={2} />,
       <SvgText key={label + 't'} x={Math.min(x + 3, W - PAD_R - 24)} y={PAD_T - 9} fontSize={10} fontFamily={fonts.bodyBold} fill={color}>{label}</SvgText>,
+    ];
+  };
+
+  /** A short label on a dark backing, so lines behind it never cut through the text. Centred on x, kept inside the plot. */
+  const label = (key: string, x: number, y: number, text: string, color: string) => {
+    const w = text.length * 6.3 + 8;
+    const left = Math.max(PAD_L, Math.min(W - PAD_R - w, x - w / 2));
+    return [
+      <Rect key={key + 'b'} x={left} y={y - 11} width={w} height={15} fill={colors.panel} opacity={0.92} />,
+      <SvgText key={key + 't'} x={left + w / 2} y={y} fontSize={10.5} fontFamily={fonts.bodyBold} fill={color} textAnchor="middle">{text}</SvgText>,
     ];
   };
 
@@ -153,31 +162,24 @@ export function CurveChart({ night }: { night: Night }) {
               {marker(night.now, colors.gold, 'NOW')}
               {inPlot(X(night.now)) ? <Rect x={X(night.now) - 3} y={Y(night.bacNow) - 3} width={6} height={6} fill={colors.gold} /> : null}
 
-              {/* Peak and clear. With the what-if on, tonight's peak label moves under its marker so the blue one fits above. */}
+              {/* Peak (◆, the level) and clear (■, the time), as short tags on a dark backing so lines never cut through them.
+                  With the what-if on, tonight's peak tag moves under its marker so the blue one fits above. */}
               {inPlot(peakX) ? [
                 <Rect key="pk" x={peakX - 3.5} y={peakY - 3.5} width={7} height={7} fill={colors.hpHi} stroke={colors.edge} strokeWidth={1} transform={`rotate(45 ${peakX} ${peakY})`} />,
-                <SvgText key="pkt" x={Math.max(PAD_L + 40, Math.min(W - PAD_R - 40, peakX))} y={ghost ? Math.min(BASE - 22, peakY + 17) : Math.max(PAD_T + 10, peakY - 9)} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.ink} textAnchor="middle">
-                  {`Peak ${pct(night.peak)}${peakFuture ? ` · ${clock(night.peakAt)}` : ''}`}
-                </SvgText>,
+                ...label('pkt', peakX, ghost ? Math.min(BASE - 22, peakY + 19) : Math.max(PAD_T + 13, peakY - 9), pct(night.peak), colors.ink),
+              ] : null}
+              {ghost && inPlot(X(ghost.peakAt)) ? [
+                <Rect key="gpk" x={X(ghost.peakAt) - 3.5} y={Y(ghost.peak) - 3.5} width={7} height={7} fill={colors.mana} stroke={colors.edge} strokeWidth={1} transform={`rotate(45 ${X(ghost.peakAt)} ${Y(ghost.peak)})`} />,
+                ...label('gpkt', X(ghost.peakAt), Math.max(PAD_T + 13, Y(ghost.peak) - 9), pct(ghost.peak), colors.mana),
               ] : null}
               {inPlot(clearX) && night.soberAt > night.now ? [
                 <Rect key="cl" x={clearX - 3} y={BASE - 3} width={6} height={6} fill={colors.good} />,
-                <SvgText key="clt" x={Math.min(clearX, W - PAD_R)} y={BASE - 8} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.good} textAnchor={clearX > W - PAD_R - 30 ? 'end' : 'middle'}>
-                  {`Clear ~${clock(night.soberAt)}`}
-                </SvgText>,
-              ] : null}
-              {/* The what-if's own peak and clear, in blue */}
-              {ghost && inPlot(X(ghost.peakAt)) ? [
-                <Rect key="gpk" x={X(ghost.peakAt) - 3.5} y={Y(ghost.peak) - 3.5} width={7} height={7} fill={colors.mana} stroke={colors.edge} strokeWidth={1} transform={`rotate(45 ${X(ghost.peakAt)} ${Y(ghost.peak)})`} />,
-                <SvgText key="gpkt" x={Math.max(PAD_L + 40, Math.min(W - PAD_R - 40, X(ghost.peakAt)))} y={Math.max(PAD_T + 10, Y(ghost.peak) - 9)} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.mana} textAnchor="middle">
-                  {`Peak ${pct(ghost.peak)} · ${clock(ghost.peakAt)}`}
-                </SvgText>,
+                ...label('clt', clearX, BASE - 9, clock(night.soberAt), colors.good),
               ] : null}
               {ghost && inPlot(X(ghost.soberAt)) ? [
                 <Rect key="gcl" x={X(ghost.soberAt) - 3} y={BASE - 3} width={6} height={6} fill={colors.mana} />,
-                <SvgText key="gclt" x={Math.min(X(ghost.soberAt), W - PAD_R)} y={BASE - 21} fontSize={10.5} fontFamily={fonts.bodyBold} fill={colors.mana} textAnchor={X(ghost.soberAt) > W - PAD_R - 30 ? 'end' : 'middle'}>
-                  {`Clear ~${clock(ghost.soberAt)}`}
-                </SvgText>,
+                // Stack above tonight's clear tag if they'd overlap.
+                ...label('gclt', X(ghost.soberAt), Math.abs(X(ghost.soberAt) - clearX) < 46 ? BASE - 26 : BASE - 9, clock(ghost.soberAt), colors.mana),
               ] : null}
 
               {hours.map(t => (
@@ -225,7 +227,7 @@ export function CurveChart({ night }: { night: Night }) {
           <Text style={[styles.whatIfTxt, whatIf && { color: colors.edge }]}>{whatIf ? '✓ ' : '+ '}What if one more {last.name.toLowerCase()}?</Text>
         </Pressable>
       </View>
-      <Text style={styles.key}>Solid: so far · Dotted: if you stop now{ghost ? ' · Blue: one more' : ''}. Drag across the chart to read any time.</Text>
+      <Text style={styles.key}>Solid: so far · Dotted: if you stop now{ghost ? ' · Blue: one more' : ''} · ◆ peak level · ■ clear time. Drag across the chart to read any time.</Text>
     </View>
   );
 }
