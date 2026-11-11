@@ -8,7 +8,7 @@ import {
 } from '../../../engine/src/index.ts';
 import { newId, sampleNightEvents } from '../sampleNight';
 import { colors, fonts, panel } from '../theme';
-import { glassSprite } from '../sprites';
+import { glassSprite, type SpriteDef } from '../sprites';
 import { HealthBar } from '../components/HealthBar';
 import { StatusTray } from '../components/StatusTray';
 import { LogDrinkSheet } from '../components/LogDrinkSheet';
@@ -26,11 +26,17 @@ import { PHASE_COPY } from '../copy';
 import { useApp } from '../AppDataProvider';
 
 
-function Button({ label, onPress, primary, flex = 1 }: { label: string; onPress: () => void; primary?: boolean; flex?: number }) {
+/** A pint, for the + Drink button. */
+const DRINK_ICON = glassSprite({ type: 'drink', id: 'icon', t: 0, name: 'Lager', ml: 568, abv: 5, category: 'beer', grams: 0, kcal: 0, kcalFromAlcohol: 0 });
+
+function Button({ label, onPress, variant = 'plain', icon, big, flex = 1 }: {
+  label: string; onPress: () => void; variant?: 'primary' | 'water' | 'plain'; icon?: SpriteDef; big?: boolean; flex?: number;
+}) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button"
-      style={({ pressed }) => [styles.btn, primary && styles.btnPrimary, { flex }, pressed && { transform: [{ translateY: 2 }] }]}>
-      <Text style={[styles.btnTxt, primary && { color: '#fff8ee' }]}>{label}</Text>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={({ pressed }) => [styles.btn, variant === 'primary' && styles.btnPrimary, variant === 'water' && styles.btnWater, big && styles.btnBig, { flex }, pressed && { transform: [{ translateY: 2 }] }]}>
+      {icon ? <PixelSprite sprite={icon} scale={big ? 2 : 1.5} /> : null}
+      <Text style={[styles.btnTxt, big && styles.btnTxtBig, variant === 'primary' && { color: '#fff8ee' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -38,6 +44,7 @@ function Button({ label, onPress, primary, flex = 1 }: { label: string; onPress:
 export function TonightScreen() {
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const [removed, setRemoved] = useState<LogEvent | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { data, error, update, now, tick, currentTime } = useApp();
@@ -153,12 +160,25 @@ export function TonightScreen() {
           </Pressable>
         ) : null}
 
-        <View style={styles.actions}>
-          <Button label="+ Drink" primary flex={2} onPress={() => setSheet(true)} />
-          <Button label="Water" onPress={() => log({ type: 'water', id: newId(), t: currentTime() })} />
-          <Button label="Food" onPress={() => log({ type: 'food', id: newId(), t: currentTime() })} />
-          <Button label={endedAt ? 'Resume' : 'End night'} flex={1.3} onPress={() => setEnded(endedAt ? null : currentTime())} />
+        {/* + Drink is the main action: its own full-width row. Easy to find, but no glow or bounce, so it never looks like a reward. */}
+        <View style={styles.actionsCol}>
+          <Button label="+ Drink" variant="primary" big icon={DRINK_ICON} onPress={() => setSheet(true)} />
+          <View style={styles.actions}>
+            <Button label="Water" variant="water" icon={ICONS.hydrated} onPress={() => log({ type: 'water', id: newId(), t: currentTime() })} />
+            <Button label="Food" icon={ICONS.lined} onPress={() => log({ type: 'food', id: newId(), t: currentTime() })} />
+            <Button label={endedAt ? 'Resume' : 'End night'} flex={1.15} onPress={() => (endedAt ? setEnded(null) : setConfirmEnd(true))} />
+          </View>
         </View>
+        {confirmEnd ? (
+          <View style={styles.confirm} accessibilityLiveRegion="polite">
+            <Text style={styles.confirmTitle}>End the night here?</Text>
+            <Text style={styles.confirmTxt}>Tonight's log is kept and your debuffs keep counting down. You can tap Resume if you change your mind.</Text>
+            <View style={styles.actions}>
+              <Button label="Yes, end night" variant="primary" onPress={() => { setEnded(currentTime()); setConfirmEnd(false); }} />
+              <Button label="Not yet" onPress={() => setConfirmEnd(false)} />
+            </View>
+          </View>
+        ) : null}
         {removed ? (
           <View style={styles.undo}>
             <Text style={styles.undoTxt}>Removed {removed.type === 'drink' ? removed.name : removed.type === 'water' ? 'water' : 'food'}.</Text>
@@ -219,10 +239,17 @@ const styles = StyleSheet.create({
   glasses: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 2 },
   tallyN: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
   faint: { fontFamily: fonts.body, fontSize: 13, color: colors.inkFaint },
+  actionsCol: { gap: 8 },
   actions: { flexDirection: 'row', gap: 8 },
-  btn: { paddingVertical: 12, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edgeHi, borderBottomWidth: 5, borderBottomColor: colors.edge },
+  btn: { flexDirection: 'row', gap: 6, paddingVertical: 11, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edgeHi, borderBottomWidth: 5, borderBottomColor: colors.edge },
   btnPrimary: { backgroundColor: colors.hp, borderColor: colors.hpHi, borderBottomColor: colors.hpLo },
+  btnWater: { backgroundColor: '#22385a', borderColor: '#4a78b8', borderBottomColor: '#14213a' },
+  btnBig: { paddingVertical: 14, gap: 10 },
   btnTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, textAlign: 'center' },
+  btnTxtBig: { fontSize: 18 },
+  confirm: { backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, padding: 12, gap: 8 },
+  confirmTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
+  confirmTxt: { fontFamily: fonts.body, fontSize: 14, color: colors.inkDim, lineHeight: 20 },
   h2: { fontFamily: fonts.display, fontSize: 30, letterSpacing: 0.4, color: colors.ink },
   logHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   nudge: { backgroundColor: '#3a3220', borderWidth: 2, borderColor: '#6a5424', padding: 12 },
