@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import {
-  MIN, PHASES, WARNING_BAC, effects, healthState, makeDrink, phaseIndex, simulateNight, standardDrinks,
+  MIN, PHASES, WARNING_BAC, effects, healthState, lingeringDebuffs, makeDrink, phaseIndex, simulateNight, standardDrinks, withLingering,
   type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
 import { newId, sampleNightEvents } from '../sampleNight';
@@ -60,7 +60,15 @@ export function TonightScreen() {
   const events = data.tonight.events;
   const endedAt = data.tonight.endedAt;
   const night = useMemo(() => simulateNight({ profile, events, now }), [profile, events, now]);
-  const fx = useMemo(() => effects(night, { calories: settings.calories, endedAt }), [night, settings.calories, endedAt]);
+  const tonightFx = useMemo(() => effects(night, { calories: settings.calories, endedAt }), [night, settings.calories, endedAt]);
+  // Debuffs still running from earlier nights (Slow recovery, Hangover…), worked out once a minute.
+  // Ones that tonight causes again stack with tonight's; the rest show in their own "Lingering" row.
+  const minute = Math.floor(now / 60_000);
+  const past = data.past;
+  const carried = useMemo(() => lingeringDebuffs(profile, past.map(n => n.events), minute * 60_000, { calories: settings.calories }),
+    [profile, past, minute, settings.calories]);
+  const stacked = withLingering(tonightFx.debuffs, carried.debuffs);
+  const fx = { buffs: tonightFx.buffs, debuffs: stacked.debuffs };
   const region = profile.region;
   // People are badly impaired well before 0 HP, so the safety check-in appears from the Wasted zone (0.15%+)
   // as well as at 0 HP, and comes back every 30 minutes while the level stays that high.
@@ -194,7 +202,7 @@ export function TonightScreen() {
         ) : null}
 
         {/* Cause, then effect: what you've had (and the buttons to log more) sits above what it's doing to you. */}
-        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} night={night} region={region} zone={zone} />
+        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} lingering={stacked.lingering} sources={carried.nights} night={night} region={region} zone={zone} />
       </View>
 
       <View style={[panel, styles.card]}>

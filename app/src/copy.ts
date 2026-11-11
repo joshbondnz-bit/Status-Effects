@@ -35,7 +35,7 @@ export function describe(e: Effect, n: Night, region: RegionCode): string {
       : `You should be near zero by your ${clock(n.bed)} bedtime, which softens the hit. Another drink would push alcohol into your sleep.`;
     case 'hrv': return `Overnight heart-rate variability recovery drops roughly ${e.data?.dropPct}% at this intake. Expect a higher resting heart rate tomorrow.`;
     case 'dehydration': return `Alcohol blocks the hormone that helps your kidneys hold onto water. ${e.data?.waters} water for ${e.data?.drinks} drinks so far.`;
-    case 'hangover': return `Hangovers peak as your level returns to zero, around ${clock(e.start)}. Your estimated peak tonight is ${n.peak.toFixed(2)}%.`;
+    case 'hangover': return `Hangovers peak as your level returns to zero, around ${clock(e.start)}. Estimated peak for the night: ${n.peak.toFixed(2)}%.`;
     case 'hangxiety': return "Next-day anxiety and low mood as your brain rebounds from alcohol's calming effect.";
     case 'recovery': return 'Heavy drinking slows how your muscles rebuild after exercise by roughly a quarter to a third. Go easy on hard training.';
     case 'fatpause': return `Your body clears alcohol before anything else, so fat burning drops sharply until it's gone. Paused for about ${duration(e.data?.pausedMs ?? 0)} tonight.`;

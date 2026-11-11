@@ -1,12 +1,14 @@
 // The status tray: buffs and debuffs as a row of RPG-style icons under the HP ring.
 // Frame colour = severity (yellow, orange, red; purple when unrated; green for buffs), pips repeat it,
 // a shaded wedge shows time already used (sweeping clockwise like the ring), and tapping opens the details.
+// Debuffs still running from an earlier night sit in their own "Lingering" row; one that tonight causes again
+// stacks (a ×2 badge) with tonight's.
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAnimatedValue } from '../useAnimatedValue';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import type { Effect, Night, RegionCode } from '../../../engine/src/index.ts';
+import { keyToTime, nightOf, type Effect, type Night, type RegionCode } from '../../../engine/src/index.ts';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { ICONS } from '../sprites';
 import { PixelSprite } from './PixelSprite';
@@ -38,6 +40,11 @@ function short(ms: number): string {
 /** When something ends: a time today, or the day and time if it's further off. */
 function endsAt(t: number, now: number): string {
   return t - now < 20 * 3600_000 ? clock(t) : `${new Date(t).toLocaleDateString([], { weekday: 'short' })} ${clock(t)}`;
+}
+
+/** "Friday night" for the night a first drink belongs to (drinks after midnight count as the evening before). */
+function nightName(firstDrink: number): string {
+  return `${new Date(keyToTime(nightOf(firstDrink))).toLocaleDateString([], { weekday: 'long' })} night`;
 }
 
 /** The time already used, as a shaded pie wedge from 12 o'clock, clockwise. */
@@ -74,7 +81,7 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
   const color = frameColor(e, colors);
   const time = incoming ? `in ${short(e.start - now)}` : ongoing ? 'Active' : short(left);
   const name = EFFECT_NAMES[e.id];
-  const label = `${name}, ${incoming ? 'starts in ' + duration(e.start - now) : ongoing ? 'active' : duration(left) + ' left'}, ${severityLabel(e).toLowerCase()}. Show details`;
+  const label = `${name}${(e.stacks ?? 1) > 1 ? `, stacked ×${e.stacks}` : ''}, ${incoming ? 'starts in ' + duration(e.start - now) : ongoing ? 'active' : duration(left) + ' left'}, ${severityLabel(e).toLowerCase()}. Show details`;
 
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={styles.slot} hitSlop={3}>
@@ -92,6 +99,7 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
           </View>
         ) : null}
         {incoming ? <Text style={styles.badge}>⏱</Text> : null}
+        {(e.stacks ?? 1) > 1 ? <View style={styles.stack}><Text style={styles.stackTxt}>×{e.stacks}</Text></View> : null}
       </Animated.View>
       <Text style={[styles.time, incoming && styles.timeIncoming, !incoming && !ongoing && left < 3600_000 && styles.timeSoon]}>{time}</Text>
     </Pressable>
@@ -101,11 +109,21 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
 /** The current zone, e.g. "Tipsy" and what it means, shown under the Status heading. */
 export interface ZoneInfo { name: string; text: string; color: string }
 
-export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: Effect[]; buffs: Effect[]; night: Night; region: RegionCode; zone?: ZoneInfo }) {
+export function StatusTray({ debuffs, buffs, lingering = [], sources, night, region, zone }: {
+  debuffs: Effect[]; buffs: Effect[]; night: Night; region: RegionCode; zone?: ZoneInfo;
+  /** Debuffs still running from earlier nights (not caused again tonight). */
+  lingering?: Effect[];
+  /** Earlier nights' simulations by first drink, so their descriptions use their own numbers. */
+  sources?: Map<number, Night>;
+}) {
   const colors = useColors();
   const styles = useStyles(colors);
   const now = night.now;
-  const list = [...order(debuffs, now), ...order(buffs, now)];
+  const tonight = [...order(debuffs, now), ...order(buffs, now)];
+  const carried = order(lingering, now);
+  const list = [...tonight, ...carried];
+  const fromNames = [...new Set(carried.map(e => nightName(e.carriedFrom!)))];
+  const lingerTitle = fromNames.length === 1 ? `Lingering from ${fromNames[0]}` : 'Lingering from recent nights';
   const [openId, setOpenId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
@@ -122,17 +140,25 @@ export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: E
     <View style={styles.wrap}>
       <Text style={styles.title}>Status</Text>
       {zone ? <Text style={styles.zoneText}><Text style={[styles.zoneName, { color: zone.color }]}>{zone.name}. </Text>{zone.text}</Text> : null}
-      {list.length ? (
+      {tonight.length ? (
         <View style={styles.tray}>
-          {list.map((e, i) => (
+          {tonight.map((e, i) => (
             <View key={e.id} style={styles.slotWrap}>
-              {e.kind === 'buff' && i > 0 && list[i - 1].kind === 'debuff' ? <View style={styles.sep} /> : null}
+              {e.kind === 'buff' && i > 0 && tonight[i - 1].kind === 'debuff' ? <View style={styles.sep} /> : null}
               <Slot e={e} now={now} land={fresh.has(e.id)} onPress={() => setOpenId(e.id)} />
             </View>
           ))}
         </View>
-      ) : <Text style={styles.empty}>No buffs or debuffs. Log a drink and they show up here.</Text>}
-      {list.length && !buffs.length ? <Text style={styles.empty}>No buffs. Water, food and a slower pace earn them.</Text> : null}
+      ) : <Text style={styles.empty}>{carried.length ? 'Nothing new tonight.' : 'No buffs or debuffs. Log a drink and they show up here.'}</Text>}
+      {debuffs.length && !buffs.length ? <Text style={styles.empty}>No buffs. Water, food and a slower pace earn them.</Text> : null}
+      {carried.length ? (
+        <View style={styles.linger}>
+          <Text style={styles.lingerTitle}>{lingerTitle.toUpperCase()}</Text>
+          <View style={styles.tray}>
+            {carried.map(e => <Slot key={e.id} e={e} now={now} land={false} onPress={() => setOpenId(e.id)} />)}
+          </View>
+        </View>
+      ) : null}
       {list.length ? <Text style={styles.hint}>Tap an icon for details.</Text> : null}
 
       <Modal visible={!!open} transparent animationType="slide" onRequestClose={() => setOpenId(null)}>
@@ -163,7 +189,12 @@ export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: E
                   width: open.status !== 'active' || !isFinite(open.end) ? '100%' : `${Math.max(3, ((open.end - now) / Math.max(1, open.end - open.start)) * 100)}%`,
                 }]} />
               </View>
-              <Text style={styles.desc}>{describe(open, night, region)}</Text>
+              {(open.stacks ?? 1) > 1 && open.carriedFrom != null ? (
+                <Text style={styles.from}>Stacked ×{open.stacks}. Still running from {nightName(open.carriedFrom)}, and tonight builds on it. It lasts until the later of the two, at the worse severity.</Text>
+              ) : open.carriedFrom != null ? (
+                <Text style={styles.from}>Lingering from {nightName(open.carriedFrom)}. Drinking again before it wears off stacks on top of it.</Text>
+              ) : null}
+              <Text style={styles.desc}>{describe(open, open.carriedFrom != null && carried.includes(open) ? sources?.get(open.carriedFrom) ?? night : night, region)}</Text>
               {list.length > 1 ? (
                 <View style={styles.nav}>
                   <Pressable onPress={() => step(-1)} style={styles.navBtn} accessibilityRole="button"><Text style={styles.navTxt}>‹ Previous</Text></Pressable>
@@ -196,6 +227,11 @@ const useStyles = makeStyles((colors: Palette) => ({
   pips: { position: 'absolute', top: 2, right: 2, flexDirection: 'row', gap: 2 },
   pip: { width: 4, height: 4, borderWidth: 1, borderColor: colors.edge },
   badge: { position: 'absolute', left: 1, bottom: 0, fontSize: 10 },
+  stack: { position: 'absolute', left: 0, bottom: 0, backgroundColor: colors.edge, paddingHorizontal: 3, paddingTop: 1, borderTopRightRadius: 4 },
+  stackTxt: { fontFamily: fonts.num, fontSize: 18, lineHeight: 16, color: colors.gold },
+  linger: { gap: 6, marginTop: 4, paddingTop: 8, borderTopWidth: 2, borderColor: colors.edgeHi, borderStyle: 'dashed' },
+  lingerTitle: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 1, color: colors.inkFaint },
+  from: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20, color: colors.gold },
   time: { fontFamily: fonts.display, fontSize: 19, lineHeight: 19, color: colors.ink },
   timeIncoming: { color: colors.inkFaint, fontSize: 16 },
   timeSoon: { color: colors.gold },

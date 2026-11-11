@@ -11,3 +11,4 @@ export * from './history.ts';
 export * from './preview.ts';
 export * from './feel.ts';
 export * from './energy.ts';
+export * from './lingering.ts';

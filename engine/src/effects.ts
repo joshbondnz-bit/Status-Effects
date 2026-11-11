@@ -19,6 +19,10 @@ export interface Effect {
   severity: Severity | null;
   /** Numbers the UI may want for its description. */
   data?: Record<string, number>;
+  /** Still running from an earlier night: that night's first drink. (See lingering.ts.) */
+  carriedFrom?: number;
+  /** How many nights this debuff is stacked from (2 or more when tonight builds on an earlier night). */
+  stacks?: number;
 }
 
 export interface EffectOptions {
@@ -83,6 +87,8 @@ export function effects(night: Night, opts: EffectOptions): { debuffs: Effect[];
 
   if (night.firstDrink && night.lastDrink) {
     const first = night.firstDrink.t, last = night.lastDrink.t;
+    // When the alcohol clears (or cleared): fixed once it has happened, so after-effects count down from it.
+    const cleared = night.clearedAt ?? night.soberAt;
 
     // Reaching the critical level leaves the body under strain for two days. If the projection
     // says you're heading there, it shows as incoming: an early warning, not a badge.
@@ -115,14 +121,14 @@ export function effects(night: Night, opts: EffectOptions): { debuffs: Effect[];
 
     const deficit = Math.max(0, night.drinks.length - night.waters.length);
     add(debuffs, {
-      id: 'dehydration', kind: 'debuff', start: first, end: night.soberAt + deficit * 45 * MIN, status: 'active',
+      id: 'dehydration', kind: 'debuff', start: first, end: cleared + deficit * 45 * MIN, status: 'active',
       severity: deficit === 0 ? 0 : deficit <= 2 ? 1 : 2,
       data: { drinks: night.drinks.length, waters: night.waters.length },
     });
 
     const hang = hangoverSeverity(night.peak);
     if (hang != null) {
-      const s = night.soberAt;
+      const s = cleared;
       add(debuffs, {
         id: 'hangover', kind: 'debuff', start: s, end: s + [10, 16, 24][hang] * HOUR,
         status: now < s ? 'incoming' : 'active', severity: hang, data: { peak: night.peak },
@@ -143,8 +149,8 @@ export function effects(night: Night, opts: EffectOptions): { debuffs: Effect[];
 
     if (opts.calories) {
       if (night.soberAt > now || night.bacNow > 0) add(debuffs, {
-        id: 'fatpause', kind: 'debuff', start: first, end: night.soberAt, status: 'active', severity: null,
-        data: { pausedMs: night.soberAt - first },
+        id: 'fatpause', kind: 'debuff', start: first, end: cleared, status: 'active', severity: null,
+        data: { pausedMs: cleared - first },
       });
       const m = night.span(0.04);
       if (m && m.active) add(debuffs, {
