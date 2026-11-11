@@ -15,7 +15,7 @@ export const PHASE_COPY = [
 export const EFFECT_NAMES: Record<EffectId, string> = {
   judgment: 'Impaired judgment', sleep: 'Impaired sleep', hrv: 'HRV drain', dehydration: 'Dehydration',
   hangover: 'Hangover', hangxiety: 'Hangxiety', recovery: 'Slow recovery', fatpause: 'Fat burning paused',
-  munchies: 'Munchies', hydrated: 'Hydrated', lined: 'Lined stomach', pace: 'Steady pace', called: 'Called it',
+  munchies: 'Munchies', hydrated: 'Hydrated', lined: 'Well fed', pace: 'Steady pace', called: 'Called it',
   strain: 'Body under strain',
 };
 

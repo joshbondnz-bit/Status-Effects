@@ -33,6 +33,12 @@ export const colors = {
   heatInk: '#fff6ee',
   /** Day numbers on the lighter heatmap colours. */
   heatInkDark: '#1a1420',
+  // Status tray frames: debuff severity (minor, moderate, severe), unrated debuffs, buffs
+  sevMinor: '#e8c547',
+  sevModerate: '#ff8a3d',
+  sevSevere: '#ec3a50',
+  sevUnrated: '#8a7aa0',
+  buff: '#4cc488',
 } as const;
 
 /** Font family names, as registered by useFonts in App.tsx. */

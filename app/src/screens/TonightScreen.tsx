@@ -10,7 +10,7 @@ import { newId, sampleNightEvents } from '../sampleNight';
 import { colors, fonts, panel } from '../theme';
 import { glassSprite } from '../sprites';
 import { HealthBar } from '../components/HealthBar';
-import { EffectCard } from '../components/EffectCard';
+import { StatusTray } from '../components/StatusTray';
 import { LogDrinkSheet } from '../components/LogDrinkSheet';
 import { NightLog } from '../components/NightLog';
 import { Rations } from '../components/Rations';
@@ -111,6 +111,7 @@ export function TonightScreen() {
 
       <View style={[panel, styles.card]}>
         <HealthBar night={night} />
+        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} night={night} region={region} />
 
         <View style={styles.tally}>
           <View style={styles.glasses}>
@@ -159,20 +160,6 @@ export function TonightScreen() {
         ) : null}
       </View>
 
-      <View style={[panel, styles.card]}>
-        <Text style={styles.h2}>Debuffs</Text>
-        <View style={styles.grid}>
-          {fx.debuffs.length
-            ? fx.debuffs.map(e => <EffectCard key={e.id} effect={e} night={night} region={region} />)
-            : <Text style={styles.empty}>No debuffs. Log a drink and they appear here with countdowns.</Text>}
-        </View>
-        <Text style={[styles.h2, { marginTop: 18 }]}>Buffs</Text>
-        <View style={styles.grid}>
-          {fx.buffs.length
-            ? fx.buffs.map(e => <EffectCard key={e.id} effect={e} night={night} region={region} />)
-            : <Text style={styles.empty}>Log water, eat something, or take an hour off to earn buffs.</Text>}
-        </View>
-      </View>
 
       {settings.calories ? (
         <View style={[panel, styles.card]}>
@@ -233,8 +220,6 @@ const styles = StyleSheet.create({
   undo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.ink, paddingHorizontal: 12, paddingVertical: 10 },
   undoTxt: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.bg },
   undoBtn: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.hpLo, textDecorationLine: 'underline' },
-  grid: { gap: 8 },
-  empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12, width: '100%' },
   warn: { fontFamily: fonts.body, fontSize: 15, color: colors.alertInk, backgroundColor: colors.alertBg, borderWidth: 2, borderColor: colors.alertEdge, padding: 10 },
   danger: { backgroundColor: '#1e2a33', borderWidth: 2, borderColor: '#3f6275', padding: 14, gap: 6 },
   dangerTitle: { fontFamily: fonts.display, fontSize: 31, letterSpacing: 0.4, color: '#e9f6ff' },

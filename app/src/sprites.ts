@@ -11,23 +11,30 @@ export const ICONS: Record<EffectId, SpriteDef> = {
   sleep: { palette: { m: '#f2d98a', M: '#c9a24a', z: '#b9b4ff' }, rows: [E,
     '.........zzzz...', '...........z....', '.....mmm..z.....', '...mmmm..zzzz...', '..mmmm..........', '..mmm......zzz..', '.mmmm.......z...',
     '.mmmm......zzz..', '.mmmm...........', '.mmmmm..........', '..mmmmm.....mm..', '..MmmmmmmmmmMm..', '...MMmmmmmmMM...', '.....MMMMMM.....', E] },
-  judgment: { palette: { p: '#f29bb8', P: '#c9607f', d: '#c9607f', y: '#f2c14e' }, rows: [E,
-    '..y..........y..', '.yyy........yyy.', '..y...pppp...y..', '....ppPppPpp....', '...pPpppppPpp...', '..ppppPpppppPp..', '..pPppppPppppp..',
-    '..ppppPppPpppp..', '...pPpppppPpp...', '....pppPpppp....', '.......dd.......', '.......dd.......', E, E, E] },
+  // A tilted balance scale.
+  judgment: { palette: { g: '#f2c14e', G: '#a87a22' }, rows: [
+    '................', '.......gg.......', '.......GG.......', '.gggg..GG.......', '..G..gggg.......', '..G....GGggg....', 'ggggg..GG...ggg.',
+    '.GGG...GG....G..', '.......GG....G..', '.......GG....G..', '.......GG..ggggg', '.......GG...GGG.', '.......GG.......', '.....gggggg.....',
+    '....GGGGGGGG....', '................'] },
   hrv: { palette: { r: '#e5484f', h: '#ff9a86', R: '#a3243a', w: '#fff1e6' }, rows: [E, E,
     '...rrr....rrr...', '..rhrrr..rrrrr..', '.rhhrrrrrrrrrrr.', '.rhrrrrwrrrrrrr.', '.rrrrrrwrrrrrrR.', '.rrrrrrwrrrrrrR.',
     'wwwwwwwwwwwwwwww', '...rrrrrwrrRR...', '....rrrrwrRR....', '.....rrrrRR.....', '......rrRR......', '.......RR.......', E, E] },
-  dehydration: { palette: { b: '#8fb4cc', h: '#d5e8f4', B: '#5d7f99', c: '#3a2a1f' }, rows: [E,
-    '.......bb.......', '......bbbb......', '......bhbb......', '.....bhbbbb.....', '.....hbbbbb.....', '....bhbbcbbb....', '....hbbbbcbb....',
-    '...bhbbbcbbbb...', '...bbbbbbcbbb...', '...bbbbbcbbbB...', '...bbbbbbbbbB...', '....bbbbbbbB....', '.....BBBBBB.....', E, E] },
+  // A cracked water drop.
+  dehydration: { palette: { b: '#4a8fd6', h: '#a9d4ff', B: '#2b5a96', c: '#152238' }, rows: [
+    '................', '.......bb.......', '......bbbb......', '......bhbb......', '.....bhbbbb.....', '.....hbbbbb.....', '....bhbbbbbb....',
+    '...bhbbbbbbbb...', '..bhbbbbbcbbbb..', '..hbbbbbbbcbbb..', '..bbbbbbbcbbbB..', '..bbbbbbbbcbbB..', '...bbbbbbbbbB...', '....bbbbbbbB....',
+    '.....BBBBBB.....', '................'] },
   hangover: { palette: { g: '#a8c46a', G: '#71913a', e: '#24301a' }, rows: [E,
     '.....gggggg.....', '...gggggggggg...', '..gggggggggggg..', '..gggggggggggg..', '.gggeeggggeeggg.', '.gggggggggggggg.', '.gggggggggggggg.',
     '.ggggegegegggGg.', '.gggggegegeggGg.', '..ggggggggggGG..', '..gggggggggGGG..', '...gggggggGGG...', '.....GGGGGG.....', E, E] },
   hangxiety: { palette: { c: '#9b8fc4', C: '#6b5f99', y: '#f2c14e', b: '#6f93ff' }, rows: [E, E,
     '......ccc.......', '....ccccccc.....', '..ccccccccccc...', '.ccccccccccccc..', '.cccccccccccccc.', '.CCCCCCCCCCCCCC.',
     '......yy........', '.....yy...b.....', '....yyyy........', '......yy....b...', '.....yy.........', '.....y..........', E, E] },
-  recovery: { palette: { h: '#c3cad6', W: '#7f8a9c', b: '#9aa3b2', B: '#5d6573' }, rows: [E, E, E, E,
-    '.hh..........hh.', '.hhW........hhW.', '.hhW........hhW.', '.hhWbbbbbbbbhhW.', '.hhWBBBBBBBBhhW.', '.hhW........hhW.', '.hhW........hhW.', '.WW..........WW.', E, E, E, E] },
+  // A low battery, charging slowly.
+  recovery: { palette: { o: '#c3cad6', O: '#7f8a9c', e: '#2a2238', r: '#e5484f', R: '#a3243a', y: '#f2c14e', Y: '#fff1b0' }, rows: [
+    '................', '................', '................', '................', '........yy......', '.ooooooyyoooo...', '.orreeyyeeeeO...',
+    '.orreYyyyyeeOO..', '.orreeeyyeeeOO..', '.orreeyyeeeeOO..', '.orreyyeeeeeOO..', '.oRRyyeeeeeeO...', '.OOOyOOOOOOOO...', '...y............',
+    '................', '................'] },
   fatpause: { palette: { f: '#ff7a2e', y: '#ffd166', P: '#5a1f0c' }, rows: [E,
     '......f.........', '......ff........', '.....fff........', '.....ffff..f....', '....fffff.ff....', '...ffffffffff...', '...ffyyyyyyff...',
     '..ffyyyyyyyyff..', '..ffyyPyyPyyff..', '..ffyyPyyPyyff..', '..ffyyPyyPyyff..', '...ffyyyyyyff...', '....ffffffff....', E, E] },
@@ -36,9 +43,11 @@ export const ICONS: Record<EffectId, SpriteDef> = {
   hydrated: { palette: { g: '#cfe6ff', a: '#3d4a6b', w: '#bfe3ff', b: '#4aa3f0', h: '#a8d8ff' }, rows: [E, E,
     '...gaaaaaaaag...', '...gaaaaaaaag...', '...gwwwwwwwwg...', '...gbbbbbbbbg...', '....gbbbbbbg....', '....gbbbbbbg....', '....gbhbbbbg....',
     '....gbbbbbbg....', '....gbbbbbbg....', '.....gbbbbg.....', '.....gggggg.....', E, E, E] },
-  lined: { palette: { c: '#b0703a', b: '#f3d9a4' }, rows: [E, E,
-    '....cccccccc....', '..cccccccccccc..', '.ccbbbbbbbbbbcc.', '.cbbbbbbbbbbbbc.', '.cbbbbbbbbbbbbc.', '..cbbbbbbbbbbc..', '..cbbbbbbbbbbc..',
-    '..cbbbbbbbbbbc..', '..cbbbbbbbbbbc..', '..cbbbbbbbbbbc..', '..cccccccccccc..', E, E, E] },
+  // Well fed: a drumstick.
+  lined: { palette: { m: '#c8642e', M: '#8a3a1a', h: '#e89a5a', b: '#f3ead6', B: '#c9bfa8' }, rows: [
+    '................', '.hhhmmm.........', '.hhhmmmm........', '.hhmmmmm........', '.mmmmmmmm.......', '.mmmmmmmM.......', '.mmmmmmMM.......',
+    '..mmmmMMM.......', '....mMMMbb......', '........bbb.....', '.........bbb....', '..........bbbbb.', '...........bbbB.', '...........bb...',
+    '...........bB...', '................'] },
   pace: { palette: { w: '#c08a52', g: '#cfe6ff', a: '#3d4a6b', s: '#f2c14e' }, rows: [E,
     '..wwwwwwwwwwww..', '...gaaaaaaaag...', '...gssssssssg...', '....gssssssg....', '.....gssssg.....', '......gssg......', '.......ss.......',
     '......gssg......', '.....gassag.....', '....gaassaag....', '...gaassssaag...', '...gssssssssg...', '..wwwwwwwwwwww..', E, E] },
