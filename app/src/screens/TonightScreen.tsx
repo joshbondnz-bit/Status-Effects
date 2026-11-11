@@ -190,6 +190,10 @@ export function TonightScreen() {
         <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} night={night} region={region} zone={zone} />
       </View>
 
+      <View style={[panel, styles.card]}>
+        <View style={styles.logHead}><Text style={styles.h2}>Sleep forecast</Text><Text style={styles.faint}>Blood alcohol vs bedtime</Text></View>
+        <CurveChart night={night} />
+      </View>
 
       {settings.calories ? (
         <View style={[panel, styles.card]}>
@@ -197,11 +201,6 @@ export function TonightScreen() {
           <Rations night={night} compareWith={settings.compareWith ?? 'pizza'} />
         </View>
       ) : null}
-
-      <View style={[panel, styles.card]}>
-        <View style={styles.logHead}><Text style={styles.h2}>Tonight's curve</Text><Text style={styles.faint}>Blood alcohol (est.)</Text></View>
-        <CurveChart night={night} />
-      </View>
 
       <View style={[panel, styles.card]}>
         <View style={styles.logHead}>

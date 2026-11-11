@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { HOUR, MIN, THRESHOLDS, type Night } from '../../../engine/src/index.ts';
 import { colors, fonts } from '../theme';
+import { clock } from '../format';
 
 const W = 340, H = 190, PAD_L = 28, PAD_R = 8, PAD_T = 16, PAD_B = 22;
 
@@ -44,7 +45,15 @@ export function CurveChart({ night }: { night: Night }) {
     ];
   };
 
+  // The headline: will there still be alcohol in you when you go to bed?
+  const atBed = night.bedBac > 0.005;
+  const verdict = atBed
+    ? `About ${night.bedBac.toFixed(3)}% still in your system at your ${clock(night.bed)} bedtime. Not clear until around ${clock(night.soberAt)}.`
+    : `Clear by about ${clock(night.soberAt)}, before your ${clock(night.bed)} bedtime. Your sleep is spared the worst of it.`;
+
   return (
+    <View style={{ gap: 6 }}>
+    <Text style={[styles.verdict, { color: atBed ? colors.warn : colors.good }]}>{verdict}</Text>
     <View accessible accessibilityLabel={`Estimated blood alcohol curve. Peak ${night.peak.toFixed(3)}%, cleared around ${new Date(night.soberAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`}>
       <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
         {THRESHOLDS.slice(1).filter(th => th <= yMax).map(th => (
@@ -72,10 +81,12 @@ export function CurveChart({ night }: { night: Night }) {
       </Svg>
       <Text style={styles.key}>Solid: so far · Dotted: projected if you stop now · Gold squares: drinks</Text>
     </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12 },
   key: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, marginTop: 4 },
+  verdict: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20 },
 });
