@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import {
-  MIN, WARNING_BAC, effects, healthState, makeDrink, simulateNight, standardDrinks,
+  MIN, PHASES, WARNING_BAC, effects, healthState, makeDrink, phaseIndex, simulateNight, standardDrinks,
   type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
 import { newId, sampleNightEvents } from '../sampleNight';
@@ -22,6 +22,7 @@ import { MorningReport, findMorningNight } from '../components/MorningReport';
 import type { SavedNight } from '../storage';
 import { ICONS } from '../sprites';
 import { clock, money } from '../format';
+import { PHASE_COPY } from '../copy';
 import { useApp } from '../AppDataProvider';
 
 
@@ -50,6 +51,13 @@ export function TonightScreen() {
   // People are badly impaired well before 0 HP, so the safety check-in appears from the Wasted zone (0.15%+)
   // as well as at 0 HP, and comes back every 30 minutes while the level stays that high.
   const critical = healthState(night) === 'critical';
+  // The current zone and what it means, shown under Status (it describes the state you're in).
+  const zoneK = night.bacNow >= 0.25 ? 6 : phaseIndex(night.bacNow);
+  const zone = {
+    name: critical ? 'Critical' : PHASES[zoneK].name,
+    text: PHASE_COPY[zoneK],
+    color: critical || zoneK >= 5 ? colors.bad : zoneK >= 3 ? colors.warn : colors.ink,
+  };
   const highRange = critical || night.bacNow >= WARNING_BAC;
   const ack = data.tonight.safetyAckAt;
   const showSafety = highRange && (ack == null || now - ack > 30 * MIN);
@@ -159,7 +167,7 @@ export function TonightScreen() {
         ) : null}
 
         {/* Cause, then effect: what you've had (and the buttons to log more) sits above what it's doing to you. */}
-        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} night={night} region={region} />
+        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} night={night} region={region} zone={zone} />
       </View>
 
 

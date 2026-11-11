@@ -94,7 +94,10 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
   );
 }
 
-export function StatusTray({ debuffs, buffs, night, region }: { debuffs: Effect[]; buffs: Effect[]; night: Night; region: RegionCode }) {
+/** The current zone, e.g. "Tipsy" and what it means, shown under the Status heading. */
+export interface ZoneInfo { name: string; text: string; color: string }
+
+export function StatusTray({ debuffs, buffs, night, region, zone }: { debuffs: Effect[]; buffs: Effect[]; night: Night; region: RegionCode; zone?: ZoneInfo }) {
   const now = night.now;
   const list = [...order(debuffs, now), ...order(buffs, now)];
   const [openId, setOpenId] = useState<string | null>(null);
@@ -113,6 +116,7 @@ export function StatusTray({ debuffs, buffs, night, region }: { debuffs: Effect[
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>Status</Text>
+      {zone ? <Text style={styles.zoneText}><Text style={[styles.zoneName, { color: zone.color }]}>{zone.name}. </Text>{zone.text}</Text> : null}
       {list.length ? (
         <View style={styles.tray}>
           {list.map((e, i) => (
@@ -172,6 +176,8 @@ export function StatusTray({ debuffs, buffs, night, region }: { debuffs: Effect[
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
   title: { fontFamily: fonts.display, fontSize: 30, letterSpacing: 0.4, color: colors.ink },
+  zoneText: { fontFamily: fonts.body, fontSize: 15, color: colors.ink, lineHeight: 21, marginBottom: 2 },
+  zoneName: { fontFamily: fonts.bodyBold },
   tray: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8, columnGap: 6 },
   slotWrap: { flexDirection: 'row', gap: 6 },
   sep: { width: 2, height: SLOT, backgroundColor: colors.edgeHi, marginHorizontal: 3 },

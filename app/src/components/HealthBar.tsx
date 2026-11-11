@@ -9,7 +9,6 @@ import {
 import { colors, fonts } from '../theme';
 import { HEART } from '../sprites';
 import { PixelSprite } from './PixelSprite';
-import { PHASE_COPY } from '../copy';
 import { clock } from '../format';
 import { useReduceMotion } from '../useReduceMotion';
 
@@ -303,8 +302,6 @@ export function HealthBar({ night }: { night: Night }) {
         <Text style={styles.rateNote}>Slowed by food: about {Math.round(emptyStomachLoss)} HP on an empty stomach.</Text>
       ) : null}
       {reduceMotion && direction ? <Text style={styles.motionNote}>Animations are off because Reduce Motion is on in your phone's settings.</Text> : null}
-
-      <Text style={styles.desc}>{PHASE_COPY[k]}</Text>
     </View>
   );
 }
@@ -328,5 +325,4 @@ const styles = StyleSheet.create({
   rateSub: { fontFamily: fonts.body, fontSize: 13.5, color: colors.inkDim, lineHeight: 19 },
   rateNote: { fontFamily: fonts.body, fontSize: 13, color: colors.good },
   motionNote: { fontFamily: fonts.body, fontSize: 12, color: colors.inkFaint },
-  desc: { fontFamily: fonts.body, fontSize: 15, color: colors.ink, lineHeight: 21 },
 });
