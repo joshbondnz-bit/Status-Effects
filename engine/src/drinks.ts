@@ -18,6 +18,7 @@ export const REGIONS: Record<RegionCode, Region> = {
   us: { gramsPerStandardDrink: 14, unitLabel: 'standard drinks' },
   uk: { gramsPerStandardDrink: 8, unitLabel: 'units' },
   au: { gramsPerStandardDrink: 10, unitLabel: 'standard drinks' },
+  nz: { gramsPerStandardDrink: 10, unitLabel: 'standard drinks' },
   eu: { gramsPerStandardDrink: 10, unitLabel: 'standard drinks' },
 };
 

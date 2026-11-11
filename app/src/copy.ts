@@ -2,15 +2,41 @@
 import { REGIONS, standardDrinks, type Effect, type EffectId, type Night, type RegionCode } from '../../engine/src/index.ts';
 import { clock, duration } from './format';
 
-export const PHASE_COPY = [
-  'No meaningful alcohol in your blood.',
-  'Relaxed and chattier. If this is still in your system at bedtime, your sleep takes a hit.',
-  'Judgment and coordination are slipping and risk-taking goes up. At 0.05% most Canadian provinces issue roadside suspensions.',
-  'Over the 0.08% criminal driving limit in Canada and the US. Balance, reaction time and speech are impaired.',
-  'A hangover is very likely tomorrow, along with a dip in mood and focus.',
-  'Memory gaps and vomiting are likely. Switch to water and stay with people you trust.',
-  'Risk of alcohol poisoning. Stop drinking and make sure someone sober is with you.',
-];
+/** Driving limits by region, for the zone descriptions (Buzzed, Tipsy, Drunk). */
+const DRIVING: Record<RegionCode, { buzzed: string; tipsy: string; drunk: string }> = {
+  ca: { buzzed: 'Already over the zero limit for new and young drivers in most provinces.',
+    tipsy: 'At 0.05% most Canadian provinces issue roadside suspensions.',
+    drunk: 'Over the 0.08% criminal driving limit in Canada.' },
+  us: { buzzed: 'Under-21 drivers face zero-tolerance limits in every state.',
+    tipsy: "Driving skills are already impaired, and Utah's limit is 0.05%.",
+    drunk: 'Over the 0.08% driving limit in every US state.' },
+  uk: { buzzed: 'Driving skills start to slip well before the legal limit.',
+    tipsy: "At 0.05% you're over Scotland's driving limit.",
+    drunk: 'Over the 0.08% driving limit in England, Wales and Northern Ireland.' },
+  au: { buzzed: 'Learner, provisional and some professional drivers must be at zero.',
+    tipsy: "At 0.05% you're over Australia's driving limit.",
+    drunk: "Well over Australia's 0.05% driving limit." },
+  nz: { buzzed: 'Drivers under 20 must be at zero, so this is already over their limit.',
+    tipsy: "At 0.05% you're over New Zealand's driving limit.",
+    drunk: "Well over New Zealand's 0.05% driving limit." },
+  eu: { buzzed: 'New and professional drivers in much of Europe have a 0.02% limit or lower.',
+    tipsy: "At 0.05% you're over the driving limit in most of Europe.",
+    drunk: 'Over the driving limit everywhere in Europe.' },
+};
+
+/** What each zone (Fresh … Danger) means, with the driving limits for your region. */
+export function phaseCopy(k: number, region: RegionCode): string {
+  const d = DRIVING[region];
+  return [
+    'No meaningful alcohol in your blood.',
+    `Relaxed and chattier. ${d.buzzed} If this is still in your system at bedtime, your sleep takes a hit.`,
+    `Judgment and coordination are slipping and risk-taking goes up. ${d.tipsy}`,
+    `${d.drunk} Balance, reaction time and speech are impaired.`,
+    'A hangover is very likely tomorrow, along with a dip in mood and focus.',
+    'Memory gaps and vomiting are likely. Switch to water and stay with people you trust.',
+    'Risk of alcohol poisoning. Stop drinking and make sure someone sober is with you.',
+  ][k];
+}
 
 export const EFFECT_NAMES: Record<EffectId, string> = {
   judgment: 'Impaired judgment', sleep: 'Impaired sleep', hrv: 'HRV drain', dehydration: 'Dehydration',

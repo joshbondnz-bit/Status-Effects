@@ -70,7 +70,7 @@ export function RoutineFields({ profile, onChange }: { profile: Profile; onChang
         <Segmented<RegionCode> label="Guidelines" value={profile.region} onChange={region => onChange({ region })}
           options={[
             { value: 'ca', label: 'Canada' }, { value: 'us', label: 'US' }, { value: 'uk', label: 'UK' },
-            { value: 'au', label: 'Australia' }, { value: 'eu', label: 'Europe' },
+            { value: 'au', label: 'Australia' }, { value: 'nz', label: 'NZ' }, { value: 'eu', label: 'Europe' },
           ]} />
       </Field>
     </View>

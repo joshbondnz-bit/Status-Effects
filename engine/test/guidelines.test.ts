@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canadaRisk, weeklyGuidance, auditCScore, auditCPositive, REGIONS } from '../src/index.ts';
+import { canadaRisk, weeklyGuidance, auditCScore, auditCPositive, standardDrinks, REGIONS } from '../src/index.ts';
 
 test("Canada's continuum: ≤2 low, 3–6 moderate, 7+ increasingly high", () => {
   assert.equal(canadaRisk(0), 'low');
@@ -30,4 +30,13 @@ test('AUDIT-C scoring and cut-offs', () => {
   assert.equal(auditCPositive(3, 'ca', 'm'), false);
   assert.equal(auditCPositive(3, 'ca', 'f'), true);
   assert.equal(auditCPositive(4, 'uk', 'm'), false);
+});
+
+test('New Zealand: 10 a week for women, 15 for men, with a per-occasion limit', () => {
+  const f = weeklyGuidance('nz', 'f'), m = weeklyGuidance('nz', 'm');
+  assert.equal(f.weeklyGrams, 100);
+  assert.equal(m.weeklyGrams, 150);
+  assert.equal(f.perOccasionDrinks, 4);
+  assert.equal(m.perOccasionDrinks, 5);
+  assert.equal(standardDrinks(10, 'nz'), 1);
 });

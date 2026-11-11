@@ -22,7 +22,7 @@ import { MorningReport, findMorningNight } from '../components/MorningReport';
 import type { SavedNight } from '../storage';
 import { ICONS } from '../sprites';
 import { clock, money } from '../format';
-import { PHASE_COPY } from '../copy';
+import { phaseCopy } from '../copy';
 import { useApp } from '../AppDataProvider';
 
 
@@ -77,7 +77,7 @@ export function TonightScreen() {
   const zoneK = night.bacNow >= 0.25 ? 6 : phaseIndex(night.bacNow);
   const zone = {
     name: critical ? 'Critical' : PHASES[zoneK].name,
-    text: PHASE_COPY[zoneK],
+    text: phaseCopy(zoneK, region),
     color: critical || zoneK >= 5 ? colors.bad : zoneK >= 3 ? colors.warn : colors.ink,
   };
   const highRange = critical || night.bacNow >= WARNING_BAC;
@@ -188,6 +188,7 @@ export function TonightScreen() {
           <View style={styles.confirm} accessibilityLiveRegion="polite">
             <Text style={styles.confirmTitle}>Call it for tonight?</Text>
             <Text style={styles.confirmTxt}>Stopping before bedtime earns the Called it buff: less alcohol in your system at bedtime means better sleep. Tonight's log is kept, and you can tap Resume if you change your mind.</Text>
+            <Text style={styles.confirmTxt}><Text style={styles.fineBold}>Getting home:</Text> take a taxi, rideshare or transit, or ride with someone who hasn't been drinking. Never drive.</Text>
             <View style={styles.actions}>
               <Button label="Yes, call it" variant="primary" onPress={() => { setEnded(currentTime()); setConfirmEnd(false); }} />
               <Button label="Not yet" onPress={() => setConfirmEnd(false)} />
@@ -226,7 +227,7 @@ export function TonightScreen() {
         {data && data.past.length ? <Text style={styles.faint}>{data.past.length} earlier night{data.past.length === 1 ? '' : 's'} saved for History.</Text> : null}
       </View>
 
-      <Text style={styles.fine}>Estimates only. Not a breathalyser and never a driving clearance. Your log is saved on this device only.</Text>
+      <Text style={styles.fine}><Text style={styles.fineBold}>Never drink and drive.</Text> Every number here is an estimate, not a breathalyser reading or a driving clearance. Your log is saved on this device only.</Text>
       {events.length === 0 ? (
         <Pressable onPress={loadSample} accessibilityRole="button"><Text style={styles.link}>Load a sample night</Text></Pressable>
       ) : null}
@@ -277,5 +278,6 @@ const useStyles = makeStyles((colors: Palette) => ({
   dangerTxt: { fontFamily: fonts.body, fontSize: 15, color: '#cfe3ef', lineHeight: 21 },
   dangerLink: { fontFamily: fonts.bodyBold, fontSize: 15, color: '#9fd4f0', textDecorationLine: 'underline', marginTop: 4 },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, textAlign: 'center' },
+  fineBold: { fontFamily: fonts.bodyBold, color: colors.ink },
   link: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana, textAlign: 'center', textDecorationLine: 'underline' },
 }));

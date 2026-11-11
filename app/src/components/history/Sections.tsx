@@ -238,6 +238,7 @@ const HELP: Record<RegionCode, string> = {
   uk: 'Drinkline is free and confidential: 0300 123 1110.',
   us: 'The SAMHSA National Helpline is free, confidential and open 24/7: 1-800-662-4357.',
   au: 'The National Alcohol and Other Drug Hotline is free and confidential: 1800 250 015.',
+  nz: 'The Alcohol Drug Helpline is free, confidential and open 24/7: call 0800 787 797 or text 8681.',
   eu: 'Your GP or local health service can point you to support near you.',
 };
 

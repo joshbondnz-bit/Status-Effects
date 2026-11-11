@@ -72,6 +72,8 @@ export function MorningReport({ night, profile, now, showCalories, onFeel, onClo
       </View>
 
       {s.critical ? <Text style={styles.crit}>You reached critical last night. Your body is still under strain, so go easy today.</Text> : null}
+      {/* Morning-after driving: warn while alcohol is still in the blood. Never say it's safe to drive. */}
+      {sim.bacNow > 0 ? <Text style={styles.crit}>There's still alcohol in your blood this morning. Don't drive, even if you feel fine.</Text> : null}
       {running.length ? (
         <Text style={styles.body}>
           <Text style={styles.bold}>Still running: </Text>

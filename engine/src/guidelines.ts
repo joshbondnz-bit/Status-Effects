@@ -21,6 +21,9 @@ export function weeklyGuidance(region: RegionCode, sex: Sex): WeeklyGuidance {
     case 'uk': return { weeklyGrams: 14 * g, source: 'UK Chief Medical Officers (2016)' };
     case 'us': return { weeklyGrams: (sex === 'f' ? 7 : 14) * g, source: 'Dietary Guidelines for Americans' };
     case 'au': return { weeklyGrams: 10 * g, source: 'NHMRC Australian guidelines (2020)' };
+    // Health NZ low-risk advice: 10 a week and 2 a day for women, 15 and 3 for men, no more than 4 or 5 on any one
+    // occasion, and 2 alcohol-free days a week. Dates from 2011; Health NZ has been reviewing it since 2024.
+    case 'nz': return { weeklyGrams: (sex === 'f' ? 10 : 15) * g, perOccasionDrinks: sex === 'f' ? 4 : 5, source: "Health NZ low-risk drinking advice (under review since 2024)" };
     case 'eu': return { weeklyGrams: 10 * g, source: 'Varies by country' };
   }
 }

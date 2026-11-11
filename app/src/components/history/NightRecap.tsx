@@ -152,13 +152,18 @@ function RecapBody({ night, profile, now, showCalories, compareWith }: {
 function Ring({ hp, zone, critical }: { hp: number; zone: string; critical: boolean }) {
   const colors = useColors();
   const styles = useStyles(colors);
-  // Drains clockwise from the top like the main HP ring: the filled arc ends at 12 o'clock.
-  const R = 46, C = 2 * Math.PI * R;
+  // Drains clockwise from the top like the main HP ring: the filled arc runs from the drained point round to
+  // 12 o'clock. Drawn as a plain arc path (no transforms, which the web build warns about).
+  const R = 46;
+  const pt = (deg: number) => `${(56 + R * Math.sin(deg * Math.PI / 180)).toFixed(2)} ${(56 - R * Math.cos(deg * Math.PI / 180)).toFixed(2)}`;
+  const from = 360 * (1 - hp / 100);
+  const arc = `M ${pt(from)} A ${R} ${R} 0 ${360 - from > 180 ? 1 : 0} 1 ${pt(359.99)}`;
   return (
     <View style={styles.ring} accessible accessibilityLabel={`Lowest HP ${hp} of 100, ${zone}`}>
       <Svg width={112} height={112} style={{ position: 'absolute' }}>
         <Circle cx={56} cy={56} r={R} fill="none" stroke={colors.track2} strokeWidth={10} />
-        {hp > 0 ? <Circle cx={56} cy={56} r={R} fill="none" stroke={colors.hp} strokeWidth={10} strokeDasharray={`${C * hp / 100} ${C}`} rotation={-90 + 360 * (1 - hp / 100)} origin="56,56" /> : null}
+        {hp >= 100 ? <Circle cx={56} cy={56} r={R} fill="none" stroke={colors.hp} strokeWidth={10} />
+          : hp > 0 ? <Path d={arc} fill="none" stroke={colors.hp} strokeWidth={10} /> : null}
         <Circle cx={56} cy={56} r={R + 6} fill="none" stroke={colors.edge} strokeWidth={2} />
         <Circle cx={56} cy={56} r={R - 6} fill="none" stroke={colors.edge} strokeWidth={2} />
       </Svg>

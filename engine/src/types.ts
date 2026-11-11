@@ -2,7 +2,7 @@
 // Times are milliseconds since the Unix epoch (what Date.now() returns).
 
 export type Sex = 'm' | 'f';
-export type RegionCode = 'ca' | 'us' | 'uk' | 'au' | 'eu';
+export type RegionCode = 'ca' | 'us' | 'uk' | 'au' | 'nz' | 'eu';
 export type DrinkCategory = 'beer' | 'wine' | 'spirits' | 'mixed';
 
 /** The user's "character sheet". */

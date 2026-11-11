@@ -5,15 +5,17 @@ import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { CharacterFields, RoutineFields } from '../components/ProfileFields';
 import { Field, PixelButton, Segmented, ToggleRow } from '../components/Form';
-import type { FoodCompare, ThemeChoice } from '../storage';
+import { clearHistory, type FoodCompare, type ThemeChoice } from '../storage';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
 export function OptionsScreen() {
   const colors = useColors();
   const styles = useStyles(colors);
   const { panel } = panelStyles(colors);
-  const { data, update } = useApp();
+  const { data, update, currentTime } = useApp();
   const [confirmReplay, setConfirmReplay] = useState(false);
+  const [clearStep, setClearStep] = useState<0 | 1 | 2>(0);
+  const [cleared, setCleared] = useState(false);
 
   // Every change saves immediately. Editing your stats also counts as finishing setup.
   const setProfile = (patch: Partial<Profile>) =>
@@ -77,7 +79,37 @@ export function OptionsScreen() {
         )}
       </View>
 
-      <Text style={styles.fine}>Everything is saved on this device only.</Text>
+      {/* Clearing history takes two confirmations, because there's no backup and no undo. */}
+      <View style={[panel, styles.card]}>
+        <Text style={styles.h2}>Your data</Text>
+        {clearStep === 0 ? (
+          <>
+            <Text style={styles.lead}>Everything is saved on this device only.</Text>
+            {cleared ? <Text style={styles.done}>History cleared. You're starting fresh from today.</Text> : null}
+            <PixelButton label="Clear all history" onPress={() => { setClearStep(1); setCleared(false); }} />
+          </>
+        ) : clearStep === 1 ? (
+          <View style={{ gap: 10 }}>
+            <Text style={styles.warnTitle}>Clear all history?</Text>
+            <Text style={styles.lead}>This deletes every night you've logged (tonight too), your morning check-ins, your drinking check-in score, and your streaks and achievements.</Text>
+            <Text style={styles.lead}>Your character, settings and My drinks are kept.</Text>
+            <View style={styles.row}>
+              <PixelButton label="Continue" flex={1} onPress={() => setClearStep(2)} />
+              <PixelButton label="Cancel" flex={1} onPress={() => setClearStep(0)} />
+            </View>
+          </View>
+        ) : (
+          <View style={{ gap: 10 }}>
+            <Text style={styles.warnTitle}>Last check: this can't be undone</Text>
+            <Text style={styles.lead}>There's no backup. Your history only lives on this phone, so once it's gone it's gone.</Text>
+            <View style={styles.row}>
+              <PixelButton label="Delete everything" primary flex={1}
+                onPress={() => { update(d => clearHistory(d, currentTime())); setClearStep(0); setCleared(true); }} />
+              <PixelButton label="Keep my history" flex={1} onPress={() => setClearStep(0)} />
+            </View>
+          </View>
+        )}
+      </View>
     </Screen>
   );
 }
@@ -91,4 +123,6 @@ const useStyles = makeStyles((colors: Palette) => ({
   nudge: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, backgroundColor: colors.nudgeBg, borderWidth: 2, borderColor: colors.nudgeEdge, padding: 12, lineHeight: 20 },
   row: { flexDirection: 'row', gap: 8 },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, textAlign: 'center' },
+  warnTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.bad },
+  done: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.good },
 }));

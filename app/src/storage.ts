@@ -104,6 +104,14 @@ export function newNight(): SavedNight {
   return { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`, events: [], endedAt: null };
 }
 
+/**
+ * Wipe the drinking history: every night (tonight included), morning check-ins, the AUDIT-C score, and the
+ * streak and achievement counts (tracking starts again from `now`). Keeps the character, settings and My drinks.
+ */
+export function clearHistory(d: AppData, now: number): AppData {
+  return { ...d, tonight: newNight(), past: [], trackingSince: now, audit: undefined };
+}
+
 export function defaultData(): AppData {
   return { version: DATA_VERSION, setup: 'pending', profile: DEFAULT_PROFILE, settings: DEFAULT_SETTINGS, tonight: newNight(), past: [], trackingSince: Date.now() };
 }

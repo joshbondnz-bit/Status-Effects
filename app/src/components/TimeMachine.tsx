@@ -3,7 +3,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { simulateNight } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
-import { newNight } from '../storage';
+import { clearHistory, newNight } from '../storage';
 import { sampleNightEvents } from '../sampleNight';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
 
@@ -42,6 +42,8 @@ export function TimeMachine() {
   };
   const emptyNight = () => { update(d => ({ ...d, tonight: newNight() })); tick(); };
   const replaySetup = () => update(d => ({ ...d, setup: 'pending' }));
+  // Dev only, so no confirmation. The real button in Options asks twice.
+  const wipeHistory = () => { update(d => clearHistory(d, currentTime())); tick(); };
 
   return (
     <View style={styles.box}>
@@ -65,6 +67,7 @@ export function TimeMachine() {
         <Btn label="Load sample night" onPress={loadSample} />
         <Btn label="Start an empty night" onPress={emptyNight} />
         <Btn label="Replay first-run setup" onPress={replaySetup} />
+        <Btn label="Clear all history" onPress={wipeHistory} />
       </View>
       <Text style={styles.note}>60× = a minute per second. Once wake-up passes and the alcohol has cleared, tonight is filed into History, just like real life. Loading a sample or empty night replaces tonight's log.</Text>
     </View>

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RegionCode } from '../../../engine/src/index.ts';
 import { fonts } from '../theme';
 
-export const EMERGENCY: Record<RegionCode, string> = { ca: '911', us: '911', uk: '999', au: '000', eu: '112' };
+export const EMERGENCY: Record<RegionCode, string> = { ca: '911', us: '911', uk: '999', au: '000', nz: '111', eu: '112' };
 
 const FRIEND_MESSAGE = "I've had a lot to drink and I'm not feeling safe on my own. Can you come and be with me, or call me?";
 
