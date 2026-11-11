@@ -2,10 +2,11 @@ import type { ReactNode } from 'react';
 import { ScrollView, View, type ScrollViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors, makeStyles, type Palette } from '../theme';
+import { Sky } from './Sky';
 
 /**
  * A scrolling screen that starts below the phone's status bar (clock, signal, notch),
- * so content and sticky headers never slide underneath it.
+ * so content and sticky headers never slide underneath it. The pixel sky sits behind it all.
  */
 export function Screen({ children, stickyHeaderIndices, keyboardShouldPersistTaps }: {
   children: ReactNode;
@@ -17,6 +18,7 @@ export function Screen({ children, stickyHeaderIndices, keyboardShouldPersistTap
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <Sky />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
