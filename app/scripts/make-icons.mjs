@@ -93,7 +93,44 @@ function png(size, rgba, alpha) {
 const save = (name, size, img, alpha) => { const b = png(size, img, alpha); writeFileSync(`assets/${name}.png`, b); console.log(`assets/${name}.png ${size}px ${(b.length / 1024).toFixed(0)} KB`); };
 
 // iOS icon: no transparency allowed. Heart drawn 2× on a 48-cell grid, leaving room for the rounded corners.
-save('icon', 1024, draw(1024, 48, { bg: true, heartScale: 2 }), false);
+// iOS icon: the heart with a sword behind it (hilt bottom right), on a 64-cell night sky. No transparency allowed.
+// Same layout as the icon options prototype ("D · One sword").
+function emblem(size) {
+  const N = 64, cell = size / N;
+  const grid = Array.from({ length: N }, () => Array(N));
+  const stars = [[6, 6], [52, 5], [41, 11], [11, 50], [56, 44], [24, 3], [3, 30], [60, 26], [33, 58]];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = (y / (N - 1)) * 4, st = Math.floor(u) + (u % 1 > BAYER[y & 3][x & 3] ? 1 : 0);
+    grid[y][x] = mix(hex('#07060f'), hex('#2a1c33'), Math.min(st, 4) / 4);
+  }
+  for (const [x, y] of stars) grid[y][x] = mix(grid[y][x], hex('#fff3d6'), 0.7);
+  // Draw a text-grid sprite at (ox, oy), k cells per pixel, with a dark outline.
+  const put = (rows, pal, ox, oy, k) => {
+    const H = rows.length, W = rows[0].length, on = (x, y) => y >= 0 && y < H && x >= 0 && x < W && rows[y][x] !== '.';
+    for (let y = -1; y <= H; y++) for (let x = -1; x <= W; x++) {
+      const c = on(x, y) ? pal[rows[y][x]] : [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => on(x + dx, y + dy)) ? PAL.O : null;
+      if (!c) continue;
+      for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) {
+        const gx = ox + x * k + i, gy = oy + y * k + j;
+        if (gx >= 0 && gy >= 0 && gx < N && gy < N) grid[gy][gx] = c;
+      }
+    }
+  };
+  const SWORD = ['....................', '.................ws.', '................wsS.', '...............wsS..', '..............wsS...', '.............wsS....',
+    '............wsS.....', '...........wsS......', '..........wsS.......', '.........wsS........', '...g....wsS.........', '....g..wsS..........',
+    '.....gGsS...........', '......Gg............', '.....h..G...........', '....h....G..........', '...h................', '..p.................',
+    '.pp.................', '....................'].map(r => [...r].reverse().join('')); // flipped: hilt bottom right
+  const SPAL = { s: hex('#d8dde8'), S: hex('#8f97ab'), w: hex('#ffffff'), g: hex('#f2c14e'), G: hex('#a87a22'), h: hex('#7a4a22'), p: hex('#e5484f') };
+  put(SWORD, SPAL, 3, 3, 3);
+  put(HEART, PAL, 15, 18, 2);
+  const px = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const c = grid[Math.floor(y / cell)][Math.floor(x / cell)], k = (y * size + x) * 4;
+    px[k] = c[0]; px[k + 1] = c[1]; px[k + 2] = c[2]; px[k + 3] = 255;
+  }
+  return px;
+}
+save('icon', 1024, emblem(1024), false);
 // Splash: the heart alone on transparent (the splash background colour is set in app.json).
 save('splash-icon', 1024, draw(1024, 32, { bg: false, heartScale: 1 }), true);
 // Android adaptive icon: heart in the middle (safe zone), sky as the background layer, white heart for themed icons.
