@@ -56,6 +56,10 @@ export function LogDrinkSheet(props: Props) {
   const [form, setForm] = useState<Form>(null);
   // The drink type whose sizes are showing (beer, wine and spirits tabs).
   const [openType, setOpenType] = useState<string | null>(null);
+  // The open type's strength if you've changed it (null = its usual strength).
+  const [abvAdj, setAbvAdj] = useState<number | null>(null);
+  const openTypeAs = (name: string | null) => { setOpenType(name); setAbvAdj(null); };
+  const typeFor = (t: DrinkType): DrinkType => (t.name === openType && abvAdj != null ? { ...t, abv: abvAdj } : t);
   // Building a mixed drink from spirits and a mixer (Mixed tab).
   const [building, setBuilding] = useState(false);
   // When the drink was had: 0 = now, or minutes ago (for a drink you forgot to log), in 10-minute steps.
@@ -71,7 +75,7 @@ export function LogDrinkSheet(props: Props) {
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
     setWasVisible(visible);
-    if (visible) { setForm(null); setRestock(null); setOpenType(null); setBuilding(false); setBack(0); setTab(myDrinks.length ? 'mine' : 'beer'); }
+    if (visible) { setForm(null); setRestock(null); setOpenType(null); setAbvAdj(null); setBuilding(false); setBack(0); setTab(myDrinks.length ? 'mine' : 'beer'); }
   }
 
   const types = tab === 'mine' ? null : DRINK_TYPES[tab];
@@ -79,14 +83,15 @@ export function LogDrinkSheet(props: Props) {
   const rows: { key: string; spec: DrinkSpec; saved?: SavedDrink }[] = tab === 'mine'
     ? myDrinks.map(d => ({ key: d.id, spec: savedToSpec(d), saved: d }))
     : tab === 'mixed' ? PRESETS.mixed.map((p, i) => ({ key: tab + i, spec: p })) : [];
-  const openSpec = types?.find(t => t.name === openType);
+  const found = types?.find(t => t.name === openType);
+  const openSpec = found ? typeFor(found) : undefined;
 
   const preview = (spec: DrinkSpec) => previewDrink(profile, events, now, spec, now - back * 60_000);
   const minute = Math.floor(now / 60_000); // previews refresh once a minute, not on every tick
   const previews = useMemo(() => (visible && !form ? rows.map(r => preview(r.spec)) : []),
     [visible, form, tab, myDrinks, events, profile, minute, back]); // eslint-disable-line react-hooks/exhaustive-deps
   const sizePreviews = useMemo(() => (visible && !form && openSpec ? sizes.map(sz => preview(withSize(openSpec, sz))) : []),
-    [visible, form, openSpec, sizes, events, profile, minute, back]); // eslint-disable-line react-hooks/exhaustive-deps
+    [visible, form, openType, abvAdj, sizes, events, profile, minute, back]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const close = () => { setForm(null); setRestock(null); setBuilding(false); onClose(); };
 
@@ -141,7 +146,7 @@ export function LogDrinkSheet(props: Props) {
             <>
               <View style={styles.tabs}>
                 {myDrinks.length ? <TabBtn label="My drinks" on={tab === 'mine'} onPress={() => setTab('mine')} /> : null}
-                {TABS.map(t => <TabBtn key={t.key} label={t.label} on={tab === t.key} onPress={() => { setTab(t.key); setOpenType(null); }} />)}
+                {TABS.map(t => <TabBtn key={t.key} label={t.label} on={tab === t.key} onPress={() => { setTab(t.key); openTypeAs(null); }} />)}
               </View>
               <Text style={styles.note}>Red numbers are the HP each drink would take once it's absorbed.</Text>
               <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 6 }}>
@@ -153,10 +158,10 @@ export function LogDrinkSheet(props: Props) {
                 ) : null}
                 {tab === 'mixed' ? <Text style={styles.group}>READY TO DRINK</Text> : null}
                 {types?.map(t => (
-                  <TypeRow key={t.name} t={t} open={openType === t.name} sizes={sizes} previews={openType === t.name ? sizePreviews : []} g={g}
-                    showCalories={showCalories} onToggle={() => setOpenType(openType === t.name ? null : t.name)}
-                    onPick={sz => pick(withSize(t, sz))}
-                    onEdit={() => setForm({ mode: 'new', initial: { name: t.name, size: sizes[0]?.label, ml: sizes[0]?.ml, abv: t.abv, category: t.category } })} />
+                  <TypeRow key={t.name} t={typeFor(t)} usual={t.abv} onAbv={setAbvAdj} open={openType === t.name} sizes={sizes} previews={openType === t.name ? sizePreviews : []} g={g}
+                    showCalories={showCalories} onToggle={() => openTypeAs(openType === t.name ? null : t.name)}
+                    onPick={sz => pick(withSize(typeFor(t), sz))}
+                    onEdit={() => setForm({ mode: 'new', initial: { name: t.name, size: sizes[0]?.label, ml: sizes[0]?.ml, abv: typeFor(t).abv, category: t.category } })} />
                 ))}
                 {tab === 'mixed' ? <Text style={styles.group}>COCKTAILS</Text> : null}
                 {rows.map((r, i) => (
@@ -212,7 +217,9 @@ function TabBtn({ label, on, onPress }: { label: string; on: boolean; onPress: (
 }
 
 /** A drink type (Lager 5%). Tapping it shows its sizes, each with the HP it would cost; tapping a size logs it. */
-function TypeRow({ t, open, sizes, previews, g, showCalories, onToggle, onPick, onEdit }: {
+function TypeRow({ t, usual, onAbv, open, sizes, previews, g, showCalories, onToggle, onPick, onEdit }: {
+  /** Its usual strength, and a way to change it for this drink. */
+  usual: number; onAbv: (abv: number) => void;
   t: DrinkType; open: boolean; sizes: { label: string; ml: number }[]; previews: DrinkPreview[]; g: number;
   showCalories: boolean; onToggle: () => void; onPick: (s: { label: string; ml: number }) => void; onEdit: () => void;
 }) {
@@ -233,6 +240,19 @@ function TypeRow({ t, open, sizes, previews, g, showCalories, onToggle, onPick, 
           <Text style={styles.editTxt}>✎</Text>
         </Pressable>
       </View>
+      {open ? (
+        <View style={styles.strength}>
+          <Text style={styles.strengthLabel}>STRENGTH</Text>
+          <Pressable onPress={() => onAbv(Math.max(0.5, Math.round((t.abv - 0.5) * 2) / 2))} style={styles.step} accessibilityRole="button" accessibilityLabel={`Weaker than ${t.abv}%`} hitSlop={4}>
+            <Text style={styles.stepTxt}>−</Text>
+          </Pressable>
+          <Text style={[styles.strengthVal, t.abv !== usual && { color: colors.gold }]} accessibilityLiveRegion="polite">{t.abv}%</Text>
+          <Pressable onPress={() => onAbv(Math.min(70, Math.round((t.abv + 0.5) * 2) / 2))} style={styles.step} accessibilityRole="button" accessibilityLabel={`Stronger than ${t.abv}%`} hitSlop={4}>
+            <Text style={styles.stepTxt}>+</Text>
+          </Pressable>
+          {t.abv !== usual ? <Pressable onPress={() => onAbv(usual)} hitSlop={6} accessibilityRole="button"><Text style={styles.reset}>Usual {usual}%</Text></Pressable> : null}
+        </View>
+      ) : null}
       {open ? (
         <View style={styles.sizes}>
           {sizes.map((sz, i) => {
@@ -311,6 +331,12 @@ const useStyles = makeStyles((colors: Palette) => ({
   edit: { width: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 2, borderLeftColor: colors.edge },
   editTxt: { fontSize: 17, color: colors.inkDim },
   typeOpen: { borderColor: colors.gold },
+  strength: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 8, paddingBottom: 8 },
+  strengthLabel: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 1, color: colors.inkFaint, marginRight: 2 },
+  strengthVal: { fontFamily: fonts.num, fontSize: 24, color: colors.ink, minWidth: 54, textAlign: 'center' },
+  step: { width: 36, height: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edge },
+  stepTxt: { fontFamily: fonts.bodyBold, fontSize: 20, lineHeight: 22, color: colors.ink },
+  reset: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: colors.mana, textDecorationLine: 'underline' },
   when: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, padding: 6 },
   whenBack: { borderColor: colors.gold },
   whenBtn: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edge },

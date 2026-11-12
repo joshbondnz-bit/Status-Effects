@@ -43,7 +43,8 @@ function Stepper({ value, onChange, step, max, label, suffix, prefix, placeholde
   return (
     <View style={styles.inputRow}>
       <Pressable onPress={() => bump(-1)} style={styles.step} accessibilityRole="button" accessibilityLabel={`${label}: less`} hitSlop={4}><Text style={styles.stepTxt}>−</Text></Pressable>
-      <NumText value={value} onChange={onChange} label={label} suffix={suffix} prefix={prefix} placeholder={placeholder} />
+      {/* flex + minWidth 0 keeps the box between the buttons; without it the box takes the whole row on a phone. */}
+      <View style={{ flex: 1, minWidth: 0 }}><NumText value={value} onChange={onChange} label={label} suffix={suffix} prefix={prefix} placeholder={placeholder} /></View>
       <Pressable onPress={() => bump(1)} style={styles.step} accessibilityRole="button" accessibilityLabel={`${label}: more`} hitSlop={4}><Text style={styles.stepTxt}>+</Text></Pressable>
     </View>
   );
