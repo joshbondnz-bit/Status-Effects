@@ -1,4 +1,4 @@
-// The Sleep forecast: blood alcohol over the night. Solid so far, dotted for the projection, with zone bands,
+// The Alcohol forecast: blood alcohol over the night. Solid so far, dotted for the projection, with zone bands,
 // the peak and "clear" moments labelled, what you had along the bottom, drag-to-read, and a "what if one more?" ghost.
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -134,7 +134,7 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
       {ghost ? <Text style={[styles.verdict, { color: colors.mana }]}>{ghostVerdict}</Text> : null}
 
       <View onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}
-        accessible accessibilityLabel={`Sleep forecast. Peak ${pct(night.peak)} around ${clock(night.peakAt)}. ${verdict}`}>
+        accessible accessibilityLabel={`Alcohol forecast. Peak ${pct(night.peak)} around ${clock(night.peakAt)}. ${verdict}`}>
         {width > 0 ? (
           <View style={{ width: W, height: H }}>
             <Svg width={W} height={H}>

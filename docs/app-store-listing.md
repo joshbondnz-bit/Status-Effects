@@ -28,8 +28,8 @@ Every drink drains your HP based on your body, what you've eaten and how fast yo
 BUFFS AND DEBUFFS
 Drinks come with status effects: Impaired judgment, Dehydration, Impaired sleep, Hangover, Slow recovery and more, each with a timer and a severity. Water, food and a slower pace earn buffs. Tap any effect to see what it means, and the Science tab shows the research behind each one.
 
-SLEEP FORECAST
-See how much alcohol will still be in your system at bedtime, and try "what if one more?" before you decide.
+ALCOHOL FORECAST
+See your blood alcohol across the night: when you'll peak, how much will still be in your system at bedtime, and when it clears. Try "what if one more?" before you decide.
 
 THE MORNING AFTER
 A morning report sums up last night: drinks, lowest HP, sleep, and the debuffs still running. Tell it how you feel, and History learns how many drinks your mornings can take.

@@ -50,7 +50,7 @@ export function TonightScreen() {
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
-  // "What if one more?" is shared by the Sleep forecast and Rations.
+  // "What if one more?" is shared by the Alcohol forecast and Rations.
   const [whatIf, setWhatIf] = useState(false);
   const [removed, setRemoved] = useState<LogEvent | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -212,7 +212,7 @@ export function TonightScreen() {
       </View>
 
       <View style={[panel, styles.card]}>
-        <View style={styles.logHead}><Text style={styles.h2}>Sleep forecast</Text><Text style={styles.faint}>Blood alcohol vs bedtime</Text></View>
+        <View style={styles.logHead}><Text style={styles.h2}>Alcohol forecast</Text><Text style={styles.faint}>Peak, bedtime and clear</Text></View>
         <CurveChart night={night} whatIf={whatIf} onWhatIf={setWhatIf} />
       </View>
 
