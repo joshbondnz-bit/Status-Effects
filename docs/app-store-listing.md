@@ -71,4 +71,4 @@ Answer "Frequent/Intense" for alcohol, tobacco or drug use or references. That g
 - **Privacy policy URL:** https://joshbondnz-bit.github.io/statusfx/privacy/ (source in `site/`, published from the public repo joshbondnz-bit/statusfx)
 - **Support URL:** https://joshbondnz-bit.github.io/statusfx/support/ · contact connect.statusfx@outlook.com
 - **Screenshots:** iPhone 6.9" (1320 × 2868) at minimum. Easiest made from TestFlight on your phone.
-- **Final artwork:** the icon and splash are placeholders from `app/scripts/make-icons.mjs`.
+- **Final artwork:** the app icon is final. The splash image is still the placeholder from `app/scripts/make-icons.mjs`.
