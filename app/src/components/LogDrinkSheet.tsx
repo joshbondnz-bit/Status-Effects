@@ -160,23 +160,19 @@ export function LogDrinkSheet(props: Props) {
                 {types?.map(t => (
                   <TypeRow key={t.name} t={typeFor(t)} usual={t.abv} onAbv={setAbvAdj} open={openType === t.name} sizes={sizes} previews={openType === t.name ? sizePreviews : []} g={g}
                     showCalories={showCalories} onToggle={() => openTypeAs(openType === t.name ? null : t.name)}
-                    onPick={sz => pick(withSize(typeFor(t), sz))}
-                    onEdit={() => setForm({ mode: 'new', initial: { name: t.name, size: sizes[0]?.label, ml: sizes[0]?.ml, abv: typeFor(t).abv, category: t.category } })} />
+                    onPick={sz => pick(withSize(typeFor(t), sz))} />
                 ))}
                 {tab === 'mixed' ? <Text style={styles.group}>COCKTAILS</Text> : null}
                 {rows.map((r, i) => (
                   <DrinkRow key={r.key} spec={r.spec} p={previews[i]} std={alcoholGrams(r.spec.ml, r.spec.abv) / g} showCalories={showCalories}
                     left={r.saved?.left} onPress={() => pickRow(r.spec, r.saved)}
-                    onEdit={() => setForm(r.saved
-                      ? { mode: 'edit', initial: r.saved }
-                      : { mode: 'new', initial: { name: r.spec.name, size: r.spec.size, ml: r.spec.ml, abv: r.spec.abv, category: r.spec.category } })}
-                    editLabel={r.saved ? 'Edit' : 'Customise'} />
+                    onEdit={r.saved ? () => setForm({ mode: 'edit', initial: r.saved! }) : undefined} />
                 ))}
               </ScrollView>
               <Pressable onPress={() => setForm({ mode: 'new', initial: { category: tab === 'mine' ? 'beer' : tab } })} style={styles.custom} accessibilityRole="button">
                 <Text style={styles.customTxt}>+ Custom drink</Text>
               </Pressable>
-              <Text style={styles.hint}>{types ? 'Tap a drink, then its size to log it.' : 'Tap a drink to log it.'} Log it when you get it. Use ✎ to save your own version with a price.</Text>
+              <Text style={styles.hint}>{types ? 'Tap a drink, then its size to log it.' : 'Tap a drink to log it.'} Log it when you get it.{tab === 'mine' ? ' Use ✎ to change a saved drink.' : ''}</Text>
             </>
           )}
         </View>
@@ -217,11 +213,11 @@ function TabBtn({ label, on, onPress }: { label: string; on: boolean; onPress: (
 }
 
 /** A drink type (Lager 5%). Tapping it shows its sizes, each with the HP it would cost; tapping a size logs it. */
-function TypeRow({ t, usual, onAbv, open, sizes, previews, g, showCalories, onToggle, onPick, onEdit }: {
+function TypeRow({ t, usual, onAbv, open, sizes, previews, g, showCalories, onToggle, onPick }: {
   /** Its usual strength, and a way to change it for this drink. */
   usual: number; onAbv: (abv: number) => void;
   t: DrinkType; open: boolean; sizes: { label: string; ml: number }[]; previews: DrinkPreview[]; g: number;
-  showCalories: boolean; onToggle: () => void; onPick: (s: { label: string; ml: number }) => void; onEdit: () => void;
+  showCalories: boolean; onToggle: () => void; onPick: (s: { label: string; ml: number }) => void;
 }) {
   const colors = useColors();
   const styles = useStyles(colors);
@@ -235,9 +231,6 @@ function TypeRow({ t, usual, onAbv, open, sizes, previews, g, showCalories, onTo
             <Text style={styles.pSub}>{t.abv}%</Text>
           </View>
           <Text style={styles.chev}>{open ? '▴' : 'Pick size ▾'}</Text>
-        </Pressable>
-        <Pressable onPress={onEdit} style={styles.edit} accessibilityRole="button" accessibilityLabel={`Customise ${t.name}`} hitSlop={6}>
-          <Text style={styles.editTxt}>✎</Text>
         </Pressable>
       </View>
       {open ? (
@@ -275,8 +268,9 @@ function TypeRow({ t, usual, onAbv, open, sizes, previews, g, showCalories, onTo
   );
 }
 
-function DrinkRow({ spec, p, std, showCalories, left, onPress, onEdit, editLabel }: {
-  spec: DrinkSpec; p?: DrinkPreview; std: number; showCalories: boolean; left?: number; onPress: () => void; onEdit: () => void; editLabel: string;
+function DrinkRow({ spec, p, std, showCalories, left, onPress, onEdit }: {
+  /** onEdit only for saved drinks (My drinks): it opens the drink to change its price, size or pack. */
+  spec: DrinkSpec; p?: DrinkPreview; std: number; showCalories: boolean; left?: number; onPress: () => void; onEdit?: () => void;
 }) {
   const colors = useColors();
   const styles = useStyles(colors);
@@ -300,9 +294,11 @@ function DrinkRow({ spec, p, std, showCalories, left, onPress, onEdit, editLabel
           <Text style={styles.pSub}>{details}</Text>
         </View>
       </Pressable>
-      <Pressable onPress={onEdit} style={styles.edit} accessibilityRole="button" accessibilityLabel={`${editLabel} ${spec.name}`} hitSlop={6}>
-        <Text style={styles.editTxt}>✎</Text>
-      </Pressable>
+      {onEdit ? (
+        <Pressable onPress={onEdit} style={styles.edit} accessibilityRole="button" accessibilityLabel={`Edit ${spec.name}`} hitSlop={6}>
+          <Text style={styles.editTxt}>✎</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
