@@ -52,3 +52,13 @@ test('prices: a pack splits evenly, and the price is stored on the logged drink'
   assert.equal(makeDrink({ ...BOTTLE, cost: 7.5 }, 0, 'a').cost, 7.5);
   assert.equal('cost' in makeDrink(BOTTLE, 0, 'b'), false);
 });
+
+test('a drink logged as earlier matches what happens when it is logged at that time', () => {
+  const events = [drink(BOTTLE, 0)];
+  const now = at(90), had = now - 60 * 60_000;
+  const p = previewDrink(REF, events, now, BOTTLE, had);
+  const before = simulateNight({ profile: REF, events, now });
+  const after = simulateNight({ profile: REF, events: [...events, makeDrink(BOTTLE, had, 'x')], now });
+  assert.ok(p.hpLoss > 0);
+  assert.equal(p.hpLoss, Math.max(0, hpFromBac(before.futurePeak) - hpFromBac(after.futurePeak)));
+});

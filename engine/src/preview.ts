@@ -20,9 +20,10 @@ export interface DrinkPreview {
 }
 
 /** What logging `spec` right now would do to tonight. */
-export function previewDrink(profile: Profile, events: LogEvent[], now: number, spec: DrinkSpec): DrinkPreview {
+export function previewDrink(profile: Profile, events: LogEvent[], now: number, spec: DrinkSpec, at: number = now): DrinkPreview {
+  // `at` is when the drink was had: now, or earlier for a drink logged late. The effect is measured from now on.
   const before = simulateNight({ profile, events, now });
-  const after = simulateNight({ profile, events: [...events, makeDrink(spec, now, 'preview')], now });
+  const after = simulateNight({ profile, events: [...events, makeDrink(spec, at, 'preview')], now });
   const zone = (bac: number) => (bac >= CRITICAL_BAC ? 6 : phaseIndex(bac));
   return {
     hpLoss: Math.max(0, hpFromBac(before.futurePeak) - hpFromBac(after.futurePeak)),

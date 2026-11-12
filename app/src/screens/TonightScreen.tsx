@@ -89,7 +89,12 @@ export function TonightScreen() {
     update(d => ({ ...d, tonight: { ...d.tonight, events: [...d.tonight.events, e] } }));
     tick();
   };
-  const pickDrink = (spec: DrinkSpec) => { log(makeDrink(spec, currentTime(), newId())); setSheet(false); };
+  const pickDrink = (spec: DrinkSpec, minutesAgo: number) => { log(makeDrink(spec, currentTime() - minutesAgo * MIN, newId())); setSheet(false); };
+  // Nudge a logged entry's time (never into the future).
+  const shift = (e: LogEvent, minutes: number) => {
+    const t = Math.min(currentTime(), e.t + minutes * MIN);
+    update(d => ({ ...d, tonight: { ...d.tonight, events: d.tonight.events.map(x => (x.id === e.id ? { ...x, t } : x)) } }));
+  };
   const setEnded = (t: number | null) => update(d => ({ ...d, tonight: { ...d.tonight, endedAt: t } }));
 
   const remove = (e: LogEvent) => {
@@ -223,7 +228,7 @@ export function TonightScreen() {
           <Text style={styles.h2}>Tonight's log</Text>
           {night.drinks.length ? <Text style={styles.faint}>{total.toFixed(1)} std drinks</Text> : null}
         </View>
-        <NightLog events={events} region={region} onRemove={remove} />
+        <NightLog events={events} region={region} onRemove={remove} onShift={shift} now={now} />
         {data && data.past.length ? <Text style={styles.faint}>{data.past.length} earlier night{data.past.length === 1 ? '' : 's'} saved for History.</Text> : null}
       </View>
 

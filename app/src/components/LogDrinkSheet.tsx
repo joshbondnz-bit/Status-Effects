@@ -10,7 +10,7 @@ import {
 } from '../../../engine/src/index.ts';
 import { savedToSpec, type SavedDrink } from '../storage';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
-import { money } from '../format';
+import { clock, money } from '../format';
 import { DrinkForm } from './DrinkForm';
 import { MixBuilder } from './MixBuilder';
 import { hpText, zoneWarning } from './PreviewLine';
@@ -36,7 +36,8 @@ interface Props {
   now: number;
   myDrinks: SavedDrink[];
   onClose: () => void;
-  onPick: (spec: DrinkSpec) => void;
+  /** Log a drink; `minutesAgo` is 0 for now, or how long ago it was had. */
+  onPick: (spec: DrinkSpec, minutesAgo: number) => void;
   onSaveDrink: (d: SavedDrink) => void;
   onDeleteDrink: (id: string) => void;
 }
@@ -55,6 +56,9 @@ export function LogDrinkSheet(props: Props) {
   const [openType, setOpenType] = useState<string | null>(null);
   // Building a mixed drink from spirits and a mixer (Mixed tab).
   const [building, setBuilding] = useState(false);
+  // When the drink was had: 0 = now, or minutes ago (for a drink you forgot to log), in 10-minute steps.
+  const [back, setBack] = useState(0);
+  const pick = (spec: DrinkSpec) => onPick(spec, back);
   // Packs with "count what's left": each log uses one; at 0, ask whether another pack was bought.
   const [restock, setRestock] = useState<SavedDrink | null>(null);
   const insets = useSafeAreaInsets();
@@ -65,7 +69,7 @@ export function LogDrinkSheet(props: Props) {
   const [wasVisible, setWasVisible] = useState(visible);
   if (visible !== wasVisible) {
     setWasVisible(visible);
-    if (visible) { setForm(null); setRestock(null); setOpenType(null); setBuilding(false); setTab(myDrinks.length ? 'mine' : 'beer'); }
+    if (visible) { setForm(null); setRestock(null); setOpenType(null); setBuilding(false); setBack(0); setTab(myDrinks.length ? 'mine' : 'beer'); }
   }
 
   const types = tab === 'mine' ? null : DRINK_TYPES[tab];
@@ -75,18 +79,18 @@ export function LogDrinkSheet(props: Props) {
     : tab === 'mixed' ? PRESETS.mixed.map((p, i) => ({ key: tab + i, spec: p })) : [];
   const openSpec = types?.find(t => t.name === openType);
 
-  const preview = (spec: DrinkSpec) => previewDrink(profile, events, now, spec);
+  const preview = (spec: DrinkSpec) => previewDrink(profile, events, now, spec, now - back * 60_000);
   const minute = Math.floor(now / 60_000); // previews refresh once a minute, not on every tick
   const previews = useMemo(() => (visible && !form ? rows.map(r => preview(r.spec)) : []),
-    [visible, form, tab, myDrinks, events, profile, minute]); // eslint-disable-line react-hooks/exhaustive-deps
+    [visible, form, tab, myDrinks, events, profile, minute, back]); // eslint-disable-line react-hooks/exhaustive-deps
   const sizePreviews = useMemo(() => (visible && !form && openSpec ? sizes.map(sz => preview(withSize(openSpec, sz))) : []),
-    [visible, form, openSpec, sizes, events, profile, minute]); // eslint-disable-line react-hooks/exhaustive-deps
+    [visible, form, openSpec, sizes, events, profile, minute, back]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const close = () => { setForm(null); setRestock(null); setBuilding(false); onClose(); };
 
   const pickRow = (spec: DrinkSpec, saved?: SavedDrink) => {
-    if (saved?.left == null) return onPick(spec);
-    if (saved.left > 0) { onSaveDrink({ ...saved, left: saved.left - 1 }); return onPick(spec); }
+    if (saved?.left == null) return pick(spec);
+    if (saved.left > 0) { onSaveDrink({ ...saved, left: saved.left - 1 }); return pick(spec); }
     setRestock(saved);
   };
   const packCount = restock?.price?.per === 'pack' ? restock.price.count : 0;
@@ -102,6 +106,7 @@ export function LogDrinkSheet(props: Props) {
               <Text style={styles.xTxt}>×</Text>
             </Pressable>
           </View>
+          {!restock ? <WhenRow back={back} now={now} onChange={setBack} /> : null}
           {highRange ? <Text style={styles.warn}>You're already in a high range. Water might be the better pick right now.</Text> : null}
 
           {restock && !form ? (
@@ -110,23 +115,23 @@ export function LogDrinkSheet(props: Props) {
               <Text style={styles.hint}>Did you buy another pack?</Text>
               <PixelButton primary label={`Yes, ${packCount} for ${money(restock.price!.amount)}`} onPress={() => {
                 const spec = savedToSpec(restock);
-                onSaveDrink({ ...restock, left: packCount - 1 }); setRestock(null); onPick(spec);
+                onSaveDrink({ ...restock, left: packCount - 1 }); setRestock(null); pick(spec);
               }} />
               <PixelButton label="Yes, but a different price" onPress={() => { setForm({ mode: 'edit', initial: { ...restock, left: packCount } }); setRestock(null); }} />
-              <PixelButton label="Log it without counting" onPress={() => { const spec = savedToSpec(restock); setRestock(null); onPick(spec); }} />
+              <PixelButton label="Log it without counting" onPress={() => { const spec = savedToSpec(restock); setRestock(null); pick(spec); }} />
               <Pressable onPress={() => setRestock(null)} accessibilityRole="button"><Text style={styles.back}>‹ Back to drinks</Text></Pressable>
             </View>
           ) : building && !form ? (
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
               <MixBuilder region={region} showCalories={showCalories} preview={preview} onBack={() => setBuilding(false)}
-                onLog={spec => { setBuilding(false); onPick(spec); }}
-                onSaveAndLog={(saved, spec) => { onSaveDrink(saved); setBuilding(false); onPick(spec); }} />
+                onLog={spec => { setBuilding(false); pick(spec); }}
+                onSaveAndLog={(saved, spec) => { onSaveDrink(saved); setBuilding(false); pick(spec); }} />
             </ScrollView>
           ) : form ? (
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
               <DrinkForm key={form.initial.id ?? form.initial.name ?? 'new'} mode={form.mode} initial={form.initial} region={region} showCalories={showCalories}
                 preview={preview} onBack={() => setForm(null)}
-                onLog={(spec, save) => { if (save) onSaveDrink(save); setForm(null); onPick(spec); }}
+                onLog={(spec, save) => { if (save) onSaveDrink(save); setForm(null); pick(spec); }}
                 onSave={d => { onSaveDrink(d); setForm(null); setTab('mine'); }}
                 onDelete={id => { onDeleteDrink(id); setForm(null); }} />
             </ScrollView>
@@ -148,7 +153,7 @@ export function LogDrinkSheet(props: Props) {
                 {types?.map(t => (
                   <TypeRow key={t.name} t={t} open={openType === t.name} sizes={sizes} previews={openType === t.name ? sizePreviews : []} g={g}
                     showCalories={showCalories} onToggle={() => setOpenType(openType === t.name ? null : t.name)}
-                    onPick={sz => onPick(withSize(t, sz))}
+                    onPick={sz => pick(withSize(t, sz))}
                     onEdit={() => setForm({ mode: 'new', initial: { name: t.name, size: sizes[0]?.label, ml: sizes[0]?.ml, abv: t.abv, category: t.category } })} />
                 ))}
                 {tab === 'mixed' ? <Text style={styles.group}>COCKTAILS</Text> : null}
@@ -170,6 +175,27 @@ export function LogDrinkSheet(props: Props) {
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+/** When the drink was had: "Now", or "20 min ago · 22:40", stepped back in 10-minute steps (up to 12 hours). */
+function WhenRow({ back, now, onChange }: { back: number; now: number; onChange: (m: number) => void }) {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const label = back === 0 ? 'Now' : `${back < 60 ? back + ' min' : Math.floor(back / 60) + ' h' + (back % 60 ? ' ' + (back % 60) + ' min' : '')} ago · ${clock(now - back * 60_000)}`;
+  return (
+    <View style={[styles.when, back > 0 && styles.whenBack]}>
+      <Pressable onPress={() => onChange(Math.min(720, back + 10))} disabled={back >= 720} hitSlop={6} style={styles.whenBtn} accessibilityRole="button" accessibilityLabel="10 minutes earlier">
+        <Text style={styles.whenBtnTxt}>◀ 10 min</Text>
+      </Pressable>
+      <View style={{ flex: 1, alignItems: 'center' }} accessibilityLiveRegion="polite">
+        <Text style={styles.whenLabel}>WHEN</Text>
+        <Text style={[styles.whenTxt, back > 0 && { color: colors.gold }]}>{label}</Text>
+      </View>
+      <Pressable onPress={() => onChange(Math.max(0, back - 10))} disabled={back === 0} hitSlop={6} style={[styles.whenBtn, back === 0 && { opacity: 0.35 }]} accessibilityRole="button" accessibilityLabel="10 minutes later">
+        <Text style={styles.whenBtnTxt}>10 min ▶</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -283,6 +309,12 @@ const useStyles = makeStyles((colors: Palette) => ({
   edit: { width: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 2, borderLeftColor: colors.edge },
   editTxt: { fontSize: 17, color: colors.inkDim },
   typeOpen: { borderColor: colors.gold },
+  when: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, padding: 6 },
+  whenBack: { borderColor: colors.gold },
+  whenBtn: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edge },
+  whenBtnTxt: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.ink },
+  whenLabel: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1, color: colors.inkFaint },
+  whenTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
   group: { fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 1, color: colors.inkFaint, marginTop: 6 },
   build: { padding: 12, gap: 2, alignItems: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.gold },
   buildTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
