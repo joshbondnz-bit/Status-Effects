@@ -120,6 +120,12 @@ export function glassSprite(d: DrinkEvent): SpriteDef {
   return { rows: GLASSES[kind], palette: { ...GLASS_PALETTE, L, H: mixHex(L, '#ffffff', 0.45), D: mixHex(L, '#000000', 0.3) } };
 }
 
+/** A small pixel arrow for step buttons (◀ ▶ in the app's style). */
+export function arrowSprite(dir: 'left' | 'right', color: string): SpriteDef {
+  const right = ['a....', 'aa...', 'aaa..', 'aaaa.', 'aaa..', 'aa...', 'a....'];
+  return { palette: { a: color }, rows: dir === 'right' ? right : right.map(r => [...r].reverse().join('')) };
+}
+
 /** Science tab icon: a potion flask. The glass takes the tab's tint; the potion stays green. */
 export function flaskSprite(color: string): SpriteDef {
   return {

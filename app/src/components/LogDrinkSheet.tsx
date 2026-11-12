@@ -12,6 +12,8 @@ import { savedToSpec, type SavedDrink } from '../storage';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { clock, money } from '../format';
 import { DrinkForm } from './DrinkForm';
+import { PixelSprite } from './PixelSprite';
+import { arrowSprite } from '../sprites';
 import { MixBuilder } from './MixBuilder';
 import { hpText, zoneWarning } from './PreviewLine';
 import { PixelButton } from './Form';
@@ -186,14 +188,14 @@ function WhenRow({ back, now, onChange }: { back: number; now: number; onChange:
   return (
     <View style={[styles.when, back > 0 && styles.whenBack]}>
       <Pressable onPress={() => onChange(Math.min(720, back + 10))} disabled={back >= 720} hitSlop={6} style={styles.whenBtn} accessibilityRole="button" accessibilityLabel="10 minutes earlier">
-        <Text style={styles.whenBtnTxt}>◀ 10 min</Text>
+        <View style={styles.whenBtnRow}><PixelSprite sprite={arrowSprite('left', colors.ink)} scale={2} /><Text style={styles.whenBtnTxt}>10 min</Text></View>
       </Pressable>
       <View style={{ flex: 1, alignItems: 'center' }} accessibilityLiveRegion="polite">
         <Text style={styles.whenLabel}>WHEN</Text>
         <Text style={[styles.whenTxt, back > 0 && { color: colors.gold }]}>{label}</Text>
       </View>
       <Pressable onPress={() => onChange(Math.max(0, back - 10))} disabled={back === 0} hitSlop={6} style={[styles.whenBtn, back === 0 && { opacity: 0.35 }]} accessibilityRole="button" accessibilityLabel="10 minutes later">
-        <Text style={styles.whenBtnTxt}>10 min ▶</Text>
+        <View style={styles.whenBtnRow}><Text style={styles.whenBtnTxt}>10 min</Text><PixelSprite sprite={arrowSprite('right', colors.ink)} scale={2} /></View>
       </Pressable>
     </View>
   );
@@ -312,6 +314,7 @@ const useStyles = makeStyles((colors: Palette) => ({
   when: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, padding: 6 },
   whenBack: { borderColor: colors.gold },
   whenBtn: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edge },
+  whenBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   whenBtnTxt: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.ink },
   whenLabel: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1, color: colors.inkFaint },
   whenTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },

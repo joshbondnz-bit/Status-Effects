@@ -28,6 +28,27 @@ function NumText({ value, onChange, label, suffix, prefix, placeholder }: { valu
   );
 }
 
+/** A number box with − and + buttons that step by `step` (and you can still type an exact value). */
+function Stepper({ value, onChange, step, max, label, suffix, prefix, placeholder }: {
+  value: string; onChange: (s: string) => void; step: number; max: number; label: string; suffix?: string; prefix?: string; placeholder?: string;
+}) {
+  const colors = useColors();
+  const styles = useStyles(colors);
+  const bump = (dir: 1 | -1) => {
+    const n = num(value);
+    const base = isFinite(n) ? n : num(placeholder ?? '0') || 0;
+    const next = Math.min(max, Math.max(0, Math.round((base + dir * step) / step) * step));
+    onChange(trimNum(next));
+  };
+  return (
+    <View style={styles.inputRow}>
+      <Pressable onPress={() => bump(-1)} style={styles.step} accessibilityRole="button" accessibilityLabel={`${label}: less`} hitSlop={4}><Text style={styles.stepTxt}>−</Text></Pressable>
+      <NumText value={value} onChange={onChange} label={label} suffix={suffix} prefix={prefix} placeholder={placeholder} />
+      <Pressable onPress={() => bump(1)} style={styles.step} accessibilityRole="button" accessibilityLabel={`${label}: more`} hitSlop={4}><Text style={styles.stepTxt}>+</Text></Pressable>
+    </View>
+  );
+}
+
 const num = (s: string) => { const n = parseFloat(s.replace(',', '.')); return isFinite(n) ? n : NaN; };
 const trimNum = (n: number) => String(Math.round(n * 100) / 100);
 
@@ -142,19 +163,13 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
           </Field>
         </>
       ) : null}
-      <Field stack label="Strength"><NumText value={abv} onChange={setAbv} label="Alcohol by volume, percent" suffix="%" placeholder="5" /></Field>
-      {showCalories ? (
-        <Field stack label="Calories (optional)" hint={kcal.trim() ? undefined : estKcal != null ? `Leave blank to estimate (about ${estKcal} kcal).` : 'Leave blank to estimate.'}>
-          <NumText value={kcal} onChange={setKcal} label="Calories from the label" suffix="kcal" />
-        </Field>
-      ) : null}
-
+      <Field stack label="Strength"><Stepper value={abv} onChange={setAbv} step={0.5} max={80} label="Alcohol by volume, percent" suffix="%" placeholder="5" /></Field>
       <Field stack label="Price">
         <Segmented label="Price" value={priceMode} onChange={setPriceMode}
           options={[{ value: 'none', label: 'No price' }, { value: 'drink', label: 'Per drink' }, { value: 'pack', label: 'Pack' }]} />
         {priceMode !== 'none' ? (
           <View style={styles.row}>
-            <View style={{ flex: 1, minWidth: 120 }}><NumText value={price} onChange={setPrice} label={priceMode === 'pack' ? 'Pack price' : 'Price per drink'} prefix="$" /></View>
+            <View style={{ flex: 1, minWidth: 170 }}><Stepper value={price} onChange={setPrice} step={0.5} max={9999} label={priceMode === 'pack' ? 'Pack price' : 'Price per drink'} prefix="$" placeholder="0" /></View>
             {priceMode === 'pack' ? <View style={{ flex: 1, minWidth: 120 }}><NumText value={count} onChange={setCount} label="Drinks in the pack" suffix="drinks" /></View> : null}
           </View>
         ) : null}
@@ -171,6 +186,13 @@ export function DrinkForm({ initial, mode, region, showCalories, preview, onLog,
           </>
         ) : null}
       </Field>
+
+      {/* Calories last: optional, and most labels on alcohol don't list them. */}
+      {showCalories ? (
+        <Field stack label="Calories (optional)" hint={kcal.trim() ? undefined : estKcal != null ? `Leave blank to estimate (about ${estKcal} kcal).` : 'Leave blank to estimate.'}>
+          <View style={{ maxWidth: 220 }}><NumText value={kcal} onChange={setKcal} label="Calories from the label" suffix="kcal" /></View>
+        </Field>
+      ) : null}
 
       {spec && pv ? (
         <View style={styles.previewBox}>
@@ -212,6 +234,8 @@ const useStyles = makeStyles((colors: Palette) => ({
   sizeName: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: colors.ink },
   sizeMl: { fontFamily: fonts.body, fontSize: 12, color: colors.inkDim },
   sizeTxtOn: { color: colors.edge },
+  step: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edge },
+  stepTxt: { fontFamily: fonts.bodyBold, fontSize: 22, lineHeight: 24, color: colors.ink },
   affix: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.inkDim },
   hint: { fontFamily: fonts.body, fontSize: 13, color: colors.inkFaint, lineHeight: 18 },
   err: { fontFamily: fonts.body, fontSize: 13.5, color: colors.warn },

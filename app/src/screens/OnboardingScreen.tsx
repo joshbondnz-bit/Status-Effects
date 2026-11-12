@@ -7,7 +7,7 @@ import { CharacterFields, NameField, RoutineFields, profileComplete } from '../c
 import { PixelButton, ToggleRow } from '../components/Form';
 import { PixelSprite } from '../components/PixelSprite';
 import { EMERGENCY } from '../components/SafetyCheck';
-import { HEART, ICONS } from '../sprites';
+import { HEART } from '../sprites';
 import type { Settings } from '../storage';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
@@ -83,11 +83,11 @@ export function OnboardingScreen() {
           </>
         ) : (
           <>
-            <Point icon={ICONS.judgment} title="It's an estimate" body="Every number comes from population averages and what you log. It isn't a breathalyser reading or medical advice." />
-            <Point icon={ICONS.strain} title="Never drink and drive" body="The app never tells you you're safe to drive. Plan your way home before your first drink: a taxi, rideshare, transit or a sober friend." />
-            <Point icon={ICONS.hydrated} title={`In an emergency, call ${EMERGENCY[region]}`}
+            <Point title="It's an estimate" body="Every number comes from population averages and what you log. It isn't a breathalyser reading or medical advice." />
+            <Point title="Never drink and drive" body="The app never tells you you're safe to drive. Plan your way home before your first drink: a taxi, rideshare, transit or a sober friend." />
+            <Point title={`In an emergency, call ${EMERGENCY[region]}`}
               body="If someone can't be woken, is breathing slowly or irregularly, or is vomiting while drowsy, call for help and stay with them." />
-            <Point icon={ICONS.lined} title="Log it when you get it" body="Logging a drink when it's in your hand shows what it will do before you've had it." />
+            <Point title="Log it when you get it" body="Logging a drink when it's in your hand shows what it will do before you've had it." />
             <Text style={styles.age}>Status Effects is for people of legal drinking age where they live.</Text>
             <View style={styles.row}>
               <PixelButton label="I understand" primary flex={1} onPress={acknowledge} />
@@ -101,12 +101,12 @@ export function OnboardingScreen() {
   );
 }
 
-function Point({ icon, title, body }: { icon: (typeof ICONS)[keyof typeof ICONS]; title: string; body: string }) {
+function Point({ title, body }: { title: string; body: string }) {
   const colors = useColors();
   const styles = useStyles(colors);
   return (
     <View style={styles.point}>
-      <View style={styles.icon}><PixelSprite sprite={icon} scale={2} /></View>
+      <View style={styles.marker} />
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={styles.pointTitle}>{title}</Text>
         <Text style={styles.lead}>{body}</Text>
@@ -129,7 +129,7 @@ const useStyles = makeStyles((colors: Palette) => ({
   row: { flexDirection: 'row', gap: 8 },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, lineHeight: 18 },
   point: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  icon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi },
+  marker: { width: 4, alignSelf: 'stretch', backgroundColor: colors.gold },
   pointTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
   age: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: colors.gold, lineHeight: 19 },
 }));

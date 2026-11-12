@@ -3,6 +3,8 @@ import { Pressable, Text, View } from 'react-native';
 import { standardDrinks, type LogEvent, type RegionCode } from '../../../engine/src/index.ts';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
 import { clock, money } from '../format';
+import { PixelSprite } from './PixelSprite';
+import { arrowSprite } from '../sprites';
 
 interface Props {
   events: LogEvent[];
@@ -45,8 +47,8 @@ export function NightLog({ events, region, onRemove, onShift, now }: Props) {
           {openId === e.id ? (
             <View style={styles.shift}>
               <Text style={styles.shiftTxt}>Move it</Text>
-              <Pressable onPress={() => onShift(e, -10)} style={styles.shiftBtn} accessibilityRole="button" accessibilityLabel="10 minutes earlier"><Text style={styles.shiftBtnTxt}>◀ 10 min earlier</Text></Pressable>
-              <Pressable onPress={() => onShift(e, 10)} disabled={e.t + 10 * 60_000 > now} style={[styles.shiftBtn, e.t + 10 * 60_000 > now && { opacity: 0.35 }]} accessibilityRole="button" accessibilityLabel="10 minutes later"><Text style={styles.shiftBtnTxt}>later ▶</Text></Pressable>
+              <Pressable onPress={() => onShift(e, -10)} style={styles.shiftBtn} accessibilityRole="button" accessibilityLabel="10 minutes earlier"><View style={styles.shiftRow}><PixelSprite sprite={arrowSprite('left', colors.ink)} scale={2} /><Text style={styles.shiftBtnTxt}>10 min earlier</Text></View></Pressable>
+              <Pressable onPress={() => onShift(e, 10)} disabled={e.t + 10 * 60_000 > now} style={[styles.shiftBtn, e.t + 10 * 60_000 > now && { opacity: 0.35 }]} accessibilityRole="button" accessibilityLabel="10 minutes later"><View style={styles.shiftRow}><Text style={styles.shiftBtnTxt}>later</Text><PixelSprite sprite={arrowSprite('right', colors.ink)} scale={2} /></View></Pressable>
             </View>
           ) : null}
           </View>
@@ -67,6 +69,7 @@ const useStyles = makeStyles((colors: Palette) => ({
   shift: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.sunk, paddingHorizontal: 10, paddingBottom: 8 },
   shiftTxt: { flex: 1, fontFamily: fonts.body, fontSize: 13, color: colors.inkFaint },
   shiftBtn: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.edge },
+  shiftRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   shiftBtnTxt: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.ink },
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   delTxt: { fontSize: 20, color: colors.inkFaint },
