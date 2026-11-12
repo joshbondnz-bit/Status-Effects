@@ -5,9 +5,8 @@ import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { CharacterFields, NameField, RoutineFields, profileComplete } from '../components/ProfileFields';
 import { PixelButton, ToggleRow } from '../components/Form';
-import { PixelSprite } from '../components/PixelSprite';
+import { Logo } from '../components/Logo';
 import { EMERGENCY } from '../components/SafetyCheck';
-import { HEART } from '../sprites';
 import type { Settings } from '../storage';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
@@ -45,9 +44,9 @@ export function OnboardingScreen() {
 
   return (
     <Screen keyboardShouldPersistTaps="handled">
+      <View style={styles.logo}><Logo layout="stacked" /></View>
       <View style={[panel, styles.card]}>
         <View style={styles.head}>
-          <PixelSprite sprite={HEART} scale={5} />
           <View style={{ flex: 1 }}>
             <Text style={styles.step}>{onlySafety ? 'ONE LAST THING' : `STEP ${step} OF 3`}</Text>
             <Text style={styles.title}>{titles[step]}</Text>
@@ -118,6 +117,7 @@ function Point({ title, body }: { title: string; body: string }) {
 const useStyles = makeStyles((colors: Palette) => ({
   page: { paddingHorizontal: 16, width: '100%', maxWidth: 520, alignSelf: 'center' },
   card: { padding: 16, gap: 16 },
+  logo: { alignItems: 'center', paddingTop: 12, paddingBottom: 4 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   step: { fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 0.6, color: colors.inkDim },
   title: { fontFamily: fonts.displayBold, fontSize: 38, letterSpacing: 0.4, color: colors.ink },

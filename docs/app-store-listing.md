@@ -10,9 +10,9 @@ The home-screen label is **StatusFX** (set in `app/app.json`).
 
 ## Subtitle (30 max)
 
-**Your night out, as an RPG** (25)
+**See what each drink does** (24)
 
-Other options: "See how drinks hit your HP" (26) · "Drink smarter, sleep better" (27)
+Kept plain on purpose: outside the app, say what it does without game words.
 
 ## Promotional text (170 max, can change any time without a new version)
 
@@ -20,7 +20,7 @@ Log your drinks and watch your HP. Status Effects shows how tonight is hitting y
 
 ## Description (4,000 max)
 
-Status Effects turns your night out into an RPG, so you can see what each drink is doing.
+Status Effects shows what each drink is doing to you, as it happens, styled like a classic video game.
 
 YOUR HP RING
 Every drink drains your HP based on your body, what you've eaten and how fast you're drinking. Watch it drain in real time, see where you're heading before you order the next one, and get a clear warning before you reach dangerous levels.

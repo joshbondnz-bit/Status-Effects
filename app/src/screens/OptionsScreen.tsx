@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
+import Constants from 'expo-constants';
+import { Logo } from '../components/Logo';
 import { Screen } from '../components/Screen';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
@@ -111,6 +113,14 @@ export function OptionsScreen() {
           </View>
         )}
       </View>
+      <View style={[panel, styles.about]}>
+        <Logo size={0.8} />
+        <Text style={styles.lead}>Version {Constants.expoConfig?.version ?? '0.1.0'}. Estimates only, never a driving clearance.</Text>
+        <View style={styles.links}>
+          <Pressable onPress={() => Linking.openURL('https://joshbondnz-bit.github.io/statusfx/privacy/')} accessibilityRole="link"><Text style={styles.link}>Privacy</Text></Pressable>
+          <Pressable onPress={() => Linking.openURL('https://joshbondnz-bit.github.io/statusfx/support/')} accessibilityRole="link"><Text style={styles.link}>Support</Text></Pressable>
+        </View>
+      </View>
     </Screen>
   );
 }
@@ -123,6 +133,9 @@ const useStyles = makeStyles((colors: Palette) => ({
   lead: { fontFamily: fonts.body, fontSize: 14, color: colors.inkDim, lineHeight: 20 },
   nudge: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, backgroundColor: colors.nudgeBg, borderWidth: 2, borderColor: colors.nudgeEdge, padding: 12, lineHeight: 20 },
   row: { flexDirection: 'row', gap: 8 },
+  about: { padding: 16, gap: 12 },
+  links: { flexDirection: 'row', gap: 18 },
+  link: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana, textDecorationLine: 'underline' },
   fine: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint, textAlign: 'center' },
   warnTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.bad },
   done: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.good },
