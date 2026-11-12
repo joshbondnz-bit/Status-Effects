@@ -66,9 +66,9 @@ Answer "Frequent/Intense" for alcohol, tobacco or drug use or references. That g
 
 **Data Not Collected.** The app has no server, analytics or tracking, so nothing is collected under Apple's definition. Re-check this if anything that sends data is ever added.
 
-## Still needed
+## URLs and what's still needed
 
-- **Privacy policy URL:** Apple requires a public web page. `docs/privacy-policy.md` is the text; it needs a contact email and hosting. Options: a free GitHub Pages site (needs a public repo, or a separate public one just for the policy), or a free page on a site builder.
-- **Support URL:** a page or email for help. Can be the same site.
+- **Privacy policy URL:** https://joshbondnz-bit.github.io/statusfx/privacy/ (source in `site/`, published from the public repo joshbondnz-bit/statusfx)
+- **Support URL:** https://joshbondnz-bit.github.io/statusfx/support/ · contact connect.statusfx@outlook.com
 - **Screenshots:** iPhone 6.9" (1320 × 2868) at minimum. Easiest made from TestFlight on your phone.
 - **Final artwork:** the icon and splash are placeholders from `app/scripts/make-icons.mjs`.

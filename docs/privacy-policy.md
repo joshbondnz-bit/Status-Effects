@@ -1,6 +1,6 @@
 # Status Effects privacy policy
 
-**Draft, not yet published.** Effective date: [add the date it goes live]
+Effective 11 November 2026. Published at https://joshbondnz-bit.github.io/statusfx/privacy/
 
 Status Effects ("the app") is a drink tracker that estimates how alcohol affects you. This policy explains what the app does with your information. The short version: **everything stays on your phone. We don't collect it, see it, sell it or share it.**
 
@@ -42,4 +42,4 @@ If a future version changes what the app does with your information (for example
 
 ## Contact
 
-Questions about this policy: [add a contact email]
+Questions about this policy: connect.statusfx@outlook.com
