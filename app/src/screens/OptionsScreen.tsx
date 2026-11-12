@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import Constants from 'expo-constants';
 import { Logo } from '../components/Logo';
+import { entriesCsv, nightsCsv } from '../../../engine/src/index.ts';
+import { shareCsv, today } from '../exportData';
 import { Screen } from '../components/Screen';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
@@ -18,6 +20,20 @@ export function OptionsScreen() {
   const [confirmReplay, setConfirmReplay] = useState(false);
   const [clearStep, setClearStep] = useState<0 | 1 | 2>(0);
   const [cleared, setCleared] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  // Every night, tonight included, with its morning check-in.
+  const allNights = [...data.past, data.tonight].map(n => ({ events: n.events, feel: n.feel }));
+  const hasData = allNights.some(n => n.events.length);
+  const download = async (kind: 'log' | 'nights') => {
+    setExportError(null);
+    try {
+      await (kind === 'log'
+        ? shareCsv(`status-effects-log-${today()}.csv`, entriesCsv(allNights, data.profile.region))
+        : shareCsv(`status-effects-nights-${today()}.csv`, nightsCsv(data.profile, allNights)));
+    } catch {
+      setExportError("Couldn't create the file. Try again, or restart the app.");
+    }
+  };
 
   // Every change saves immediately. Editing your stats also counts as finishing setup.
   const setProfile = (patch: Partial<Profile>) =>
@@ -87,7 +103,13 @@ export function OptionsScreen() {
         <Text style={styles.h2}>Your data</Text>
         {clearStep === 0 ? (
           <>
-            <Text style={styles.lead}>Everything is saved on this device only.</Text>
+            <Text style={styles.lead}>Everything is saved on this device only. Download a copy as a spreadsheet (CSV) to keep a backup or open it in Numbers, Excel or Google Sheets.</Text>
+            <View style={styles.row}>
+              <PixelButton label="Every drink" flex={1} disabled={!hasData} onPress={() => download('log')} />
+              <PixelButton label="Night totals" flex={1} disabled={!hasData} onPress={() => download('nights')} />
+            </View>
+            {!hasData ? <Text style={styles.lead}>Nothing logged yet.</Text> : null}
+            {exportError ? <Text style={styles.warnTitle}>{exportError}</Text> : null}
             {cleared ? <Text style={styles.done}>History cleared. You're starting fresh from today.</Text> : null}
             <PixelButton label="Clear all history" onPress={() => { setClearStep(1); setCleared(false); }} />
           </>
