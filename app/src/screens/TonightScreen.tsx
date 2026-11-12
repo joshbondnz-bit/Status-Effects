@@ -3,13 +3,14 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import {
-  MIN, PHASES, WARNING_BAC, effects, healthState, lingeringDebuffs, makeDrink, phaseIndex, simulateNight, standardDrinks, withLingering,
+  MIN, PHASES, WARNING_BAC, effects, healthState, lingeringDebuffs, makeDrink, phaseIndex, previewDrink, simulateNight, standardDrinks, withLingering,
   type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
 import { newId, sampleNightEvents } from '../sampleNight';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 import { glassSprite, type SpriteDef } from '../sprites';
 import { HealthBar } from '../components/HealthBar';
+import { ActionFx, type FxEvent } from '../components/ActionFx';
 import { StatusTray } from '../components/StatusTray';
 import { LogDrinkSheet } from '../components/LogDrinkSheet';
 import { NightLog } from '../components/NightLog';
@@ -53,6 +54,8 @@ export function TonightScreen() {
   // "What if one more?" is shared by the Alcohol forecast and Rations.
   const [whatIf, setWhatIf] = useState(false);
   const [removed, setRemoved] = useState<LogEvent | null>(null);
+  // The effect to play over the HP ring for the last thing logged (a strike, a splash or a food burst).
+  const [ringFx, setRingFx] = useState<FxEvent | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { data, error, update, now, tick, currentTime } = useApp();
 
@@ -89,7 +92,13 @@ export function TonightScreen() {
     update(d => ({ ...d, tonight: { ...d.tonight, events: [...d.tonight.events, e] } }));
     tick();
   };
-  const pickDrink = (spec: DrinkSpec, minutesAgo: number) => { log(makeDrink(spec, currentTime() - minutesAgo * MIN, newId())); setSheet(false); };
+  const pickDrink = (spec: DrinkSpec, minutesAgo: number) => {
+    const at = currentTime() - minutesAgo * MIN;
+    // The strike shows the same HP cost the sheet previewed. It starts once the sheet has slid away.
+    const loss = previewDrink(profile, events, currentTime(), spec, at).hpLoss;
+    log(makeDrink(spec, at, newId())); setSheet(false);
+    setTimeout(() => setRingFx({ kind: 'hit', id: Date.now(), loss }), 380);
+  };
   // Nudge a logged entry's time (never into the future).
   const shift = (e: LogEvent, minutes: number) => {
     const t = Math.min(currentTime(), e.t + minutes * MIN);
@@ -145,7 +154,7 @@ export function TonightScreen() {
       ) : null}
 
       <View style={[panel, styles.card]}>
-        <HealthBar night={night} />
+        <ActionFx event={ringFx}><HealthBar night={night} /></ActionFx>
 
         <View style={styles.tally}>
           <View style={styles.glasses}>
@@ -184,8 +193,8 @@ export function TonightScreen() {
         <View style={styles.actionsCol}>
           <Button label="+ Drink" variant="primary" big icon={DRINK_ICON} onPress={() => setSheet(true)} />
           <View style={styles.actions}>
-            <Button label="Water" variant="water" icon={ICONS.hydrated} onPress={() => log({ type: 'water', id: newId(), t: currentTime() })} />
-            <Button label="Food" icon={ICONS.lined} onPress={() => log({ type: 'food', id: newId(), t: currentTime() })} />
+            <Button label="Water" variant="water" icon={ICONS.hydrated} onPress={() => { log({ type: 'water', id: newId(), t: currentTime() }); setRingFx({ kind: 'water', id: Date.now() }); }} />
+            <Button label="Food" icon={ICONS.lined} onPress={() => { log({ type: 'food', id: newId(), t: currentTime() }); setRingFx({ kind: 'food', id: Date.now() }); }} />
             <Button label={endedAt ? 'Resume' : 'Call it'} icon={endedAt ? undefined : ICONS.called} flex={1.15} onPress={() => (endedAt ? setEnded(null) : setConfirmEnd(true))} />
           </View>
         </View>
