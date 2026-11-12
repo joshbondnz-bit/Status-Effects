@@ -140,7 +140,7 @@ export function TonightScreen() {
       ) : null}
 
       {morning ? (
-        <MorningReport night={morning.night} profile={profile} now={now} showCalories={settings.calories}
+        <MorningReport night={morning.night} profile={profile} now={now} showCalories={settings.calories} name={settings.name}
           onFeel={f => setMorning({ feel: f })} onClose={() => setMorning({ reportClosed: true })} />
       ) : null}
 

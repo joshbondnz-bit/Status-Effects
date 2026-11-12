@@ -28,8 +28,8 @@ export function findMorningNight(data: AppData, now: number): { night: SavedNigh
 
 export const feelColors = (colors: Palette) => [colors.good, '#a6d86a', colors.gold, colors.warn, colors.bad];
 
-export function MorningReport({ night, profile, now, showCalories, onFeel, onClose }: {
-  night: SavedNight; profile: Profile; now: number; showCalories: boolean;
+export function MorningReport({ night, profile, now, showCalories, name, onFeel, onClose }: {
+  night: SavedNight; profile: Profile; now: number; showCalories: boolean; name?: string;
   onFeel: (f: Feel) => void; onClose: () => void;
 }) {
   const colors = useColors();
@@ -55,7 +55,7 @@ export function MorningReport({ night, profile, now, showCalories, onFeel, onClo
   return (
     <View style={[panel, styles.card]}>
       <View style={styles.head}>
-        <Text style={styles.title}>Morning report</Text>
+        <Text style={styles.title}>{name ? `Morning, ${name}` : 'Morning report'}</Text>
         <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close the morning report" hitSlop={8}>
           <Text style={styles.close}>×</Text>
         </Pressable>

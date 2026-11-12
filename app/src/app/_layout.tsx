@@ -41,7 +41,8 @@ function ThemedRoot() {
   const choice = data.settings.theme ?? 'system';
   const name = choice === 'system' ? (system === 'light' ? 'light' : 'dark') : choice;
   const colors = palettes[name];
-  const needsSetup = data.setup === 'pending';
+  // Setup shows until it's finished or skipped, and the safety screen until it's been acknowledged.
+  const needsSetup = data.setup === 'pending' || data.safetyAckAt == null;
   return (
     <ThemeProvider value={colors}>
       <StatusBar style={name === 'dark' ? 'light' : 'dark'} />

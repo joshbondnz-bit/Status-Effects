@@ -1,9 +1,10 @@
 // The character sheet and routine fields, used by first-run setup and Options.
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 import type { Profile, RegionCode, Sex } from '../../../engine/src/index.ts';
 import type { Units } from '../storage';
 import { Field, NumberInput, Segmented, TimeStepper } from './Form';
 import { LIMITS, clamp, cmToFtIn, ftInToCm, kgToLb, lbToKg } from '../units';
+import { useColors, fonts } from '../theme';
 
 type Change = (patch: Partial<Profile>) => void;
 
@@ -74,6 +75,18 @@ export function RoutineFields({ profile, onChange }: { profile: Profile; onChang
           ]} />
       </Field>
     </View>
+  );
+}
+
+/** Optional name, used in greetings like "Morning, Josh". */
+export function NameField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const colors = useColors();
+  return (
+    <Field stack label="Name (optional)" hint="Used in greetings like the morning report. Stays on this phone.">
+      <TextInput value={value} onChangeText={t => onChange(t.slice(0, 24))} accessibilityLabel="Your name" placeholder="What should we call you?"
+        placeholderTextColor={colors.inkFaint} autoCapitalize="words" autoCorrect={false}
+        style={{ backgroundColor: colors.sunk, borderWidth: 2, borderColor: colors.edgeHi, color: colors.ink, fontFamily: fonts.body, fontSize: 17, paddingHorizontal: 10, paddingVertical: 9 }} />
+    </Field>
   );
 }
 

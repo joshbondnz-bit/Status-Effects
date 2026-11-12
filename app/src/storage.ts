@@ -36,6 +36,8 @@ export interface Settings {
   compareWith?: FoodCompare;
   /** Colour theme: follow the phone's light/dark setting (the default), or always light or dark. */
   theme?: ThemeChoice;
+  /** What the app calls you ("Morning, Josh"). Optional; stays on the device. */
+  name?: string;
 }
 
 /** First-run setup: not seen yet, finished, or skipped (using the default character). */
@@ -53,6 +55,8 @@ export interface AppData {
   trackingSince: number;
   /** The most recent AUDIT-C check-in, if any. */
   audit?: { score: number; at: number };
+  /** When the safety screen (estimates only, never drink and drive) was acknowledged. Shown once until then. */
+  safetyAckAt?: number;
   /** Drinks the user has saved for one-tap logging, newest first. */
   myDrinks?: SavedDrink[];
 }
@@ -144,6 +148,7 @@ function upgrade(raw: any): AppData | null {
     past: raw.past.filter(isNight),
     audit: raw.audit && typeof raw.audit.score === 'number' && typeof raw.audit.at === 'number' ? raw.audit : undefined,
     myDrinks: Array.isArray(raw.myDrinks) ? raw.myDrinks.filter(isSavedDrink) : [],
+    safetyAckAt: typeof raw.safetyAckAt === 'number' ? raw.safetyAckAt : undefined,
   };
 }
 

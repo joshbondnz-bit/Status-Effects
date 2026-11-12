@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
-import { CharacterFields, RoutineFields } from '../components/ProfileFields';
+import { CharacterFields, NameField, RoutineFields } from '../components/ProfileFields';
 import { Field, PixelButton, Segmented, ToggleRow } from '../components/Form';
 import { clearHistory, type FoodCompare, type ThemeChoice } from '../storage';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
@@ -32,6 +32,7 @@ export function OptionsScreen() {
       <View style={[panel, styles.card]}>
         <Text style={styles.h2}>Character sheet</Text>
         <Text style={styles.lead}>Your stats decide how far each drink spreads through your body, which sets how fast your health bar drops.</Text>
+        <NameField value={data.settings.name ?? ''} onChange={name => update(d => ({ ...d, settings: { ...d.settings, name: name || undefined } }))} />
         <CharacterFields profile={data.profile} units={data.settings.units} onChange={setProfile}
           onUnits={units => update(d => ({ ...d, settings: { ...d.settings, units } }))} />
       </View>
