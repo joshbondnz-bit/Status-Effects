@@ -68,11 +68,11 @@ export function LogDrinkSheet(props: Props) {
     if (visible) { setForm(null); setRestock(null); setOpenType(null); setBuilding(false); setTab(myDrinks.length ? 'mine' : 'beer'); }
   }
 
-  const types = tab === 'beer' || tab === 'wine' || tab === 'spirits' ? DRINK_TYPES[tab] : null;
-  const sizes = types ? SERVING_SIZES[tab as 'beer' | 'wine' | 'spirits'][region] : [];
+  const types = tab === 'mine' ? null : DRINK_TYPES[tab];
+  const sizes = types ? SERVING_SIZES[tab as DrinkCategory][region] : [];
   const rows: { key: string; spec: DrinkSpec; saved?: SavedDrink }[] = tab === 'mine'
     ? myDrinks.map(d => ({ key: d.id, spec: savedToSpec(d), saved: d }))
-    : types ? [] : PRESETS[tab].map((p, i) => ({ key: tab + i, spec: p }));
+    : tab === 'mixed' ? PRESETS.mixed.map((p, i) => ({ key: tab + i, spec: p })) : [];
   const openSpec = types?.find(t => t.name === openType);
 
   const preview = (spec: DrinkSpec) => previewDrink(profile, events, now, spec);
@@ -144,12 +144,14 @@ export function LogDrinkSheet(props: Props) {
                     <Text style={styles.hint}>Pick the spirit, single or double, and a mixer</Text>
                   </Pressable>
                 ) : null}
+                {tab === 'mixed' ? <Text style={styles.group}>READY TO DRINK</Text> : null}
                 {types?.map(t => (
                   <TypeRow key={t.name} t={t} open={openType === t.name} sizes={sizes} previews={openType === t.name ? sizePreviews : []} g={g}
                     showCalories={showCalories} onToggle={() => setOpenType(openType === t.name ? null : t.name)}
                     onPick={sz => onPick(withSize(t, sz))}
                     onEdit={() => setForm({ mode: 'new', initial: { name: t.name, size: sizes[0]?.label, ml: sizes[0]?.ml, abv: t.abv, category: t.category } })} />
                 ))}
+                {tab === 'mixed' ? <Text style={styles.group}>COCKTAILS</Text> : null}
                 {rows.map((r, i) => (
                   <DrinkRow key={r.key} spec={r.spec} p={previews[i]} std={alcoholGrams(r.spec.ml, r.spec.abv) / g} showCalories={showCalories}
                     left={r.saved?.left} onPress={() => pickRow(r.spec, r.saved)}
@@ -162,7 +164,7 @@ export function LogDrinkSheet(props: Props) {
               <Pressable onPress={() => setForm({ mode: 'new', initial: { category: tab === 'mine' ? 'beer' : tab } })} style={styles.custom} accessibilityRole="button">
                 <Text style={styles.customTxt}>+ Custom drink</Text>
               </Pressable>
-              <Text style={styles.hint}>{types ? 'Tap a drink, then its size to log it.' : 'Tap a drink to log it.'} Use ✎ to save your own version with a price.</Text>
+              <Text style={styles.hint}>{types ? 'Tap a drink, then its size to log it.' : 'Tap a drink to log it.'} Log it when you get it. Use ✎ to save your own version with a price.</Text>
             </>
           )}
         </View>
@@ -281,6 +283,7 @@ const useStyles = makeStyles((colors: Palette) => ({
   edit: { width: 44, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 2, borderLeftColor: colors.edge },
   editTxt: { fontSize: 17, color: colors.inkDim },
   typeOpen: { borderColor: colors.gold },
+  group: { fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 1, color: colors.inkFaint, marginTop: 6 },
   build: { padding: 12, gap: 2, alignItems: 'center', backgroundColor: colors.panel2, borderWidth: 2, borderColor: colors.gold },
   buildTxt: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
   chev: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkFaint },

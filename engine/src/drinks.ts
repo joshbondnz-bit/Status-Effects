@@ -99,8 +99,8 @@ export const PRESETS: Record<DrinkCategory, DrinkSpec[]> = {
 /** A kind of drink without a size (Lager 5%); the size is picked separately from SERVING_SIZES. */
 export type DrinkType = Omit<DrinkSpec, 'ml' | 'size'>;
 
-/** Drink types for the drink sheet. Mixed drinks keep their fixed PRESETS sizes instead. */
-export const DRINK_TYPES: Record<'beer' | 'wine' | 'spirits', DrinkType[]> = {
+/** Drink types for the drink sheet. Mixed holds ready-to-drink cans; cocktails keep their fixed PRESETS sizes. */
+export const DRINK_TYPES: Record<DrinkCategory, DrinkType[]> = {
   beer: [
     { name: 'Lager', abv: 5, carbPer100ml: 3.0 },
     { name: 'Light beer', abv: 4, carbPer100ml: 2.0 },
@@ -108,7 +108,6 @@ export const DRINK_TYPES: Record<'beer' | 'wine' | 'spirits', DrinkType[]> = {
     { name: 'Double IPA', abv: 8.5, carbPer100ml: 5.5 },
     { name: 'Stout', abv: 4.2, carbPer100ml: 3.5 },
     { name: 'Cider', abv: 4.5, carbPer100ml: 5.0 },
-    { name: 'Hard seltzer', abv: 5, carbPer100ml: 0.5 },
   ],
   wine: [
     { name: 'Red wine', abv: 13.5, carbPer100ml: 0.8 },
@@ -122,6 +121,14 @@ export const DRINK_TYPES: Record<'beer' | 'wine' | 'spirits', DrinkType[]> = {
     { name: 'Rum', abv: 40, carbPer100ml: 0 },
     { name: 'Tequila', abv: 38, carbPer100ml: 0 },
   ],
+  // Ready to drink: cans and bottles bought premixed. Typical strengths; check the can and use ✎ if yours differs.
+  mixed: [
+    { name: 'Hard seltzer', abv: 5, carbPer100ml: 0.6 },
+    { name: 'Hard iced tea', abv: 5, carbPer100ml: 6.8 },
+    { name: 'Vodka soda', abv: 5, carbPer100ml: 0.5 },
+    { name: 'Bourbon and cola', abv: 7, carbPer100ml: 9 },
+    { name: 'Fruit cooler', abv: 5, carbPer100ml: 11 },
+  ],
 };
 for (const [category, list] of Object.entries(DRINK_TYPES) as [DrinkCategory, DrinkType[]][]) {
   for (const t of list) t.category = category;
@@ -133,7 +140,7 @@ const OZ_WINE: ServingSize[] = [{ label: 'Standard pour, 5 oz', ml: 148 }, { lab
 const ML_WINE: ServingSize[] = [{ label: 'Medium glass', ml: 175 }, { label: 'Large glass', ml: 250 }, { label: 'Small glass', ml: 125 }, { label: 'Bottle', ml: 750 }];
 
 /** The usual serving sizes in each region, most common first. */
-export const SERVING_SIZES: Record<'beer' | 'wine' | 'spirits', Record<RegionCode, ServingSize[]>> = {
+export const SERVING_SIZES: Record<DrinkCategory, Record<RegionCode, ServingSize[]>> = {
   beer: {
     // Canada: plain names, no ounces (the ml shows on every size tile).
     ca: [{ label: 'Bottle', ml: 341 }, { label: 'Can', ml: 355 }, { label: 'Tallboy', ml: 473 }, { label: 'Pint', ml: 568 }, { label: 'Small glass', ml: 355 }],
@@ -151,6 +158,15 @@ export const SERVING_SIZES: Record<'beer' | 'wine' | 'spirits', Record<RegionCod
     au: [{ label: 'Nip', ml: 30 }, { label: 'Double', ml: 60 }],
     nz: [{ label: 'Nip', ml: 30 }, { label: 'Double', ml: 60 }],
     eu: [{ label: 'Single, 4 cl', ml: 40 }, { label: 'Small, 2 cl', ml: 20 }, { label: 'Double, 8 cl', ml: 80 }],
+  },
+  // Ready-to-drink cans and bottles.
+  mixed: {
+    ca: [{ label: 'Can', ml: 355 }, { label: 'Tallboy', ml: 473 }],
+    us: [{ label: 'Can, 12 oz', ml: 355 }, { label: 'Tallboy, 16 oz', ml: 473 }, { label: 'Large can, 24 oz', ml: 710 }],
+    uk: [{ label: 'Can', ml: 330 }, { label: 'Small can', ml: 250 }, { label: 'Large can', ml: 440 }],
+    au: [{ label: 'Can', ml: 375 }, { label: 'Bottle', ml: 275 }, { label: 'Large can', ml: 440 }],
+    nz: [{ label: 'Can', ml: 330 }, { label: 'Small can', ml: 250 }, { label: 'Large can', ml: 440 }],
+    eu: [{ label: 'Can', ml: 330 }, { label: 'Large can', ml: 500 }],
   },
 };
 
