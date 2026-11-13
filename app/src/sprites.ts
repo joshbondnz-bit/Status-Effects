@@ -68,6 +68,11 @@ export const HEART: SpriteDef = {
   rows: ['.RR.RR.', 'hRRRRRR', 'RRRRRRR', '.RRRRR.', '..RRR..', '...R...'],
 };
 
+/** HP rate arrows under the ring: red pointing down while draining, green pointing up while regenerating. */
+const ARROW = ['..hrR..', '..hrR..', '..hrR..', 'hhrrrRR', '.hrrrR.', '..hrR..', '...r...'];
+export const ARROW_DOWN: SpriteDef = { palette: { h: '#ff9a86', r: '#ff5d62', R: '#a3243a' }, rows: ARROW };
+export const ARROW_UP: SpriteDef = { palette: { h: '#b8f7d6', r: '#5fd39a', R: '#2f8f62' }, rows: [...ARROW].reverse() };
+
 /** Options tab icon; tinted to match the tab state. */
 export function gearSprite(color: string): SpriteDef {
   return {

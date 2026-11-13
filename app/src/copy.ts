@@ -1,8 +1,8 @@
 // All user-facing wording for Tonight. The engine returns numbers; this turns them into words.
-import { REGIONS, standardDrinks, type Effect, type EffectId, type Night, type RegionCode } from '../../engine/src/index.ts';
+import { REGIONS, phaseIndex, standardDrinks, type Effect, type EffectId, type Night, type RegionCode } from '../../engine/src/index.ts';
 import { clock, duration, zoneName as zoneNameOf } from './format';
 
-/** Driving limits by region, for the zone descriptions (Buzzed, Tipsy, Drunk). */
+/** Driving limits by region, for the impaired judgment details, by the night's peak zone (Buzzed, Tipsy, Drunk). */
 const DRIVING: Record<RegionCode, { buzzed: string; tipsy: string; drunk: string }> = {
   ca: { buzzed: 'Already over the zero limit for new and young drivers in most provinces.',
     tipsy: 'Most Canadian provinces issue roadside suspensions in this zone.',
@@ -24,20 +24,6 @@ const DRIVING: Record<RegionCode, { buzzed: string; tipsy: string; drunk: string
     drunk: 'Over the driving limit everywhere in Europe.' },
 };
 
-/** What each zone (Fresh … Danger) means, with the driving limits for your region. */
-export function phaseCopy(k: number, region: RegionCode): string {
-  const d = DRIVING[region];
-  return [
-    "Little or no alcohol, by estimate. If you've been drinking tonight, don't drive: estimates can be wrong.",
-    `Relaxed and chattier. ${d.buzzed} If this is still in your system at bedtime, your sleep takes a hit.`,
-    `Judgment and coordination are slipping and risk-taking goes up. ${d.tipsy}`,
-    `${d.drunk} Balance, reaction time and speech are impaired.`,
-    'A hangover is very likely tomorrow, along with a dip in mood and focus.',
-    'Memory gaps and vomiting are likely. Switch to water and stay with people you trust.',
-    'Risk of alcohol poisoning. Stop drinking and make sure someone sober is with you.',
-  ][k];
-}
-
 export const EFFECT_NAMES: Record<EffectId, string> = {
   judgment: 'Impaired judgment', sleep: 'Impaired sleep', hrv: 'HRV drain', dehydration: 'Dehydration',
   hangover: 'Hangover', hangxiety: 'Hangxiety', recovery: 'Slow recovery', fatpause: 'Fat burning paused',
@@ -55,7 +41,11 @@ export function severityLabel(e: Effect): string {
 export function describe(e: Effect, n: Night, region: RegionCode): string {
   const unit = REGIONS[region].unitLabel;
   switch (e.id) {
-    case 'judgment': return `Slower reactions and bolder decisions until about ${clock(e.end)}. This is an estimate, not a driving clearance. Don't drive tonight.`;
+    case 'judgment': {
+      const k = phaseIndex(n.peak), d = DRIVING[region];
+      const law = k >= 3 ? d.drunk : k === 2 ? d.tipsy : k === 1 ? d.buzzed : '';
+      return `Slower reactions and bolder decisions until about ${clock(e.end)}. ${law ? law + ' ' : ''}This is an estimate, not a driving clearance. Don't drive tonight.`;
+    }
     case 'sleep': return n.bedGrams > 0.5
       ? `You'll still have about ${standardDrinks(n.bedGrams, region).toFixed(1)} ${unit} of alcohol in your system at your ${clock(n.bed)} bedtime, not cleared until around ${clock(n.soberAt)}. That cuts REM sleep and breaks up the second half of the night.`
       : `You should be near zero by your ${clock(n.bed)} bedtime, which softens the hit. Another drink would push alcohol into your sleep.`;

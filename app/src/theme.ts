@@ -52,6 +52,7 @@ const dark = {
   nudgeEdge: '#6a5424',
   // Status tray: the shaded wedge showing time already used
   wedge: 'rgba(11,8,16,0.62)',
+  wood: '#8a5a34', woodHi: '#b8814e', woodLo: '#4a2c18',
   // The Water button
   waterBg: '#22385a',
   waterEdge: '#4a78b8',
@@ -107,6 +108,7 @@ const light: Palette = {
   nudgeBg: '#fbefcc',
   nudgeEdge: '#d4ad52',
   wedge: 'rgba(46,37,64,0.3)',
+  wood: '#a86f3f', woodHi: '#d29a62', woodLo: '#5e3a1f',
   waterBg: '#d9e5fb',
   waterEdge: '#7b9ee0',
   waterEdgeLo: '#4a6db8',

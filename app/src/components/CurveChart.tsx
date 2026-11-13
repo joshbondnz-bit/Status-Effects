@@ -130,7 +130,6 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
     <View style={{ gap: 8 }}>
       <Text style={[styles.verdict, { color: atBed ? colors.warn : colors.good }]}>{verdict}</Text>
       {ghost ? <Text style={[styles.verdict, { color: colors.mana }]}>{ghostVerdict}</Text> : null}
-      <Text style={styles.note}>Times and zones are estimates from averages, not a driving guide. You can still be impaired after &quot;clear&quot;, and the next morning.</Text>
 
       <View onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}
         accessible accessibilityLabel={`Alcohol forecast. Peak around ${clock(night.peakAt)}, in the ${zoneName(night.peak)} zone. ${verdict}`}>
@@ -230,16 +229,13 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
           <Text style={[styles.whatIfTxt, whatIf && { color: colors.edge }]}>{whatIf ? '✓ ' : '+ '}What if one more {last.name.toLowerCase()}?</Text>
         </Pressable>
       </View>
-      <Text style={styles.key}>Solid: so far · Dotted: if you stop now{ghost ? ' · Blue: one more' : ''} · ◆ peak level · ■ clear time. Drag across the chart to read any time.</Text>
     </View>
   );
 }
 
 const useStyles = makeStyles((colors: Palette) => ({
   empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12 },
-  key: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
   verdict: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20 },
-  note: { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 18, color: colors.inkFaint },
   icon: { position: 'absolute', width: ICON, height: ICON },
   touch: { position: 'absolute', top: 0 },
   footer: { flexDirection: 'row' },

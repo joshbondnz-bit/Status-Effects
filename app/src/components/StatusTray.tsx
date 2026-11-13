@@ -106,11 +106,8 @@ function Slot({ e, now, land, onPress }: { e: Effect; now: number; land: boolean
   );
 }
 
-/** The current zone, e.g. "Tipsy" and what it means, shown under the Status heading. */
-export interface ZoneInfo { name: string; text: string; color: string }
-
-export function StatusTray({ debuffs, buffs, lingering = [], sources, night, region, zone }: {
-  debuffs: Effect[]; buffs: Effect[]; night: Night; region: RegionCode; zone?: ZoneInfo;
+export function StatusTray({ debuffs, buffs, lingering = [], sources, night, region }: {
+  debuffs: Effect[]; buffs: Effect[]; night: Night; region: RegionCode;
   /** Debuffs still running from earlier nights (not caused again tonight). */
   lingering?: Effect[];
   /** Earlier nights' simulations by first drink, so their descriptions use their own numbers. */
@@ -139,7 +136,6 @@ export function StatusTray({ debuffs, buffs, lingering = [], sources, night, reg
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>Status</Text>
-      {zone ? <Text style={styles.zoneText}><Text style={[styles.zoneName, { color: zone.color }]}>{zone.name}. </Text>{zone.text}</Text> : null}
       {tonight.length ? (
         <View style={styles.tray}>
           {tonight.map((e, i) => (
@@ -159,7 +155,6 @@ export function StatusTray({ debuffs, buffs, lingering = [], sources, night, reg
           </View>
         </View>
       ) : null}
-      {list.length ? <Text style={styles.hint}>Tap an icon for details.</Text> : null}
 
       <Modal visible={!!open} transparent animationType="slide" onRequestClose={() => setOpenId(null)}>
         <Pressable style={styles.backdrop} onPress={() => setOpenId(null)} accessibilityLabel="Close details" />
@@ -212,8 +207,6 @@ export function StatusTray({ debuffs, buffs, lingering = [], sources, night, reg
 const useStyles = makeStyles((colors: Palette) => ({
   wrap: { gap: 8 },
   title: { fontFamily: fonts.display, fontSize: 30, letterSpacing: 0.4, color: colors.ink },
-  zoneText: { fontFamily: fonts.body, fontSize: 15, color: colors.ink, lineHeight: 21, marginBottom: 2 },
-  zoneName: { fontFamily: fonts.bodyBold },
   tray: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8, columnGap: 6 },
   slotWrap: { flexDirection: 'row', gap: 6 },
   sep: { width: 2, height: SLOT, backgroundColor: colors.edgeHi, marginHorizontal: 3 },
@@ -236,7 +229,6 @@ const useStyles = makeStyles((colors: Palette) => ({
   timeIncoming: { color: colors.inkFaint, fontSize: 16 },
   timeSoon: { color: colors.gold },
   empty: { fontFamily: fonts.body, fontSize: 13.5, color: colors.inkFaint },
-  hint: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
   backdrop: { flex: 1, backgroundColor: 'rgba(9,7,14,0.7)' },
   sheet: { backgroundColor: colors.panel2, borderTopWidth: 3, borderColor: colors.edgeHi, padding: 16, maxHeight: '80%' },
   sheetTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },

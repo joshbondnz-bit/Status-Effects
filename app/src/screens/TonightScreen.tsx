@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import {
-  MIN, PHASES, WARNING_BAC, effects, healthState, lingeringDebuffs, makeDrink, phaseIndex, previewDrink, simulateNight, standardDrinks, withLingering,
+  MIN, WARNING_BAC, effects, healthState, lingeringDebuffs, makeDrink, previewDrink, simulateNight, standardDrinks, withLingering,
   type DrinkSpec, type LogEvent,
 } from '../../../engine/src/index.ts';
 import { newId, sampleNightEvents } from '../sampleNight';
@@ -23,7 +23,6 @@ import { MorningReport, findMorningNight } from '../components/MorningReport';
 import type { SavedNight } from '../storage';
 import { ICONS } from '../sprites';
 import { clock, money } from '../format';
-import { phaseCopy } from '../copy';
 import { useApp } from '../AppDataProvider';
 
 
@@ -76,13 +75,6 @@ export function TonightScreen() {
   // People are badly impaired well before 0 HP, so the safety check-in appears from the Wasted zone (0.15%+)
   // as well as at 0 HP, and comes back every 30 minutes while the level stays that high.
   const critical = healthState(night) === 'critical';
-  // The current zone and what it means, shown under Status (it describes the state you're in).
-  const zoneK = night.bacNow >= 0.25 ? 6 : phaseIndex(night.bacNow);
-  const zone = {
-    name: critical ? 'Critical' : PHASES[zoneK].name,
-    text: phaseCopy(zoneK, region),
-    color: critical || zoneK >= 5 ? colors.bad : zoneK >= 3 ? colors.warn : colors.ink,
-  };
   const highRange = critical || night.bacNow >= WARNING_BAC;
   const ack = data.tonight.safetyAckAt;
   const showSafety = highRange && (ack == null || now - ack > 30 * MIN);
@@ -154,27 +146,26 @@ export function TonightScreen() {
       ) : null}
 
       {/* The ring floats on the sky rather than in a card, so the night shows through behind it. */}
+      {/* Tonight's glasses lined up on a pixel bar shelf above the ring. */}
+      <View style={styles.shelf}>
+      <View style={styles.tally}>
+        <View style={styles.glasses}>
+          {/* Drinks, water and food in the order they were logged, so the water-to-drink ratio is visible at a glance. */}
+          {[...events].sort((a, b) => a.t - b.t).slice(0, 30).map(e =>
+            e.type === 'drink' ? <PixelSprite key={e.id} sprite={glassSprite(e)} scale={2} />
+            : <PixelSprite key={e.id} sprite={e.type === 'water' ? ICONS.hydrated : ICONS.lined} scale={1.5} />)}
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.hudN}>{total.toFixed(1)}</Text>
+          <Text style={styles.hudL}>STD DRINKS</Text>
+          {spent > 0 ? <Text style={styles.faint}>{money(spent)} spent</Text> : null}
+        </View>
+      </View>
+      <View style={styles.plank} />
+      </View>
       <ActionFx event={ringFx}><HealthBar night={night} /></ActionFx>
 
       <View style={[panel, styles.card]}>
-        <View style={styles.tally}>
-          <View style={styles.glasses}>
-            {night.drinks.length
-              // Drinks, water and food in the order they were logged, so the water-to-drink ratio is visible at a glance.
-              ? [...events].sort((a, b) => a.t - b.t).slice(0, 30).map(e =>
-                  e.type === 'drink' ? <PixelSprite key={e.id} sprite={glassSprite(e)} scale={2} />
-                  : <PixelSprite key={e.id} sprite={e.type === 'water' ? ICONS.hydrated : ICONS.lined} scale={1.5} />)
-              : <Text style={styles.faint}>Your glasses stack up here.</Text>}
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.tallyN}>{night.drinks.length} drink{night.drinks.length === 1 ? '' : 's'}</Text>
-            {night.waters.length || night.foods.length ? (
-              <Text style={styles.faint}>{night.waters.length} water · {night.foods.length} food</Text>
-            ) : null}
-            <Text style={styles.faint}>{total.toFixed(1)} std drinks</Text>
-            {spent > 0 ? <Text style={styles.faint}>{money(spent)} spent</Text> : null}
-          </View>
-        </View>
 
         {critical ? (
           <View style={styles.danger}>
@@ -218,11 +209,11 @@ export function TonightScreen() {
         ) : null}
 
         {/* Cause, then effect: what you've had (and the buttons to log more) sits above what it's doing to you. */}
-        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} lingering={stacked.lingering} sources={carried.nights} night={night} region={region} zone={zone} />
+        <StatusTray debuffs={fx.debuffs} buffs={fx.buffs} lingering={stacked.lingering} sources={carried.nights} night={night} region={region} />
       </View>
 
       <View style={[panel, styles.card]}>
-        <View style={styles.logHead}><Text style={styles.h2}>Alcohol forecast</Text><Text style={styles.faint}>Peak, bedtime and clear</Text></View>
+        <Text style={styles.h2}>Alcohol forecast</Text>
         <CurveChart night={night} whatIf={whatIf} onWhatIf={setWhatIf} />
       </View>
 
@@ -242,7 +233,7 @@ export function TonightScreen() {
         {data && data.past.length ? <Text style={styles.faint}>{data.past.length} earlier night{data.past.length === 1 ? '' : 's'} saved for History.</Text> : null}
       </View>
 
-      <Text style={styles.fine}><Text style={styles.fineBold}>Never drink and drive.</Text> Every number here is an estimate, not a breathalyser reading or a driving clearance. Your log is saved on this device only.</Text>
+      <Text style={styles.fine}>Estimates only. <Text style={styles.fineBold}>Never drink and drive.</Text></Text>
       {events.length === 0 ? (
         <Pressable onPress={loadSample} accessibilityRole="button"><Text style={styles.link}>Load a sample night</Text></Pressable>
       ) : null}
@@ -265,9 +256,12 @@ const useStyles = makeStyles((colors: Palette) => ({
   clock: { fontFamily: fonts.num, fontSize: 28, color: colors.ink },
   noDrive: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.5, color: colors.bad, borderWidth: 2, borderColor: colors.alertEdge, paddingHorizontal: 7, paddingVertical: 4 },
   card: { padding: 14, gap: 14 },
-  tally: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, backgroundColor: colors.sunk, padding: 10, minHeight: 50 },
+  shelf: { marginBottom: -12 },
+  tally: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, paddingHorizontal: 8, paddingBottom: 1 },
+  plank: { height: 9, backgroundColor: colors.wood, borderTopWidth: 2, borderTopColor: colors.woodHi, borderBottomWidth: 3, borderBottomColor: colors.woodLo, borderLeftWidth: 2, borderRightWidth: 2, borderLeftColor: colors.woodLo, borderRightColor: colors.woodLo },
   glasses: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 2 },
-  tallyN: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
+  hudN: { fontFamily: fonts.num, fontSize: 26, lineHeight: 28, color: colors.ink },
+  hudL: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.8, color: colors.inkDim },
   faint: { fontFamily: fonts.body, fontSize: 13, color: colors.inkFaint },
   actionsCol: { gap: 8 },
   actions: { flexDirection: 'row', gap: 8 },

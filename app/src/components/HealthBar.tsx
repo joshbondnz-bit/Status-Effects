@@ -8,7 +8,7 @@ import {
   FED_WINDOW, PHASES, WARNING_BAC, healthState, hpFromBac, hpGainNextHour, hpLossNextHour, phaseIndex, simulateNight, type Night,
 } from '../../../engine/src/index.ts';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
-import { HEART } from '../sprites';
+import { ARROW_DOWN, ARROW_UP, HEART } from '../sprites';
 import { PixelSprite } from './PixelSprite';
 import { clock } from '../format';
 import { useReduceMotion } from '../useReduceMotion';
@@ -22,6 +22,11 @@ const VIEW = '-10 -10 260 260';
 /** Light top, main and dark bottom bands, like the old bar's bevel, as three concentric rings. */
 const BANDS = [{ r: 99, w: 5 }, { r: 93, w: 8 }, { r: 86, w: 6 }];
 const DMG = ['#9c4652', '#76182e', '#460a1b'];
+/** The aura behind the ring, by zone (Fresh to Danger): cool and clear, warming to red as the night gets serious. */
+const AURA = ['#6fd3c8', '#9fd36a', '#f2c14e', '#ff9a3d', '#ff6a4f', '#ff3c50', '#d81e3c'];
+/** Stepped pixel bands fading out from the ring's edge: [radius, opacity], in the ring's drawing units. */
+const AURA_BANDS: [number, number][] = [[112, 0.55], [124, 0.36], [136, 0.22], [148, 0.12], [160, 0.06]];
+const AURA_R = 170;
 const HEAL = ['rgba(127,240,184,0.55)', 'rgba(95,211,154,0.42)', 'rgba(60,160,112,0.34)'];
 
 /** A point on the ring: 0° is the top, angles go clockwise. */
@@ -189,6 +194,21 @@ export function HealthBar({ night }: { night: Night }) {
     return () => loop.stop();
   }, [critical, warning, reduceMotion, pulse]);
 
+  // The aura breathes slowly while HP is draining, and holds still otherwise.
+  const auraPulse = useAnimatedValue(1);
+  useEffect(() => {
+    if (!taking || reduceMotion) { auraPulse.setValue(1); return; }
+    const ease = Easing.inOut(Easing.sin);
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(auraPulse, { toValue: 0.6, duration: 1400, easing: ease, useNativeDriver: NATIVE }),
+      Animated.timing(auraPulse, { toValue: 1, duration: 1400, easing: ease, useNativeDriver: NATIVE }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [taking, reduceMotion, auraPulse]);
+  const aura = AURA[critical ? 6 : k];
+  const auraPx = (AURA_R * 2 * size) / 260;
+
   // The shine: a soft highlight slides along the incoming-damage arc (clockwise, the way health drains)
   // or back along the healing arc. Drawn once at the top and rotated, so it runs on the native driver.
   const shineFrom = tipDeg;
@@ -214,17 +234,29 @@ export function HealthBar({ night }: { night: Night }) {
 
   // ----- Words -----
   const rateNum = (n: number) => Math.max(1, Math.round(n));
+  /** One to three arrows, more the faster HP is changing. */
+  const arrowsFor = (n: number) => (n < 4 ? 1 : n < 9 ? 2 : 3);
+  // One box under the ring: alerts fill it with their colour; draining and regenerating show the rate with 1–3 arrows.
   const chip = critical ? { text: 'CRITICAL', style: styles.chipCrit } : stabilising ? { text: 'STABILISING', style: styles.chipStab }
-    : warning ? { text: 'WARNING', style: styles.chipWarn }
-    // The drain figure is what's lost over the next hour (heaviest while drinks absorb), shown as at least 1.
-    : taking ? { text: `▼ DRAINING · ${rateNum(loss)} HP/HR`, style: styles.chipDmg }
-    : healing ? { text: `▲ REGENERATING · ${rateNum(gain)} HP/HR`, style: styles.chipHeal } : null;
+    : warning ? { text: 'WARNING', style: styles.chipWarn } : null;
+  // The drain figure is what's lost over the next hour (heaviest while drinks absorb), shown as at least 1.
+  const combat = chip ? null
+    : taking ? { arrow: ARROW_DOWN, arrows: arrowsFor(rateNum(loss)), tint: 'rgba(255,93,98,0.18)', edge: 'rgba(255,93,98,0.6)', text: `-${rateNum(loss)} HP/HR`, color: colors.bad, said: `draining ${rateNum(loss)} HP an hour until about ${clock(night.futurePeakAt)}` }
+    : healing ? { arrow: ARROW_UP, arrows: arrowsFor(rateNum(gain)), tint: 'rgba(95,211,154,0.16)', edge: 'rgba(95,211,154,0.55)', text: `+${rateNum(gain)} HP/HR`, color: colors.good, said: `regenerating ${rateNum(gain)} HP an hour, full around ${clock(night.soberAt)}` }
+    : null;
   const [ex1, ey1] = pt(tipDeg, R - 11), [ex2, ey2] = pt(tipDeg, R + 11);
 
   return (
     <View style={{ gap: 10 }}>
       <View style={[styles.ringBox, { width: size, height: size }]}
-        accessibilityRole="progressbar" accessibilityLabel={`Health ${Math.round(hp)} of 100, ${critical ? 'critical' : PHASES[k].name}${chip ? ', ' + chip.text.toLowerCase().replace(/[▼▲]/g, '') : ''}`}>
+        accessibilityRole="progressbar" accessibilityLabel={`Health ${Math.round(hp)} of 100, ${critical ? 'critical' : PHASES[k].name}${chip ? ', ' + chip.text.toLowerCase() : combat ? ', ' + combat.said : ''}`}>
+        <Animated.View pointerEvents="none"
+          style={{ position: 'absolute', width: auraPx, height: auraPx, left: (size - auraPx) / 2, top: (size - auraPx) / 2, opacity: auraPulse }}>
+          <Svg width={auraPx} height={auraPx} viewBox={`${C - AURA_R} ${C - AURA_R} ${AURA_R * 2} ${AURA_R * 2}`}>
+            <Circle cx={C} cy={C} r={81} fill={aura} fillOpacity={0.12} />
+            {AURA_BANDS.map(([r, o]) => <Circle key={r} cx={C} cy={C} r={r} stroke={aura} strokeOpacity={o} strokeWidth={12} fill="none" />)}
+          </Svg>
+        </Animated.View>
         <Svg width={size} height={size} viewBox={VIEW}>
           <Circle cx={C} cy={C} r={104} stroke={colors.edge} strokeWidth={3} fill="none" />
           <Circle cx={C} cy={C} r={81} stroke={colors.edge} strokeWidth={3} fill="none" />
@@ -275,8 +307,25 @@ export function HealthBar({ night }: { night: Night }) {
         </View>
       </View>
 
-      {chip ? <Animated.Text style={[styles.chip, chip.style, (critical || warning) && { opacity: pulse }]}>{chip.text}</Animated.Text> : null}
-      {night.drinks.length ? <Text style={styles.bac}>An estimate, not a breathalyser or a driving guide</Text> : null}
+      {chip || combat ? (
+        // Tucked up close under the ring.
+        <View style={[styles.box, { marginTop: -Math.round(size * 0.094) - 4 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {chip ? (
+            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: chip.style.backgroundColor, opacity: critical || warning ? pulse : 1 }]} />
+          ) : combat ? (
+            // The translucent fill breathes with the aura while draining.
+            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: combat.tint, borderWidth: 2, borderColor: combat.edge, opacity: taking ? auraPulse : 1 }]} />
+          ) : null}
+          {chip ? <Text style={[styles.chipTxt, { color: chip.style.color }]}>{chip.text}</Text> : combat ? (
+            <>
+              <Text style={[styles.combatNum, { color: combat.color }]}>{combat.text}</Text>
+              <View style={styles.arrows}>
+                {Array.from({ length: combat.arrows }, (_, i) => <PixelSprite key={i} sprite={combat.arrow} scale={2} />)}
+              </View>
+            </>
+          ) : null}
+        </View>
+      ) : null}
 
       {warning ? (
         <Text style={[styles.rate, { color: colors.warn }]}>
@@ -294,10 +343,6 @@ export function HealthBar({ night }: { night: Night }) {
         <Text style={[styles.rate, { color: colors.bad }]}>Health is at 0.  <Text style={styles.rateSub}>Stop drinking and make sure someone sober is with you.</Text></Text>
       ) : stabilising ? (
         <Text style={[styles.rate, { color: colors.gold }]}>Regenerating {rateNum(gain)} HP/hr.  <Text style={styles.rateSub}>Keep someone with you until you're clear, around {clock(night.soberAt)}.</Text></Text>
-      ) : taking && !warning ? (
-        <Text style={styles.rateSub}>Most of this drain comes in the next hour while your drinks absorb. Lowest point around {clock(night.futurePeakAt)}, even if you stop now.</Text>
-      ) : healing ? (
-        <Text style={styles.rateSub}>Full health around {clock(night.soberAt)}, by estimate. That isn't a sign you're fine to drive, and next-day debuffs keep running after it.</Text>
       ) : null}
       {taking && emptyStomachLoss != null && emptyStomachLoss - loss >= 1 ? (
         <Text style={styles.rateNote}>Slowed by food: about {Math.round(emptyStomachLoss)} HP on an empty stomach.</Text>
@@ -313,13 +358,15 @@ const useStyles = makeStyles((colors: Palette) => ({
   hpNum: { fontFamily: fonts.display, color: colors.ink, includeFontPadding: false },
   hpMax: { fontFamily: fonts.display, color: colors.inkDim },
   zone: { fontFamily: fonts.display, letterSpacing: 0.4 },
-  chip: { alignSelf: 'center', fontFamily: fonts.bodyBold, fontSize: 11.5, letterSpacing: 0.6, paddingHorizontal: 8, paddingVertical: 4, overflow: 'hidden', textAlign: 'center' },
-  chipDmg: { color: '#fff', backgroundColor: colors.hp },
-  chipHeal: { color: colors.edge, backgroundColor: colors.good },
+  box: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingHorizontal: 10, paddingVertical: 3, marginBottom: 4 },
+  arrows: { flexDirection: 'row', gap: 2 },
+  chipTxt: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.8, textAlign: 'center', paddingVertical: 3 },
   chipCrit: { color: '#fff', backgroundColor: '#b3132b' },
   chipStab: { color: colors.edge, backgroundColor: colors.gold },
   chipWarn: { color: colors.edge, backgroundColor: '#ff8a3d' },
-  bac: { alignSelf: 'center', fontFamily: fonts.body, fontSize: 13, color: colors.inkDim, marginTop: -4 },
+  // Draining and regenerating: the rate in the pixel number font.
+  combatNum: { fontFamily: fonts.num, fontSize: 21, lineHeight: 23 },
   particle: { position: 'absolute', width: 4, height: 4 },
   pop: { position: 'absolute', width: 32, textAlign: 'center', fontFamily: fonts.num, fontSize: 24, textShadowColor: colors.edge, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 0 },
   rate: { fontFamily: fonts.bodyBold, fontSize: 14 },
