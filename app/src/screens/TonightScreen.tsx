@@ -153,9 +153,10 @@ export function TonightScreen() {
           onFeel={f => setMorning({ feel: f })} onClose={() => setMorning({ reportClosed: true })} />
       ) : null}
 
-      <View style={[panel, styles.card]}>
-        <ActionFx event={ringFx}><HealthBar night={night} /></ActionFx>
+      {/* The ring floats on the sky rather than in a card, so the night shows through behind it. */}
+      <ActionFx event={ringFx}><HealthBar night={night} /></ActionFx>
 
+      <View style={[panel, styles.card]}>
         <View style={styles.tally}>
           <View style={styles.glasses}>
             {night.drinks.length
