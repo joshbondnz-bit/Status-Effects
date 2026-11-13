@@ -29,7 +29,7 @@ BUFFS AND DEBUFFS
 Drinks come with status effects: Impaired judgment, Dehydration, Impaired sleep, Hangover, Slow recovery and more, each with a timer and a severity. Water, food and a slower pace earn buffs. Tap any effect to see what it means, and the Science tab shows the research behind each one.
 
 ALCOHOL FORECAST
-See your blood alcohol across the night: when you'll peak, how much will still be in your system at bedtime, and when it clears. Try "what if one more?" before you decide.
+See how tonight plays out: when you'll peak, which zone you'll reach, whether alcohol will still be in your system at bedtime, and roughly when it clears. Try "what if one more?" before you decide. Zones and times are estimates, never a driving guide.
 
 THE MORNING AFTER
 A morning report sums up last night: drinks, lowest HP, sleep, and the debuffs still running. Tell it how you feel, and History learns how many drinks your mornings can take.
@@ -52,7 +52,9 @@ Status Effects gives estimates based on population averages. It is not a breatha
 
 ## Keywords (100 max, comma-separated, no spaces needed)
 
-drink,tracker,alcohol,BAC,blood alcohol,hangover,units,drinking,RPG,HP,calories,sleep,beer,wine (95)
+drink,tracker,alcohol,hangover,units,drinking,sober,cut back,habit,RPG,HP,calories,sleep,beer,wine (98)
+
+No "BAC" or "blood alcohol": the app shows zones, not readings, and the listing shouldn't sell it as a BAC tool.
 
 ## Category
 
@@ -72,7 +74,7 @@ Paste this into App Store Connect under App Review Information → Notes. It exp
 >
 > Safety features:
 > - Setup includes a safety screen. The app's numbers are estimates and not a breathalyser reading. It never says you are safe to drive. It shows your local emergency number. It is for people of legal drinking age only.
-> - At very high estimated blood alcohol (0.15% and over), or when HP reaches 0, a safety check-in opens. It asks whether someone sober is with you, offers to text a friend (you pick the recipient) or call the emergency number, and lists the signs of alcohol poisoning. It returns every 30 minutes while the level stays that high.
+> - When the estimate reaches the Wasted zone or higher, or HP reaches 0, a safety check-in opens. It asks whether someone sober is with you, offers to text a friend (you pick the recipient) or call the emergency number, and lists the signs of alcohol poisoning. It returns every 30 minutes while the level stays that high.
 > - The impaired judgment effect says plainly that it is not a driving clearance, and to not drive tonight.
 > - Weekly guidelines and help lines are shown for the user's region (Canada, US, UK, Australia, New Zealand, Europe).
 >
