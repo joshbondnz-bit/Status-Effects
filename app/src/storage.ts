@@ -8,6 +8,10 @@ import { DEFAULT_CARBS_PER_100ML, costPerDrink, type DrinkCategory, type DrinkSp
 const KEY = 'status-effects/data';
 const DATA_VERSION = 2;
 
+/** The Terms of Use version people agree to at setup. Raise it when the terms change, and everyone sees the safety screen once more. */
+export const TERMS_VERSION = 1;
+export const TERMS_URL = 'https://joshbondnz-bit.github.io/statusfx/terms/';
+
 export interface SavedNight {
   id: string;
   events: LogEvent[];
@@ -57,6 +61,8 @@ export interface AppData {
   audit?: { score: number; at: number };
   /** When the safety screen (estimates only, never drink and drive) was acknowledged. Shown once until then. */
   safetyAckAt?: number;
+  /** The Terms of Use version agreed to on the safety screen, with the legal drinking age confirmed. */
+  termsVersion?: number;
   /** Drinks the user has saved for one-tap logging, newest first. */
   myDrinks?: SavedDrink[];
 }
@@ -149,6 +155,7 @@ function upgrade(raw: any): AppData | null {
     audit: raw.audit && typeof raw.audit.score === 'number' && typeof raw.audit.at === 'number' ? raw.audit : undefined,
     myDrinks: Array.isArray(raw.myDrinks) ? raw.myDrinks.filter(isSavedDrink) : [],
     safetyAckAt: typeof raw.safetyAckAt === 'number' ? raw.safetyAckAt : undefined,
+    termsVersion: typeof raw.termsVersion === 'number' ? raw.termsVersion : undefined,
   };
 }
 

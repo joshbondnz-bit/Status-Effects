@@ -14,7 +14,7 @@ import type { FoodCompare } from '../../storage';
 import { FOOD } from '../../food';
 import { EFFECT_NAMES } from '../../copy';
 import { ICONS, glassSprite } from '../../sprites';
-import { clock, duration, money } from '../../format';
+import { clock, duration, money, zoneName } from '../../format';
 import { PixelSprite } from '../PixelSprite';
 import { feelColors } from '../MorningReport';
 import { fonts, makeStyles, useColors, type Palette } from '../../theme';
@@ -121,7 +121,7 @@ function RecapBody({ night, profile, now, showCalories, compareWith }: {
 
       <View style={styles.stats}>
         <Stat k="Drinks" v={`${s.drinks} · ${std.toFixed(1)} std`} sub={`${s.waters} water · ${foods} food`} />
-        <Stat k="Peak" v={`${s.peak.toFixed(3)}%`} sub={zone} />
+        <Stat k="Peak" v={zone} sub="estimated zone" />
         <Stat k="Spent" v={priced ? money(spent) : '—'} sub={priced ? `${money(Math.round(spent / s.drinks * 100) / 100)} a drink` : 'No prices set'} />
         {showCalories
           ? <Stat k="Calories" v={`${s.kcal.toLocaleString()} kcal`} sub={`≈ ${servings.toFixed(1)} ${servings === 1 ? food.one : food.many}`} />
@@ -231,13 +231,13 @@ function RecapCurve({ samples, t0, bed, end, peak }: { samples: number[]; t0: nu
   const font = { fontFamily: fonts.body, fontSize: 10 };
   return (
     <View style={styles.chart} onLayout={e => setW(e.nativeEvent.layout.width - 8)}
-      accessible accessibilityLabel={`Blood alcohol over the night, peaking at ${peak.toFixed(3)} percent`}>
+      accessible accessibilityLabel={`Estimated alcohol over the night, peaking in the ${zoneName(peak)} zone`}>
       {w > 0 ? (
         <Svg width={w} height={H}>
           {([[0.08, 'Drunk'], [0.15, 'Warning'], [0.25, 'Critical']] as const).filter(([b]) => b < maxB).map(([b, l]) => (
             <G key={l}>
               <Line x1={pad} x2={w - pad} y1={Y(b)} y2={Y(b)} stroke={colors.inkFaint} strokeDasharray="2 4" strokeWidth={1} />
-              <SvgText x={w - pad} y={Y(b) - 3} textAnchor="end" fill={colors.inkFaint} {...font}>{`${l} ${b.toFixed(2)}`}</SvgText>
+              <SvgText x={w - pad} y={Y(b) - 3} textAnchor="end" fill={colors.inkFaint} {...font}>{l}</SvgText>
             </G>
           ))}
           <Path d={`${d}L${X(mins)},${base}L${X(0)},${base}Z`} fill={colors.hp} opacity={0.18} />
@@ -249,7 +249,7 @@ function RecapCurve({ samples, t0, bed, end, peak }: { samples: number[]; t0: nu
             </>
           ) : null}
           <Circle cx={X(pk)} cy={Y(samples[pk] ?? 0)} r={3.5} fill={colors.hp} stroke={colors.edge} strokeWidth={1.5} />
-          <SvgText x={Math.min(X(pk), w - 70)} y={Math.max(Y(samples[pk] ?? 0) - 7, 24)} fill={colors.ink} {...font}>{`Peak ${peak.toFixed(3)}%`}</SvgText>
+          <SvgText x={Math.min(X(pk), w - 70)} y={Math.max(Y(samples[pk] ?? 0) - 7, 24)} fill={colors.ink} {...font}>{`Peak: ${zoneName(peak)}`}</SvgText>
           <Line x1={pad} x2={w - pad} y1={base} y2={base} stroke={colors.edgeHi} strokeWidth={1} />
           <SvgText x={pad} y={H - 3} fill={colors.inkFaint} {...font}>{clock(t0)}</SvgText>
           <SvgText x={w - pad} y={H - 3} textAnchor="end" fill={colors.inkFaint} {...font}>{`clear ${clock(t0 + mins * 60000)}`}</SvgText>

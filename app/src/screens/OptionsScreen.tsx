@@ -9,7 +9,7 @@ import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
 import { CharacterFields, NameField, RoutineFields } from '../components/ProfileFields';
 import { Field, PixelButton, Segmented, ToggleRow } from '../components/Form';
-import { clearHistory, type FoodCompare, type ThemeChoice } from '../storage';
+import { TERMS_URL, clearHistory, type FoodCompare, type ThemeChoice } from '../storage';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
 export function OptionsScreen() {
@@ -140,6 +140,7 @@ export function OptionsScreen() {
         <Text style={styles.lead}>Version {Constants.expoConfig?.version ?? '0.1.0'}. Estimates only, never a driving clearance.</Text>
         <View style={styles.links}>
           <Pressable onPress={() => Linking.openURL('https://joshbondnz-bit.github.io/statusfx/privacy/')} accessibilityRole="link"><Text style={styles.link}>Privacy</Text></Pressable>
+          <Pressable onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link"><Text style={styles.link}>Terms</Text></Pressable>
           <Pressable onPress={() => Linking.openURL('https://joshbondnz-bit.github.io/statusfx/support/')} accessibilityRole="link"><Text style={styles.link}>Support</Text></Pressable>
         </View>
       </View>

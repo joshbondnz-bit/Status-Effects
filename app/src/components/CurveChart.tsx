@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Line, Path, Rect, Text as SvgText } from 'react-native-svg';
-import { HOUR, MIN, PHASES, THRESHOLDS, makeDrink, simulateNight, type LogEvent, type Night } from '../../../engine/src/index.ts';
+import { HOUR, MIN, PHASES, THRESHOLDS, makeDrink, phaseIndex, simulateNight, type LogEvent, type Night } from '../../../engine/src/index.ts';
 import { useColors, makeStyles, type Palette, fonts } from '../theme';
-import { clock } from '../format';
+import { clock, zoneName } from '../format';
 import { ICONS, glassSprite } from '../sprites';
 import { PixelSprite } from './PixelSprite';
 
@@ -16,7 +16,6 @@ const ICON = 18;              // a 16px sprite with its outline
 /** Zone tints, Buzzed → Danger, warming from green to red like the calendar. */
 const ZONE_TINT = ['#5fd39a', '#e8c547', '#ff8a3d', '#ff6a4d', '#ec3a50', '#b3132b'];
 
-const pct = (b: number) => `${b.toFixed(3)}%`;
 
 export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Night; whatIf?: boolean; onWhatIf?: (on: boolean) => void }) {
   const colors = useColors();
@@ -112,10 +111,10 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
   // ----- Verdicts -----
   const atBed = night.bedBac > 0.005;
   const verdict = atBed
-    ? `About ${pct(night.bedBac)} still in your system at your ${clock(night.bed)} bedtime. Not clear until around ${clock(night.soberAt)}.`
+    ? `Alcohol still in your system at your ${clock(night.bed)} bedtime. Not clear until around ${clock(night.soberAt)}.`
     : `Clear by about ${clock(night.soberAt)}, before your ${clock(night.bed)} bedtime. Your sleep is spared the worst of it.`;
   const ghostVerdict = ghost
-    ? `One more ${last.name.toLowerCase()} would leave ${pct(ghost.bedBac)} at bedtime and push "clear" to around ${clock(ghost.soberAt)}${ghost.peak >= 0.08 && night.peak < 0.08 ? ', over the 0.08% limit' : ''}.`
+    ? `One more ${last.name.toLowerCase()} would push "clear" to around ${clock(ghost.soberAt)}${phaseIndex(ghost.peak) > phaseIndex(night.peak) ? ` and take you into ${zoneName(ghost.peak)}` : ''}${ghost.bedBac > 0.005 && !atBed ? ', with alcohol still in you at bedtime' : ''}.`
     : '';
 
   // ----- Drag to read -----
@@ -123,8 +122,7 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
   const sx = scrubT != null ? X(scrubT) : 0;
   const sBac = scrubT != null ? night.bacAt(scrubT) : 0;
   const sGhost = scrubT != null && ghost && scrubT > night.now ? ghost.bacAt(scrubT) : null;
-  const sZone = PHASES[Math.min(6, THRESHOLDS.filter(th => sBac >= th).length - 1)]?.name ?? 'Fresh';
-  const tag = scrubT != null ? `${clock(scrubT)} · ${pct(sBac)} ${sBac >= 0.25 ? 'Danger' : sZone}${sGhost != null ? `  (one more: ${pct(sGhost)})` : ''}` : '';
+  const tag = scrubT != null ? `${clock(scrubT)} · ${zoneName(sBac)}${sGhost != null ? `  (one more: ${zoneName(sGhost)})` : ''}` : '';
   const tagW = Math.min(W - PAD_L - PAD_R, tag.length * 5.6 + 12);
   const tagX = Math.max(PAD_L, Math.min(W - PAD_R - tagW, sx - tagW / 2));
 
@@ -132,9 +130,10 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
     <View style={{ gap: 8 }}>
       <Text style={[styles.verdict, { color: atBed ? colors.warn : colors.good }]}>{verdict}</Text>
       {ghost ? <Text style={[styles.verdict, { color: colors.mana }]}>{ghostVerdict}</Text> : null}
+      <Text style={styles.note}>Times and zones are estimates from averages, not a driving guide. You can still be impaired after &quot;clear&quot;, and the next morning.</Text>
 
       <View onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}
-        accessible accessibilityLabel={`Alcohol forecast. Peak ${pct(night.peak)} around ${clock(night.peakAt)}. ${verdict}`}>
+        accessible accessibilityLabel={`Alcohol forecast. Peak around ${clock(night.peakAt)}, in the ${zoneName(night.peak)} zone. ${verdict}`}>
         {width > 0 ? (
           <View style={{ width: W, height: H }}>
             <Svg width={W} height={H}>
@@ -148,10 +147,9 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
                   yBot - yTop >= 11 ? <SvgText key={'zn' + i} x={W - PAD_R + 5} y={(yTop + yBot) / 2 + 3.5} fontSize={10} fontFamily={fonts.bodyBold} fill={ZONE_TINT[i]}>{PHASES[i + 1].name}</SvgText> : null,
                 ];
               })}
-              {THRESHOLDS.slice(1).filter(th => th <= yMax).map(th => [
-                <Line key={'th' + th} x1={PAD_L} x2={W - PAD_R} y1={Y(th)} y2={Y(th)} stroke={colors.edgeHi} strokeWidth={1} strokeDasharray="3 4" />,
-                <SvgText key={'tl' + th} x={2} y={Y(th) + 3.5} fontSize={10} fontFamily={fonts.bodyBold} fill={colors.inkFaint}>{th.toFixed(2).slice(1)}</SvgText>,
-              ])}
+              {THRESHOLDS.slice(1).filter(th => th <= yMax).map(th => (
+                <Line key={'th' + th} x1={PAD_L} x2={W - PAD_R} y1={Y(th)} y2={Y(th)} stroke={colors.edgeHi} strokeWidth={1} strokeDasharray="3 4" />
+              ))}
               <Line x1={PAD_L} x2={W - PAD_R} y1={BASE} y2={BASE} stroke={colors.edgeHi} strokeWidth={1} />
 
               {/* The curve: area and line so far, dotted projection, and the what-if ghost */}
@@ -171,11 +169,11 @@ export function CurveChart({ night, whatIf: whatIfProp, onWhatIf }: { night: Nig
                   With the what-if on, tonight's peak tag moves under its marker so the blue one fits above. */}
               {inPlot(peakX) ? [
                 <Rect key="pk" x={peakX - 3.5} y={peakY - 3.5} width={7} height={7} fill={colors.hpHi} stroke={colors.edge} strokeWidth={1} transform={`rotate(45 ${peakX} ${peakY})`} />,
-                ...label('pkt', peakX, ghost ? Math.min(BASE - 22, peakY + 19) : Math.max(PAD_T + 13, peakY - 9), pct(night.peak), colors.ink),
+                ...label('pkt', peakX, ghost ? Math.min(BASE - 22, peakY + 19) : Math.max(PAD_T + 13, peakY - 9), zoneName(night.peak), colors.ink),
               ] : null}
               {ghost && inPlot(X(ghost.peakAt)) ? [
                 <Rect key="gpk" x={X(ghost.peakAt) - 3.5} y={Y(ghost.peak) - 3.5} width={7} height={7} fill={colors.mana} stroke={colors.edge} strokeWidth={1} transform={`rotate(45 ${X(ghost.peakAt)} ${Y(ghost.peak)})`} />,
-                ...label('gpkt', X(ghost.peakAt), Math.max(PAD_T + 13, Y(ghost.peak) - 9), pct(ghost.peak), colors.mana),
+                ...label('gpkt', X(ghost.peakAt), Math.max(PAD_T + 13, Y(ghost.peak) - 9), zoneName(ghost.peak), colors.mana),
               ] : null}
               {inPlot(clearX) && night.soberAt > night.now ? [
                 <Rect key="cl" x={clearX - 3} y={BASE - 3} width={6} height={6} fill={colors.good} />,
@@ -241,6 +239,7 @@ const useStyles = makeStyles((colors: Palette) => ({
   empty: { fontFamily: fonts.body, fontSize: 14, color: colors.inkFaint, backgroundColor: colors.sunk, padding: 12 },
   key: { fontFamily: fonts.body, fontSize: 12.5, color: colors.inkFaint },
   verdict: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 20 },
+  note: { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 18, color: colors.inkFaint },
   icon: { position: 'absolute', width: ICON, height: ICON },
   touch: { position: 'absolute', top: 0 },
   footer: { flexDirection: 'row' },

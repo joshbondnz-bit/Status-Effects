@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useAnimatedValue } from '../useAnimatedValue';
-import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import {
   FED_WINDOW, PHASES, WARNING_BAC, healthState, hpFromBac, hpGainNextHour, hpLossNextHour, phaseIndex, simulateNight, type Night,
 } from '../../../engine/src/index.ts';
@@ -23,8 +23,6 @@ const VIEW = '-10 -10 260 260';
 const BANDS = [{ r: 99, w: 5 }, { r: 93, w: 8 }, { r: 86, w: 6 }];
 const DMG = ['#9c4652', '#76182e', '#460a1b'];
 const HEAL = ['rgba(127,240,184,0.55)', 'rgba(95,211,154,0.42)', 'rgba(60,160,112,0.34)'];
-/** Blood alcohol at each zone boundary, going clockwise from the top. */
-const TICKS = ['.02', '.05', '.08', '.11', '.15'];
 
 /** A point on the ring: 0° is the top, angles go clockwise. */
 function pt(deg: number, r: number): [number, number] {
@@ -238,10 +236,6 @@ export function HealthBar({ night }: { night: Night }) {
             const [x1, y1] = pt(i * 60, R - 13), [x2, y2] = pt(i * 60, R + 13);
             return <Line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={colors.edge} strokeWidth={4} />;
           })}
-          {TICKS.map((t, i) => {
-            const [x, y] = pt((i + 1) * 60, R + 24);
-            return <SvgText key={t} x={x} y={y + 4} textAnchor="middle" fontSize={11} fontWeight="700" fill={colors.inkFaint} fontFamily={fonts.bodyBold}>{t}</SvgText>;
-          })}
         </Svg>
 
         {shineOn ? (
@@ -282,7 +276,7 @@ export function HealthBar({ night }: { night: Night }) {
       </View>
 
       {chip ? <Animated.Text style={[styles.chip, chip.style, (critical || warning) && { opacity: pulse }]}>{chip.text}</Animated.Text> : null}
-      <Text style={styles.bac}>Blood alcohol ≈ {night.bacNow.toFixed(3)}%</Text>
+      {night.drinks.length ? <Text style={styles.bac}>An estimate, not a breathalyser or a driving guide</Text> : null}
 
       {warning ? (
         <Text style={[styles.rate, { color: colors.warn }]}>
@@ -303,7 +297,7 @@ export function HealthBar({ night }: { night: Night }) {
       ) : taking && !warning ? (
         <Text style={styles.rateSub}>Most of this drain comes in the next hour while your drinks absorb. Lowest point around {clock(night.futurePeakAt)}, even if you stop now.</Text>
       ) : healing ? (
-        <Text style={styles.rateSub}>Full health around {clock(night.soberAt)}. Next-day debuffs keep running after that.</Text>
+        <Text style={styles.rateSub}>Full health around {clock(night.soberAt)}, by estimate. That isn't a sign you're fine to drive, and next-day debuffs keep running after it.</Text>
       ) : null}
       {taking && emptyStomachLoss != null && emptyStomachLoss - loss >= 1 ? (
         <Text style={styles.rateNote}>Slowed by food: about {Math.round(emptyStomachLoss)} HP on an empty stomach.</Text>

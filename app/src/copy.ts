@@ -1,26 +1,26 @@
 // All user-facing wording for Tonight. The engine returns numbers; this turns them into words.
 import { REGIONS, standardDrinks, type Effect, type EffectId, type Night, type RegionCode } from '../../engine/src/index.ts';
-import { clock, duration } from './format';
+import { clock, duration, zoneName as zoneNameOf } from './format';
 
 /** Driving limits by region, for the zone descriptions (Buzzed, Tipsy, Drunk). */
 const DRIVING: Record<RegionCode, { buzzed: string; tipsy: string; drunk: string }> = {
   ca: { buzzed: 'Already over the zero limit for new and young drivers in most provinces.',
-    tipsy: 'At 0.05% most Canadian provinces issue roadside suspensions.',
-    drunk: 'Over the 0.08% criminal driving limit in Canada.' },
+    tipsy: 'Most Canadian provinces issue roadside suspensions in this zone.',
+    drunk: 'Over the criminal driving limit in Canada.' },
   us: { buzzed: 'Under-21 drivers face zero-tolerance limits in every state.',
-    tipsy: "Driving skills are already impaired, and Utah's limit is 0.05%.",
-    drunk: 'Over the 0.08% driving limit in every US state.' },
+    tipsy: "Driving skills are already impaired, and this is over Utah's limit.",
+    drunk: 'Over the driving limit in every US state.' },
   uk: { buzzed: 'Driving skills start to slip well before the legal limit.',
-    tipsy: "At 0.05% you're over Scotland's driving limit.",
-    drunk: 'Over the 0.08% driving limit in England, Wales and Northern Ireland.' },
+    tipsy: "This is over Scotland's driving limit.",
+    drunk: 'Over the driving limit in England, Wales and Northern Ireland.' },
   au: { buzzed: 'Learner, provisional and some professional drivers must be at zero.',
-    tipsy: "At 0.05% you're over Australia's driving limit.",
-    drunk: "Well over Australia's 0.05% driving limit." },
+    tipsy: "This is over Australia's driving limit.",
+    drunk: "Well over Australia's driving limit." },
   nz: { buzzed: 'Drivers under 20 must be at zero, so this is already over their limit.',
-    tipsy: "At 0.05% you're over New Zealand's driving limit.",
-    drunk: "Well over New Zealand's 0.05% driving limit." },
+    tipsy: "This is over New Zealand's driving limit.",
+    drunk: "Well over New Zealand's driving limit." },
   eu: { buzzed: 'New and professional drivers in much of Europe have a 0.02% limit or lower.',
-    tipsy: "At 0.05% you're over the driving limit in most of Europe.",
+    tipsy: "This is over the driving limit in most of Europe.",
     drunk: 'Over the driving limit everywhere in Europe.' },
 };
 
@@ -28,7 +28,7 @@ const DRIVING: Record<RegionCode, { buzzed: string; tipsy: string; drunk: string
 export function phaseCopy(k: number, region: RegionCode): string {
   const d = DRIVING[region];
   return [
-    'No meaningful alcohol in your blood.',
+    "Little or no alcohol, by estimate. If you've been drinking tonight, don't drive: estimates can be wrong.",
     `Relaxed and chattier. ${d.buzzed} If this is still in your system at bedtime, your sleep takes a hit.`,
     `Judgment and coordination are slipping and risk-taking goes up. ${d.tipsy}`,
     `${d.drunk} Balance, reaction time and speech are impaired.`,
@@ -61,7 +61,7 @@ export function describe(e: Effect, n: Night, region: RegionCode): string {
       : `You should be near zero by your ${clock(n.bed)} bedtime, which softens the hit. Another drink would push alcohol into your sleep.`;
     case 'hrv': return `Your HRV-based recovery score for early sleep drops by roughly ${e.data?.dropPct} percentage points at this intake. Expect a higher resting heart rate tomorrow.`;
     case 'dehydration': return `Alcohol blocks the hormone that helps your kidneys hold onto water. ${e.data?.waters} water for ${e.data?.drinks} drinks so far.`;
-    case 'hangover': return `Hangovers peak as your level returns to zero, around ${clock(e.start)}. Estimated peak for the night: ${n.peak.toFixed(2)}%.`;
+    case 'hangover': return `Hangovers peak as your level returns to zero, around ${clock(e.start)}. Tonight's estimated peak: the ${zoneNameOf(n.peak)} zone.`;
     case 'hangxiety': return "Next-day anxiety and low mood as your brain rebounds from alcohol's calming effect.";
     case 'recovery': return 'Heavy drinking slows how your muscles rebuild after exercise by roughly a quarter to a third. Go easy on hard training.';
     case 'fatpause': return `Your body clears alcohol before anything else, so fat burning drops sharply until it's gone. Paused for about ${duration(e.data?.pausedMs ?? 0)} tonight.`;

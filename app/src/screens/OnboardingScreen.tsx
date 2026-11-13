@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import type { Profile } from '../../../engine/src/index.ts';
 import { useApp } from '../AppDataProvider';
@@ -7,7 +7,7 @@ import { CharacterFields, NameField, RoutineFields, profileComplete } from '../c
 import { PixelButton, ToggleRow } from '../components/Form';
 import { Logo } from '../components/Logo';
 import { EMERGENCY } from '../components/SafetyCheck';
-import type { Settings } from '../storage';
+import { TERMS_URL, TERMS_VERSION, type Settings } from '../storage';
 import { useColors, makeStyles, type Palette, fonts, panelStyles } from '../theme';
 
 /**
@@ -33,11 +33,12 @@ export function OnboardingScreen() {
     setShowError(false); setStep(2);
   };
   const skip = () => { setSkipped(true); setStep(3); };
+  const agreed = () => ({ safetyAckAt: Date.now(), termsVersion: TERMS_VERSION });
   const acknowledge = () => update(d => onlySafety
-    ? { ...d, safetyAckAt: Date.now() }
+    ? { ...d, ...agreed() }
     : skipped
-      ? { ...d, setup: 'skipped', settings: { ...d.settings, name: settings.name }, safetyAckAt: Date.now() }
-      : { ...d, profile, settings, setup: 'done', safetyAckAt: Date.now() });
+      ? { ...d, setup: 'skipped', settings: { ...d.settings, name: settings.name }, ...agreed() }
+      : { ...d, profile, settings, setup: 'done', ...agreed() });
 
   const region = (skipped || onlySafety ? data.profile : profile).region;
   const titles = { 1: 'Create your character', 2: 'Your routine', 3: 'Before you start' } as const;
@@ -87,9 +88,13 @@ export function OnboardingScreen() {
             <Point title={`In an emergency, call ${EMERGENCY[region]}`}
               body="If someone can't be woken, is breathing slowly or irregularly, or is vomiting while drowsy, call for help and stay with them." />
             <Point title="Log it when you get it" body="Logging a drink when it's in your hand shows what it will do before you've had it." />
-            <Text style={styles.age}>Status Effects is for people of legal drinking age where they live.</Text>
+            <Point title="Your choices are your own" body="You decide what you drink, how much, and how you get home. The app can't know how alcohol affects you on a given night." />
+            <Text style={styles.age}>By tapping I agree, you confirm you're of legal drinking age where you live and accept the Terms of Use.</Text>
+            <Pressable onPress={() => Linking.openURL(TERMS_URL).catch(() => {})} accessibilityRole="link" style={{ alignSelf: 'flex-start' }}>
+              <Text style={styles.link}>Read the Terms of Use</Text>
+            </Pressable>
             <View style={styles.row}>
-              <PixelButton label="I understand" primary flex={1} onPress={acknowledge} />
+              <PixelButton label="I agree" primary flex={1} onPress={acknowledge} />
               {!onlySafety ? <PixelButton label="Back" flex={1} onPress={() => setStep(skipped ? 1 : 2)} /> : null}
             </View>
           </>
@@ -132,4 +137,5 @@ const useStyles = makeStyles((colors: Palette) => ({
   marker: { width: 4, alignSelf: 'stretch', backgroundColor: colors.gold },
   pointTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
   age: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: colors.gold, lineHeight: 19 },
+  link: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.mana, textDecorationLine: 'underline' },
 }));

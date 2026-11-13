@@ -194,7 +194,7 @@ export function HistoryScreen() {
         <View style={styles.tile}>
           <Text style={styles.tileLabel}>HEAVY NIGHTS</Text>
           <Text style={styles.tileValue}>{st.heavyNights}</Text>
-          <Text style={styles.tileSub}>Reached the Drunk zone (0.08% or more)</Text>
+          <Text style={styles.tileSub}>Reached the Drunk zone or higher</Text>
         </View>
         <View style={styles.tile}>
           <Text style={styles.tileLabel}>HOURS DEBUFFED</Text>

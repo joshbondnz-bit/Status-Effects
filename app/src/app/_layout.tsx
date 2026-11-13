@@ -11,6 +11,7 @@ import { VT323_400Regular } from '@expo-google-fonts/vt323';
 import { AtkinsonHyperlegible_400Regular, AtkinsonHyperlegible_700Bold } from '@expo-google-fonts/atkinson-hyperlegible';
 import { AppDataProvider, useApp } from '../AppDataProvider';
 import { ThemeProvider, palettes } from '../theme';
+import { TERMS_VERSION } from '../storage';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,8 +42,8 @@ function ThemedRoot() {
   const choice = data.settings.theme ?? 'system';
   const name = choice === 'system' ? (system === 'light' ? 'light' : 'dark') : choice;
   const colors = palettes[name];
-  // Setup shows until it's finished or skipped, and the safety screen until it's been acknowledged.
-  const needsSetup = data.setup === 'pending' || data.safetyAckAt == null;
+  // Setup shows until it's finished or skipped, and the safety screen until the current terms have been agreed to.
+  const needsSetup = data.setup === 'pending' || data.safetyAckAt == null || data.termsVersion !== TERMS_VERSION;
   return (
     <ThemeProvider value={colors}>
       <StatusBar style={name === 'dark' ? 'light' : 'dark'} />

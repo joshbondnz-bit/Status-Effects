@@ -1,3 +1,5 @@
+import { PHASES, phaseIndex } from '../../engine/src/index.ts';
+
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** 24-hour "HH:MM". */
@@ -18,4 +20,5 @@ export function money(n: number): string {
   return '$' + (Number.isInteger(n) ? String(n) : n.toFixed(2));
 }
 
-export const pct =(bac: number) => bac.toFixed(3) + '%';
+/** The zone name for a blood alcohol estimate. The app shows zones, never percentages, so nobody reads it like a breathalyser. */
+export const zoneName = (bac: number) => PHASES[phaseIndex(bac)].name;
