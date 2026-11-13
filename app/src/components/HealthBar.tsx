@@ -22,8 +22,17 @@ const VIEW = '-10 -10 260 260';
 /** Light top, main and dark bottom bands, like the old bar's bevel, as three concentric rings. */
 const BANDS = [{ r: 99, w: 5 }, { r: 93, w: 8 }, { r: 86, w: 6 }];
 const DMG = ['#9c4652', '#76182e', '#460a1b'];
-/** The aura behind the ring, by zone (Fresh to Danger): cool and clear, warming to red as the night gets serious. */
-const AURA = ['#6fd3c8', '#9fd36a', '#f2c14e', '#ff9a3d', '#ff6a4f', '#ff3c50', '#d81e3c'];
+/** The aura behind the ring, by HP: green at full health, blending through gold and orange to deep red as HP falls. */
+const AURA_STOPS: [number, string][] = [[100, '#5fd39a'], [85, '#a8d65e'], [68, '#f2c14e'], [50, '#ff9a3d'], [32, '#ff6a4f'], [15, '#ff3c50'], [0, '#d81e3c']];
+function auraColor(hp: number): string {
+  const h = Math.max(0, Math.min(100, hp));
+  const i = AURA_STOPS.findIndex(([at]) => h >= at);
+  if (i <= 0) return AURA_STOPS[0][1];
+  const [hiAt, hi] = AURA_STOPS[i - 1], [loAt, lo] = AURA_STOPS[i];
+  const t = (h - loAt) / (hiAt - loAt);
+  const mix = (k: number) => Math.round(parseInt(lo.slice(k, k + 2), 16) * (1 - t) + parseInt(hi.slice(k, k + 2), 16) * t).toString(16).padStart(2, '0');
+  return '#' + mix(1) + mix(3) + mix(5);
+}
 /** Stepped pixel bands fading out from the ring's edge: [radius, opacity], in the ring's drawing units. */
 const AURA_BANDS: [number, number][] = [[112, 0.55], [124, 0.36], [136, 0.22], [148, 0.12], [160, 0.06]];
 const AURA_R = 170;
@@ -206,7 +215,7 @@ export function HealthBar({ night }: { night: Night }) {
     loop.start();
     return () => loop.stop();
   }, [taking, reduceMotion, auraPulse]);
-  const aura = AURA[critical ? 6 : k];
+  const aura = auraColor(critical ? 0 : hp);
   const auraPx = (AURA_R * 2 * size) / 260;
 
   // The shine: a soft highlight slides along the incoming-damage arc (clockwise, the way health drains)
@@ -313,7 +322,10 @@ export function HealthBar({ night }: { night: Night }) {
           {chip ? (
             <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: chip.style.backgroundColor, opacity: critical || warning ? pulse : 1 }]} />
           ) : combat ? (
-            // The translucent fill breathes with the aura while draining.
+            // A solid backing keeps the text readable over the aura; the tinted fill on top breathes with the aura while draining.
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.panel }]} />
+          ) : null}
+          {combat ? (
             <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: combat.tint, borderWidth: 2, borderColor: combat.edge, opacity: taking ? auraPulse : 1 }]} />
           ) : null}
           {chip ? <Text style={[styles.chipTxt, { color: chip.style.color }]}>{chip.text}</Text> : combat ? (
